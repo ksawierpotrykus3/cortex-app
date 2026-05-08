@@ -12,6 +12,7 @@ class Panel {
     this.connectionsEl = document.getElementById('panel-connections');
     this.closeBtn = document.getElementById('panel-close');
     
+    this.isEditing = false;
     this.currentNodeId = null;
     this.init();
   }
@@ -21,23 +22,28 @@ class Panel {
     
     // Close on Escape
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') this.hide();
+      if (e.key === 'Escape' && !this.isEditing) this.hide();
     });
 
     // Event listeners for footer buttons
+    document.getElementById('edit-node-btn').addEventListener('click', () => this.toggleEdit());
     document.getElementById('delete-node-btn').addEventListener('click', () => this.handleDelete());
     document.getElementById('park-node-btn').addEventListener('click', () => this.handlePark());
   }
 
   show(node) {
     this.currentNodeId = node.id;
+    this.isEditing = false;
     
     // Fill data
     this.titleEl.textContent = node.title;
     this.typeEl.textContent = node.type;
     this.typeEl.style.backgroundColor = COLORS[node.type];
     this.metaEl.textContent = `Dodano: ${new Date(node.createdAt).toLocaleDateString('pl-PL')}`;
-    this.bodyEl.textContent = node.content || 'Brak opisu...';
+    this.bodyEl.innerHTML = `<p id="panel-body-text">${node.content || 'Brak opisu...'}</p>`;
+    
+    // Reset buttons
+    document.getElementById('edit-node-btn').textContent = 'Edytuj';
     
     // Render connections
     this.renderConnections(node.id);
@@ -49,6 +55,38 @@ class Panel {
   hide() {
     this.el.classList.add('hidden');
     this.currentNodeId = null;
+    this.isEditing = false;
+  }
+
+  toggleEdit() {
+    const node = store.getNodes().find(n => n.id === this.currentNodeId);
+    if (!node) return;
+
+    if (!this.isEditing) {
+      // Switch to Edit Mode
+      this.isEditing = true;
+      document.getElementById('edit-node-btn').textContent = 'Zapisz';
+      
+      this.titleEl.innerHTML = `<input type="text" id="edit-title" value="${node.title}" style="width:100%; background: var(--bg-primary); border: 1px solid var(--border); padding: 4px 8px; border-radius: 4px; color: inherit; font-size: 18px; font-weight: 600;">`;
+      this.bodyEl.innerHTML = `<textarea id="edit-body" style="width:100%; height: 200px; background: var(--bg-primary); border: 1px solid var(--border); padding: 8px; border-radius: 4px; color: inherit; font-family: inherit; font-size: 14px; resize: vertical;">${node.content}</textarea>`;
+      
+      document.getElementById('edit-title').focus();
+    } else {
+      // Save Changes
+      const newTitle = document.getElementById('edit-title').value.trim();
+      const newContent = document.getElementById('edit-body').value.trim();
+      
+      store.updateNode(this.currentNodeId, {
+        title: newTitle || 'Bez tytułu',
+        content: newContent
+      });
+
+      this.isEditing = false;
+      this.show(store.getNodes().find(n => n.id === this.currentNodeId));
+      
+      // Update Graph
+      graph.setData({ nodes: store.getNodes(), links: store.getLinks() });
+    }
   }
 
   renderConnections(nodeId) {
