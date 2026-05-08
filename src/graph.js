@@ -67,11 +67,18 @@ class Graph {
 
     // Update Links
     this.linkElements = this.linkGroup.selectAll('line')
-      .data(links, d => `${d.source}-${d.target}`)
+      .data(links, d => `${typeof d.source === 'object' ? d.source.id : d.source}-${typeof d.target === 'object' ? d.target.id : d.target}`)
       .join('line')
       .attr('stroke', COLORS.border)
       .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', 1.5);
+      .attr('stroke-width', 2)
+      .style('cursor', 'pointer')
+      .on('click', (event, d) => {
+        event.stopPropagation();
+        this.handleLinkClick(d);
+      })
+      .on('mouseover', function() { d3.select(this).attr('stroke', COLORS.accent).attr('stroke-width', 3); })
+      .on('mouseout', function() { d3.select(this).attr('stroke', COLORS.border).attr('stroke-width', 2); });
 
     // Update Nodes
     this.nodeElements = this.nodeGroup.selectAll('.node-container')
@@ -167,6 +174,17 @@ class Graph {
 
   onNodeClick(callback) {
     this.onNodeClickCallback = callback;
+  }
+
+  handleLinkClick(link) {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    
+    store.deleteLink(sourceId, targetId);
+    this.setData({ nodes: store.getNodes(), links: store.getLinks() });
+    
+    // Notify panel if it was showing connections
+    window.dispatchEvent(new CustomEvent('link-deleted'));
   }
   
   applyFilters(filteredNodes) {

@@ -22,11 +22,17 @@ class Panel {
   init() {
     this.closeBtn.addEventListener('click', () => this.hide());
     
-    // Close on Escape
+    // Close or toggle modes on keys
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         if (this.isLinking) this.cancelLinking();
         else if (!this.isEditing) this.hide();
+      }
+      
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (this.isLinking) this.cancelLinking();
+        else this.startLinking(true); // true = persistent mode
       }
     });
 
@@ -40,8 +46,13 @@ class Panel {
   show(node) {
     if (this.isLinking) {
       this.completeLinking(node.id);
+      if (!this.persistentLinking) this.cancelLinking();
       return;
     }
+
+    // Don't show panel if we are just clicking nodes to link in persistent mode
+    // but we need a starting node. Let's allow showing if not linking.
+    if (this.isLinking && this.persistentLinking) return;
 
     // Clear previous active state
     d3.selectAll('.node-container').classed('node-active', false);
@@ -77,19 +88,21 @@ class Panel {
     this.isLinking = false;
   }
 
-  startLinking() {
+  startLinking(persistent = false) {
     this.isLinking = true;
+    this.persistentLinking = persistent;
+    
     const btn = document.getElementById('add-link-btn');
-    btn.textContent = 'Kliknij w inny node... (Esc by anulować)';
+    btn.textContent = persistent ? 'TRYB ŁĄCZENIA: Klikaj w node\'y (Tab by wyjść)' : 'Kliknij w inny node... (Esc by anulować)';
     btn.style.borderColor = 'var(--accent)';
     btn.style.color = 'var(--accent)';
     
-    // Dim the graph or show hint? Let's just change cursor
     document.body.style.cursor = 'crosshair';
   }
 
   cancelLinking() {
     this.isLinking = false;
+    this.persistentLinking = false;
     const btn = document.getElementById('add-link-btn');
     btn.textContent = 'Połącz z innym...';
     btn.style.borderColor = '';
@@ -98,14 +111,24 @@ class Panel {
   }
 
   completeLinking(targetId) {
-    if (targetId === this.currentNodeId) return;
+    if (!this.currentNodeId || targetId === this.currentNodeId) {
+      // In persistent mode, the clicked node becomes the new source
+      this.currentNodeId = targetId;
+      return;
+    }
     
     store.addLink(this.currentNodeId, targetId);
-    this.cancelLinking();
     
+    // In persistent mode, the target becomes the next source (chaining)
+    if (this.persistentLinking) {
+      this.currentNodeId = targetId;
+    }
+
     // Re-render
     graph.setData({ nodes: store.getNodes(), links: store.getLinks() });
-    this.renderConnections(this.currentNodeId);
+    if (!this.el.classList.contains('hidden')) {
+      this.renderConnections(this.currentNodeId);
+    }
   }
 
   toggleEdit() {
