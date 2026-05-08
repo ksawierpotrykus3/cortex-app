@@ -3,6 +3,7 @@ import { SEED_DATA } from './seed.js';
 import { graph } from './graph.js';
 import { panel } from './panel.js';
 import { quickAdd } from './quickadd.js';
+import { filter } from './filter.js';
 
 function init() {
   console.log('Cortex: Initializing...');
@@ -17,7 +18,7 @@ function init() {
   }
 
   // 2. Setup UI listeners (already handled by modules mostly)
-  setupGlobalListeners();
+  // No-op for now
   
   // 3. Render Graph
   graph.setData({ 
@@ -31,16 +32,7 @@ function init() {
   });
 }
 
-function setupGlobalListeners() {
-  // Common listeners that don't belong to a specific module
-  const filterBtns = document.querySelectorAll('.filter-btn');
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
-}
+// End of main.js
 
 // Start the app
 document.addEventListener('DOMContentLoaded', init);

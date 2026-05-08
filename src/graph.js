@@ -168,6 +168,26 @@ class Graph {
     this.onNodeClickCallback = callback;
   }
   
+  applyFilters(filteredNodes) {
+    // Merge filter state into current data
+    this.data.nodes.forEach(node => {
+      const match = filteredNodes.find(fn => fn.id === node.id);
+      node.isFiltered = match ? match.isFiltered : false;
+    });
+    
+    // Update visuals immediately
+    this.nodeElements.transition().duration(200)
+      .style('opacity', d => d.isFiltered ? 0.15 : 1)
+      .style('pointer-events', d => d.isFiltered ? 'none' : 'all');
+      
+    this.linkElements.transition().duration(200)
+      .style('opacity', d => {
+        const sourceMatch = filteredNodes.find(fn => fn.id === (d.source.id || d.source));
+        const targetMatch = filteredNodes.find(fn => fn.id === (d.target.id || d.target));
+        return (sourceMatch?.isFiltered || targetMatch?.isFiltered) ? 0.05 : 0.6;
+      });
+  }
+
   focusNode(id) {
     const node = this.data.nodes.find(n => n.id === id);
     if (node) {
