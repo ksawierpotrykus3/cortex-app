@@ -66,19 +66,33 @@ class Graph {
     const { nodes, links } = this.data;
 
     // Update Links
-    this.linkElements = this.linkGroup.selectAll('line')
+    this.linkElements = this.linkGroup.selectAll('.link-container')
       .data(links, d => `${typeof d.source === 'object' ? d.source.id : d.source}-${typeof d.target === 'object' ? d.target.id : d.target}`)
+      .join('g')
+      .attr('class', 'link-container');
+
+    // Invisible thick line for easy clicking (hitbox)
+    this.linkElements.selectAll('.hitbox')
+      .data(d => [d])
       .join('line')
-      .attr('stroke', COLORS.border)
-      .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', 2)
+      .attr('class', 'hitbox')
+      .attr('stroke', 'transparent')
+      .attr('stroke-width', 20) // BIG HITBOX
       .style('cursor', 'pointer')
       .on('click', (event, d) => {
         event.stopPropagation();
         this.handleLinkClick(d);
-      })
-      .on('mouseover', function() { d3.select(this).attr('stroke', COLORS.accent).attr('stroke-width', 3); })
-      .on('mouseout', function() { d3.select(this).attr('stroke', COLORS.border).attr('stroke-width', 2); });
+      });
+
+    // Visible thin line
+    this.linkElements.selectAll('.visible-line')
+      .data(d => [d])
+      .join('line')
+      .attr('class', 'visible-line')
+      .attr('stroke', COLORS.border)
+      .attr('stroke-opacity', 0.6)
+      .attr('stroke-width', 3)
+      .style('pointer-events', 'none');
 
     // Update Nodes
     this.nodeElements = this.nodeGroup.selectAll('.node-container')
@@ -132,7 +146,7 @@ class Graph {
   }
 
   ticked() {
-    this.linkElements
+    this.linkElements.selectAll('line')
       .attr('x1', d => d.source.x)
       .attr('y1', d => d.source.y)
       .attr('x2', d => d.target.x)
