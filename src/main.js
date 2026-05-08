@@ -4,6 +4,7 @@ import { graph } from './graph.js';
 import { panel } from './panel.js';
 import { quickAdd } from './quickadd.js';
 import { filter } from './filter.js';
+import { parking } from './parking.js';
 
 function init() {
   console.log('Cortex: Initializing...');
@@ -29,6 +30,11 @@ function init() {
   // 4. Handle node clicks
   graph.onNodeClick((node) => {
     panel.show(node);
+  });
+
+  // 5. Handle Export/Import
+  document.getElementById('export-btn').addEventListener('click', () => {
+    store.exportData();
   });
 }
 

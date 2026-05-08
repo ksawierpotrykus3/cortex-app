@@ -79,6 +79,7 @@ class Graph {
       .data(nodes, d => d.id)
       .join('g')
       .attr('class', 'node-container')
+      .attr('data-id', d => d.id)
       .call(this.drag(this.simulation));
 
     this.nodeElements.selectAll('circle')

@@ -420,3 +420,31 @@ input, textarea {
   overflow-y: auto;
   padding: 16px;
 }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { stroke-width: 2px; stroke-opacity: 1; }
+  50% { stroke-width: 6px; stroke-opacity: 0.5; }
+  100% { stroke-width: 2px; stroke-opacity: 1; }
+}
+
+.node-active circle {
+  animation: pulse 2s infinite ease-in-out;
+  stroke: var(--accent) !important;
+  stroke-width: 3px !important;
+}

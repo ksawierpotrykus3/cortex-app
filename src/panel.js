@@ -1,3 +1,4 @@
+import * as d3 from 'd3';
 import { store } from './store.js';
 import { graph } from './graph.js';
 import { COLORS } from './constants.js';
@@ -42,6 +43,11 @@ class Panel {
       return;
     }
 
+    // Clear previous active state
+    d3.selectAll('.node-container').classed('node-active', false);
+    // Set new active state
+    d3.select(`.node-container[data-id="${node.id}"]`).classed('node-active', true);
+
     this.currentNodeId = node.id;
     this.isEditing = false;
     this.isLinking = false;
@@ -64,6 +70,7 @@ class Panel {
   }
 
   hide() {
+    d3.selectAll('.node-container').classed('node-active', false);
     this.el.classList.add('hidden');
     this.currentNodeId = null;
     this.isEditing = false;
