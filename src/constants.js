@@ -10,18 +10,18 @@ export const COLORS = {
 };
 
 export const NODE_SIZES = {
-  aksjomat: 20,
-  pewnik: 16,
-  przeblysk: 14,
-  problem: 13,
-  rozrzutka: 10
+  aksjomat: 35,
+  pewnik: 28,
+  przeblysk: 24,
+  problem: 22,
+  rozrzutka: 18
 };
 
 export const GRAPH_CONFIG = {
-  forceLinkDistance: 100,
-  forceChargeStrength: -300,
-  forceCollisionRadius: 40,
-  zoomRange: [0.3, 4]
+  forceLinkDistance: 150,
+  forceChargeStrength: 0, // No constant repulsion
+  forceCollisionRadius: 60,
+  zoomRange: [0.2, 5]
 };
 
 export const STORAGE_KEY = 'cortex-data';

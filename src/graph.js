@@ -47,9 +47,8 @@ class Graph {
   setupSimulation() {
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink().id(d => d.id).distance(GRAPH_CONFIG.forceLinkDistance))
-      .force('charge', d3.forceManyBody().strength(GRAPH_CONFIG.forceChargeStrength))
-      .force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
-      .force('collision', d3.forceCollide().radius(d => NODE_SIZES[d.type] + 20));
+      .force('collision', d3.forceCollide().radius(d => NODE_SIZES[d.type] + 30))
+      .velocityDecay(0.6); // Faster stabilization
 
     this.simulation.on('tick', () => this.ticked());
   }
@@ -148,8 +147,9 @@ class Graph {
     }
     function dragended(event) {
       if (!event.active) simulation.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
+      // Keep nodes fixed where they are dropped
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
     }
     return d3.drag()
       .on('start', dragstarted)
