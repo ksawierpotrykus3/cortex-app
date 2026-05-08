@@ -72,7 +72,14 @@ class Graph {
       .attr('class', 'link')
       .attr('stroke', COLORS.border)
       .attr('stroke-opacity', 0.4)
-      .attr('stroke-width', 2);
+      .attr('stroke-width', 4) // Bit thicker for easier right-click
+      .style('cursor', 'crosshair')
+      .on('contextmenu', (event, d) => {
+        event.preventDefault();
+        this.handleLinkClick(d);
+      })
+      .on('mouseover', function() { d3.select(this).attr('stroke', COLORS.accent).attr('stroke-opacity', 1); })
+      .on('mouseout', function() { d3.select(this).attr('stroke', COLORS.border).attr('stroke-opacity', 0.4); });
 
     // Update Nodes
     this.nodeElements = this.nodeGroup.selectAll('.node-container')
@@ -98,6 +105,11 @@ class Graph {
         } else {
           if (this.onNodeClickCallback) this.onNodeClickCallback(d);
         }
+      })
+      .on('contextmenu', (event, d) => {
+        event.preventDefault();
+        store.deleteNode(d.id);
+        this.setData({ nodes: store.getNodes(), links: store.getLinks() });
       });
 
     // Node Labels
