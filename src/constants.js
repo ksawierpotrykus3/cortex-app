@@ -10,11 +10,11 @@ export const COLORS = {
 };
 
 export const NODE_SIZES = {
-  aksjomat: 35,
-  pewnik: 28,
-  przeblysk: 24,
-  problem: 22,
-  rozrzutka: 18
+  aksjomat: 45,
+  pewnik: 36,
+  przeblysk: 32,
+  problem: 28,
+  rozrzutka: 24
 };
 
 export const GRAPH_CONFIG = {

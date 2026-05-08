@@ -77,11 +77,27 @@ class Store {
   }
 
   deleteLink(sourceId, targetId) {
-    this.state.links = this.state.links.filter(l => 
-      !(l.source === sourceId && l.target === targetId) &&
-      !(l.source === targetId && l.target === sourceId)
-    );
+    this.state.links = this.state.links.filter(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source;
+      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      return !(s === sourceId && t === targetId) && !(s === targetId && t === sourceId);
+    });
     this.save();
+  }
+
+  deleteLinksBetween(ids) {
+    this.state.links = this.state.links.filter(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source;
+      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      // Remove link if BOTH ends are in the selection
+      return !(ids.includes(s) && ids.includes(t));
+    });
+    this.save();
+  }
+
+  clearAll() {
+    localStorage.removeItem(STORAGE_KEY);
+    this.state = { nodes: [], links: [], parking: [] };
   }
 
   parkNode(id) {

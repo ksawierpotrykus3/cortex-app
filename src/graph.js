@@ -71,15 +71,8 @@ class Graph {
       .join('line')
       .attr('class', 'link')
       .attr('stroke', COLORS.border)
-      .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', 8) // Thicker overall for better interaction
-      .style('cursor', 'pointer')
-      .on('click', (event, d) => {
-        event.stopPropagation();
-        this.handleLinkClick(d);
-      })
-      .on('mouseover', function() { d3.select(this).attr('stroke-opacity', 1).attr('stroke', COLORS.accent); })
-      .on('mouseout', function() { d3.select(this).attr('stroke-opacity', 0.6).attr('stroke', COLORS.border); });
+      .attr('stroke-opacity', 0.4)
+      .attr('stroke-width', 2);
 
     // Update Nodes
     this.nodeElements = this.nodeGroup.selectAll('.node-container')
@@ -96,10 +89,15 @@ class Graph {
       .attr('fill', d => COLORS[d.type])
       .attr('fill-opacity', 0.15)
       .attr('stroke', d => COLORS[d.type])
-      .attr('stroke-width', 2)
+      .attr('stroke-width', d => d.isSelected ? 4 : 2)
       .style('cursor', 'pointer')
       .on('click', (event, d) => {
-        if (this.onNodeClickCallback) this.onNodeClickCallback(d);
+        if (event.shiftKey) {
+          event.stopPropagation();
+          this.toggleSelection(d.id);
+        } else {
+          if (this.onNodeClickCallback) this.onNodeClickCallback(d);
+        }
       });
 
     // Node Labels
@@ -177,15 +175,26 @@ class Graph {
     this.onNodeClickCallback = callback;
   }
 
-  handleLinkClick(link) {
-    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-    
-    store.deleteLink(sourceId, targetId);
-    this.setData({ nodes: store.getNodes(), links: store.getLinks() });
-    
-    // Notify panel if it was showing connections
-    window.dispatchEvent(new CustomEvent('link-deleted'));
+  toggleSelection(id) {
+    const node = this.data.nodes.find(n => n.id === id);
+    if (node) {
+      node.isSelected = !node.isSelected;
+      d3.select(`.node-container[data-id="${id}"]`).classed('selected', node.isSelected);
+      
+      // Notify about selection change
+      window.dispatchEvent(new CustomEvent('selection-changed', { 
+        detail: { selectedIds: this.data.nodes.filter(n => n.isSelected).map(n => n.id) } 
+      }));
+    }
+  }
+
+  getSelectedNodes() {
+    return this.data.nodes.filter(n => n.isSelected);
+  }
+
+  clearSelection() {
+    this.data.nodes.forEach(n => n.isSelected = false);
+    d3.selectAll('.node-container').classed('selected', false);
   }
   
   applyFilters(filteredNodes) {

@@ -3,6 +3,9 @@
   --bg-primary: #0f0f12; /* Stonowany, ciemny szary/granat */
   --surface: #17171c;
   --surface-hover: #1f1f26;
+  --accent: #6366f1;
+  --accent-soft: rgba(99, 102, 241, 0.2);
+  --selected: #fbbf24;
   --border: #26262e;
   --border-focus: #4f46e5;
   
@@ -443,8 +446,51 @@ input, textarea {
   100% { stroke-width: 2px; stroke-opacity: 1; }
 }
 
-.node-active circle {
-  animation: pulse 2s infinite ease-in-out;
-  stroke: var(--accent) !important;
-  stroke-width: 3px !important;
+.node-container.selected circle {
+  stroke: var(--selected) !important;
+  stroke-width: 4px !important;
+  fill-opacity: 0.3 !important;
+}
+
+#batch-actions {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 20px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+#batch-actions.hidden {
+  bottom: -100px;
+}
+
+.batch-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.batch-btn:hover {
+  background: var(--surface-hover);
+}
+
+.batch-btn.danger {
+  color: #ef4444;
+}
+.batch-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
