@@ -13,6 +13,7 @@ class Panel {
     this.closeBtn = document.getElementById('panel-close');
     
     this.isEditing = false;
+    this.isLinking = false;
     this.currentNodeId = null;
     this.init();
   }
@@ -22,18 +23,28 @@ class Panel {
     
     // Close on Escape
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !this.isEditing) this.hide();
+      if (e.key === 'Escape') {
+        if (this.isLinking) this.cancelLinking();
+        else if (!this.isEditing) this.hide();
+      }
     });
 
     // Event listeners for footer buttons
     document.getElementById('edit-node-btn').addEventListener('click', () => this.toggleEdit());
     document.getElementById('delete-node-btn').addEventListener('click', () => this.handleDelete());
     document.getElementById('park-node-btn').addEventListener('click', () => this.handlePark());
+    document.getElementById('add-link-btn').addEventListener('click', () => this.startLinking());
   }
 
   show(node) {
+    if (this.isLinking) {
+      this.completeLinking(node.id);
+      return;
+    }
+
     this.currentNodeId = node.id;
     this.isEditing = false;
+    this.isLinking = false;
     
     // Fill data
     this.titleEl.textContent = node.title;
@@ -56,6 +67,38 @@ class Panel {
     this.el.classList.add('hidden');
     this.currentNodeId = null;
     this.isEditing = false;
+    this.isLinking = false;
+  }
+
+  startLinking() {
+    this.isLinking = true;
+    const btn = document.getElementById('add-link-btn');
+    btn.textContent = 'Kliknij w inny node... (Esc by anulować)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    
+    // Dim the graph or show hint? Let's just change cursor
+    document.body.style.cursor = 'crosshair';
+  }
+
+  cancelLinking() {
+    this.isLinking = false;
+    const btn = document.getElementById('add-link-btn');
+    btn.textContent = 'Połącz z innym...';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    document.body.style.cursor = '';
+  }
+
+  completeLinking(targetId) {
+    if (targetId === this.currentNodeId) return;
+    
+    store.addLink(this.currentNodeId, targetId);
+    this.cancelLinking();
+    
+    // Re-render
+    graph.setData({ nodes: store.getNodes(), links: store.getLinks() });
+    this.renderConnections(this.currentNodeId);
   }
 
   toggleEdit() {
