@@ -1,6 +1,7 @@
 import { store } from './store.js';
 import { SEED_DATA } from './seed.js';
 import { graph } from './graph.js';
+import { panel } from './panel.js';
 
 function init() {
   console.log('Cortex: Initializing...');
@@ -25,8 +26,7 @@ function init() {
 
   // 4. Handle node clicks
   graph.onNodeClick((node) => {
-    console.log('Node clicked:', node);
-    // Panel logic will go here
+    panel.show(node);
   });
 }
 
