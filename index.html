@@ -1,13 +1,102 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="pl">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>cortex-app</title>
+    <title>Cortex — Personal Knowledge Graph</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <header class="top-bar">
+        <div class="logo">
+          <span class="logo-icon">⬡</span>
+          <h1>CORTEX</h1>
+        </div>
+        
+        <div class="search-container">
+          <input type="text" id="search-input" placeholder="Szukaj w bazie wiedzy... (Ctrl+K)" />
+        </div>
+
+        <nav class="filters" id="type-filters">
+          <button class="filter-btn active" data-type="all">Wszystko</button>
+          <button class="filter-btn" data-type="aksjomat">Aksjomaty</button>
+          <button class="filter-btn" data-type="pewnik">Pewniki</button>
+          <button class="filter-btn" data-type="przeblysk">Przebłyski</button>
+          <button class="filter-btn" data-type="rozrzutka">Rozrzutki</button>
+          <button class="filter-btn" data-type="problem">Problemy</button>
+        </nav>
+
+        <div class="top-actions">
+          <button id="parking-toggle" title="Parking (nie-teraz)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          </button>
+          <button id="export-btn" title="Eksportuj JSON">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main id="graph-container">
+        <!-- D3 Graph will be rendered here -->
+      </main>
+
+      <aside id="side-panel" class="side-panel hidden">
+        <div class="panel-header">
+          <div id="panel-type-badge" class="type-badge">ROZRZUTKA</div>
+          <button id="panel-close">&times;</button>
+        </div>
+        <div class="panel-content">
+          <h2 id="panel-title">Tytuł node'a</h2>
+          <div id="panel-meta" class="meta">Dodano: 2024-05-08</div>
+          <div id="panel-body-container">
+            <p id="panel-body">Treść node'a pojawi się tutaj...</p>
+          </div>
+          
+          <section class="connections-section">
+            <h3>Połączenia</h3>
+            <ul id="panel-connections" class="connections-list">
+              <!-- Connections list -->
+            </ul>
+            <button id="add-link-btn" class="secondary-btn">Połącz z innym...</button>
+          </section>
+        </div>
+        <div class="panel-footer">
+          <button id="edit-node-btn" class="action-btn">Edytuj</button>
+          <button id="park-node-btn" class="action-btn">Parkuj</button>
+          <button id="delete-node-btn" class="action-btn danger">Usuń</button>
+        </div>
+      </aside>
+
+      <footer class="bottom-bar">
+        <div class="quick-add-container">
+          <div class="type-picker" id="quick-add-types">
+            <button class="type-btn active" data-type="rozrzutka" title="Rozrzutka">R</button>
+            <button class="type-btn" data-type="przeblysk" title="Przebłysk [!]">!</button>
+            <button class="type-btn" data-type="aksjomat" title="Aksjomat">A</button>
+            <button class="type-btn" data-type="pewnik" title="Pewnik">P</button>
+            <button class="type-btn" data-type="problem" title="Problem">?</button>
+          </div>
+          <input type="text" id="quick-add-input" placeholder="Złap myśl i naciśnij Enter..." />
+        </div>
+      </footer>
+
+      <!-- Modals / Overlays -->
+      <div id="parking-view" class="modal hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Parking (Magazyn nie-teraz)</h2>
+            <button id="close-parking">&times;</button>
+          </div>
+          <div id="parking-list" class="parking-list">
+            <!-- List of parked nodes -->
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
