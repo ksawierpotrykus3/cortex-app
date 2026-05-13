@@ -61,8 +61,8 @@ function init() {
   });
 
   // 7. Export
-  document.getElementById('export-btn').addEventListener('click', () => {
-    store.exportData();
+  document.getElementById('export-btn').addEventListener('click', (e) => {
+    store.exportData({ full: e.shiftKey });
   });
 
   // 8. Reset

@@ -2,8 +2,8 @@ import { store } from './store.js';
 import { vision } from './vision.js';
 
 /**
- * Global Flash Chat — ask Flash about your entire Cortex.
- * Sends all notes as context + user question.
+ * Global Flash Chat.
+ * Sends the same semantic board snapshot that is used by the AI export.
  */
 class FlashChat {
   constructor() {
@@ -18,7 +18,6 @@ class FlashChat {
   }
 
   init() {
-    // Toggle panel
     this.toggleBtn?.addEventListener('click', () => {
       this.panel.classList.toggle('hidden');
       if (!this.panel.classList.contains('hidden')) {
@@ -26,7 +25,6 @@ class FlashChat {
       }
     });
 
-    // Send
     this.sendBtn?.addEventListener('click', () => this.send());
     this.inputEl?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -35,44 +33,30 @@ class FlashChat {
       }
     });
 
-    // Close on Esc
     this.inputEl?.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.panel.classList.add('hidden');
     });
   }
 
   _buildContext() {
-    const nodes = store.getNodes();
-    if (nodes.length === 0) return 'Brak notatek w systemie.';
-
-    const lines = nodes.map(n => {
-      let entry = `[${n.type.toUpperCase()}] ${n.title || '(bez tytułu)'}`;
-      if (n.content) entry += `\n${n.content}`;
-      if (n.imageDescription) entry += `\n[Opis screena]: ${n.imageDescription}`;
-      return entry;
-    });
-
-    return `Oto wszystkie notatki użytkownika (${nodes.length} szt.):\n\n${lines.join('\n---\n')}`;
+    const semanticContext = store.buildSemanticContext();
+    return `Widoczna tablica Cortex jako kompaktowy JSON dla AI. Nie ma tu obrazów base64 ani danych technicznych, tylko tekst, opisy screenów, układ i połączenia:\n${semanticContext}`;
   }
 
   async send() {
     const q = this.inputEl?.value.trim();
     if (!q) return;
 
-    // User bubble
     this._addBubble(q, 'user');
     this.inputEl.value = '';
     this.sendBtn.disabled = true;
 
-    // Loading
-    const loadEl = this._addBubble('⏳ myślę...', 'loading');
-
-    // Build context + question
+    const loadEl = this._addBubble('myślę...', 'loading');
     const context = this._buildContext();
-    const fullPrompt = `${context}\n\n---\nPytanie użytkownika: ${q}\n\nOdpowiedz po polsku, zwięźle i konkretnie. Bazuj na kontekście notatek powyżej.`;
+    const fullPrompt = `${context}\n\n---\nPytanie użytkownika: ${q}\n\nOdpowiedz po polsku, zwięźle i konkretnie. Bazuj na widocznej tablicy powyżej.`;
 
     if (!vision.hasApiKey()) {
-      loadEl.textContent = '[Ustaw API key w ⚙️]';
+      loadEl.textContent = '[Ustaw API key w ustawieniach]';
       loadEl.classList.add('error');
       this.sendBtn.disabled = false;
       return;

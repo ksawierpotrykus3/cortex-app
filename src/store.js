@@ -1,4 +1,5 @@
 import { STORAGE_KEY } from './constants.js';
+import { buildSemanticContext, buildSemanticExport } from './semanticExport.js';
 
 class Store {
   constructor() {
@@ -196,12 +197,23 @@ class Store {
     }
   }
 
-  exportData() {
-    const blob = new Blob([JSON.stringify(this.state, null, 2)], { type: 'application/json' });
+  buildSemanticExport() {
+    return buildSemanticExport(this.state);
+  }
+
+  buildSemanticContext() {
+    return buildSemanticContext(this.state);
+  }
+
+  exportData(options = {}) {
+    const full = options.full === true;
+    const data = full ? this.state : this.buildSemanticExport();
+    const filenamePrefix = full ? 'cortex-backup' : 'cortex-ai';
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cortex-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `${filenamePrefix}-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
