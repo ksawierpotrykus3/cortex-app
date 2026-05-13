@@ -1,0 +1,5811 @@
+{
+  "nodes": [
+    {
+      "id": "7d11d3e6-221f-43a7-a599-4c16d111b081",
+      "title": "Projekty duże a mniejsze",
+      "content": "Ale projekty dzielą sie na główny obraz projektow typu klienci oraz pomniejsze typu nawet to. nie mam tego zdefiniowane\nDla mnie wszystko co chce zrobić/poprawić to jest projekt w głowie",
+      "type": "rozrzutka",
+      "x": 1125.2225021287709,
+      "y": -1434.7872574868943,
+      "createdAt": "2026-05-10T12:05:26.278Z",
+      "cardScale": 1.05
+    },
+    {
+      "id": "9cb19699-6597-4ed8-90c1-9a6f08e72b33",
+      "title": "Dont know",
+      "content": "Ciągle przebijają mi się w głowie jakies mega pojedyńcze przypadki tego co mogło by być lepsze ale na tyle słabe ze nie pamietam ich i nie moge sie zdecydować na ich wdrożenie",
+      "type": "przeblysk",
+      "x": 2869.6988575713535,
+      "y": -1390.7955624167223,
+      "createdAt": "2026-05-10T12:11:06.095Z"
+    },
+    {
+      "id": "4b61f7d0-7dae-4707-9d14-7415c710f8d4",
+      "title": "Pomysł",
+      "content": "kategoria POMYSL/NIE WIEM. ktore z automatu działają inaczej\nzmienia tytul na POMYSŁ",
+      "type": "rozrzutka",
+      "x": -187.96704694983833,
+      "y": -731.8843142895371,
+      "createdAt": "2026-05-10T12:12:00.673Z"
+    },
+    {
+      "id": "fffc475d-13f1-4abd-9cb1-0acb5be9c401",
+      "title": "Nie pamiętam",
+      "content": "ciągle doswiadczam sytuacji gdzie tak naprawde nie pamietam co sie dzialo wczesniej. więc system powinien mieć jakis system radzenia sobie z tym",
+      "type": "problem",
+      "x": 2659.799283525764,
+      "y": -922.430572179318,
+      "createdAt": "2026-05-10T12:14:48.710Z"
+    },
+    {
+      "id": "f70c2a00-b1dc-493d-baee-479a429626d8",
+      "title": "Pomysł",
+      "content": "kategoria INFO, odrazu zmienia tytuł na INFO i ofc kolor",
+      "type": "rozrzutka",
+      "x": 185.70976384983902,
+      "y": -1147.884314289537,
+      "createdAt": "2026-05-10T12:18:57.130Z"
+    },
+    {
+      "id": "0fcaed9e-b3d5-422a-b911-9b0e3279bf75",
+      "title": "pomysł",
+      "content": "Miejsce na pomysly o mniejszych projektach o ktorych zapomnialem ktore jednak nie sa nazwane pomysł? np notatki o projektach",
+      "type": "rozrzutka",
+      "x": 128.50755623565504,
+      "y": -939.8843142895371,
+      "createdAt": "2026-05-10T12:21:17.154Z"
+    },
+    {
+      "id": "39cfba55-2afd-4a2a-a6f6-437bb9d2010e",
+      "title": "Pomysł",
+      "content": "Pomysł na np pomysły rożnego szczebla wartosci? że hierarchia coś wazniejsze od innych? albo  hierarchia - ? - że nie wiem",
+      "type": "rozrzutka",
+      "x": 388.7419897972317,
+      "y": -920.3884614453874,
+      "createdAt": "2026-05-10T12:21:59.492Z"
+    },
+    {
+      "id": "fc43c4f9-4ec8-4c60-9a38-138d1e52626c",
+      "title": "Pomysł",
+      "content": "kategoria pomysł, ta sama zasada co reszta",
+      "type": "rozrzutka",
+      "x": -339.844501647259,
+      "y": -965.2266253412743,
+      "createdAt": "2026-05-10T12:26:22.394Z"
+    },
+    {
+      "id": "bd677844-1dd2-4aad-ab6a-d505ba726265",
+      "title": "Pomysł - obserwacje",
+      "content": "trzeba prowadzić obserwacje, kiedy np wrzucilem cos w inne miejsce niż mogłem. mimo ze wczesniej zrobilem to dobrze np zamoiast dac pomysl jak reszte to nazwalem tto jakos inaczej. i potem to badać.\nmyśle ze to dobry sposob ktory moze poradzic na jakis problem",
+      "type": "rozrzutka",
+      "x": 704.9322632592825,
+      "y": -909.5440625894664,
+      "createdAt": "2026-05-10T12:27:13.366Z"
+    },
+    {
+      "id": "3a881556-8376-43d1-8ee4-a4114e220bac",
+      "title": "Pomysł",
+      "content": "1. strefy, np wyznaczam strefe i kazda notatka ktora tam przesunie odrazu dostaje tytul strefy\n2. miejsce na kontekst dzienny? \n3. daty, godziny dodania, edytowania.",
+      "type": "rozrzutka",
+      "x": 147.0609639897154,
+      "y": -731.8843142895371,
+      "createdAt": "2026-05-10T16:29:17.848Z"
+    },
+    {
+      "id": "02b7eb87-1bbe-47b9-8c00-85c97052e739",
+      "title": "Projekt - praca z AI",
+      "content": "Jeśli chodzi o prace z AI, powinna panować wieczna zasada ograniczonego zaufania ustawiona na totalne extremum",
+      "type": "aksjomat",
+      "x": -1275.2341146909368,
+      "y": -2837.854980767433,
+      "createdAt": "2026-05-10T17:03:14.950Z"
+    },
+    {
+      "id": "dd4d4397-8172-45ed-8140-ef04b890d00c",
+      "title": "Pomysł",
+      "content": "Pomysł na poziom pomysłu? \njak chcialem zapisac pomysł do projektu który jeszcze nie powstal to mialem zawachanie czy je tutaj dać do reszty",
+      "type": "rozrzutka",
+      "x": 445.2449078616099,
+      "y": -1013.5440625894664,
+      "createdAt": "2026-05-11T08:17:12.692Z"
+    },
+    {
+      "id": "b5bd0474-b9c1-4fe7-be78-ad02d4259bd8",
+      "title": "Pomysł",
+      "content": "Duplikaty - porownywanie notatek i szukanie mozliwosci tego samego żeby nie zasmiecać - potrzebny flash",
+      "type": "rozrzutka",
+      "x": -85.49807256680849,
+      "y": -1188.7476823562693,
+      "createdAt": "2026-05-11T08:20:25.855Z"
+    },
+    {
+      "id": "63f7dbeb-a165-4a78-b435-6a17d6a963bb",
+      "title": "Pomysł",
+      "content": "prosta kategoria - to do.",
+      "type": "rozrzutka",
+      "x": 151.19795566828202,
+      "y": -1043.884314289537,
+      "createdAt": "2026-05-11T08:22:01.944Z"
+    },
+    {
+      "id": "b7135017-03b8-472e-a084-ea386b0dab8d",
+      "title": "Pomysł",
+      "content": "Obsługa zrzutów ekranu",
+      "type": "rozrzutka",
+      "x": 481.6067403943632,
+      "y": -1119.6268142133465,
+      "createdAt": "2026-05-11T08:24:58.826Z"
+    },
+    {
+      "id": "d6557956-2a1e-45d6-b248-92977acb21b1",
+      "title": "Pomysł",
+      "content": "Tag - inkloza, czy coś ai tak to nazwal. miejsce na rzeczy które jeszcze nie wiem co z nimi zrobić",
+      "type": "rozrzutka",
+      "x": 458.3590194851072,
+      "y": -1377.2044205288275,
+      "createdAt": "2026-05-11T08:25:44.326Z"
+    },
+    {
+      "id": "5746e8d6-fb77-4709-86f5-de278f775342",
+      "title": "Co jeśli",
+      "content": "Co jeśli np notatka o edge case to to samo co napisalem gdzieś indziej ale innymi slowami i w ogole w inny sposob ale dotyczy tego samego ? - jest to prawie pewniak",
+      "type": "przeblysk",
+      "x": -846.9738986237653,
+      "y": -1140.3165243510966,
+      "createdAt": "2026-05-11T08:29:09.669Z"
+    },
+    {
+      "id": "889ddba8-0c0e-4143-b014-fb273946837f",
+      "title": "Pomysł",
+      "content": "System musi wiedzieć, i być odporny  oraz wykorzystywać słabosc architektra ktory nie pamieta wszystkiego.",
+      "type": "rozrzutka",
+      "x": 224.83259559268407,
+      "y": -1273.2044205288275,
+      "createdAt": "2026-05-11T08:33:32.165Z"
+    },
+    {
+      "id": "8184af47-af6b-47e3-9e4a-f9af46b3ec75",
+      "title": "PROJEKT - FB, REDDIT, YT...",
+      "content": "Mam tone materiałów z fb i tych podobnych pozapisywane gdzieś   w celu wykorzystania",
+      "type": "aksjomat",
+      "x": 540.8512309389434,
+      "y": -2796.934782876318,
+      "createdAt": "2026-05-11T08:34:48.771Z"
+    },
+    {
+      "id": "2809297e-7ce0-4f5b-a675-7d3a0addb58f",
+      "title": "Pomysł",
+      "content": "Coś co samemu daje pomysły bazując na obserwacjach",
+      "type": "rozrzutka",
+      "x": 148.84078165680933,
+      "y": -1417.9677017340605,
+      "createdAt": "2026-05-11T08:55:57.944Z"
+    },
+    {
+      "id": "e0da3a64-003a-41c1-8daa-319a8487b34b",
+      "title": "Pomysł",
+      "content": "sloty specjalne na projekty. ktore moge stawiac i jak wruzce tam cos z kategorią projekt. to tworzy z tego nowa zakladke bez tegfo wszystkiego z ktorej moge wchodzic i wychodzić",
+      "type": "rozrzutka",
+      "x": -108.14521742838834,
+      "y": -1313.9677017340605,
+      "createdAt": "2026-05-11T08:56:15.061Z"
+    },
+    {
+      "id": "73a6ede7-f7ac-45c4-bfd1-435f7f945dcd",
+      "title": "róznica",
+      "content": "Powinna być róznica jakas między tym co pisze że tylko myśle projekcie a co wiem zze wiem. bo czasami  zamiast pisac mysli do projektu losowe zeby nie zasmiecać to ich po prostu nie pisze. czyli wszystko opiewa w kategorie, ale co zroboc jak bedzie ich za dużo? moze szersza tabelka bardziej przyjazna dla oka., posegregowana i np kolory dane.",
+      "type": "przeblysk",
+      "x": -845.3948991971197,
+      "y": -1036.3165243510966,
+      "createdAt": "2026-05-11T08:58:17.909Z"
+    },
+    {
+      "id": "a87329d4-835a-468a-af63-a0a73f2e5562",
+      "title": "Perspektywa",
+      "content": "Jest taki problem który musze wiedziec ja i AI i cos z nim zrobić potem. otóż ja pisząc  to wsdzystko jestem w innej perspektywie niż Ai mysli zej estem. ja jak pisze i mysle to widze tunelowo tylko to co robie. nie widze ogolnego obrazu dopoki np nie odejde i nie odsapne ale to tez nie pewniak. wiec w przyszlosci bedzie pewnie projekt ktory jakos tworzy te różnice.  wydaje mi sie ze tysiac kategorii ktore oznaczaja rozne stany itp to jest go to na start. np tutaj dal bym kategorie czegos co istnieje, i chce cos z tym zrobić. i podzielic na zrobic w niedalekiej przyszlosci. czy na końcu.",
+      "type": "aksjomat",
+      "x": 1898.5651043828095,
+      "y": -717.8035709997893,
+      "createdAt": "2026-05-11T09:00:10.865Z"
+    },
+    {
+      "id": "d42fbba9-a4e6-4f5c-a9ee-358e1466fef4",
+      "title": "idk",
+      "content": "zauważyłem ze w sumie wiekszość rzeczy o ktorych myśle to wszystko co jest albo mega oczywiste dla mnie już albo uderza w ulepszenie  cortexa, i w sumie piszac to pisze bo nie wiem. czuje że nic mi to nie daje w 95% że to pisze. ale własnie jest to desperaca próba walki z tym.\nwiec problemem nie jest 1 obserwacja ale to co chcialem napisac po niej",
+      "type": "problem",
+      "x": -798.8297005201483,
+      "y": -477.7753037156217,
+      "createdAt": "2026-05-11T09:18:23.504Z"
+    },
+    {
+      "id": "07095ce8-9e2b-43fd-8a24-8c056cf542d3",
+      "title": "IDK 2",
+      "content": "i to własnie to. problem zapisu znow wystąpił. ja zawsze myśle pierw. a potem jak zdecyduje sie zapisać to nie wiem co bo zapomniałem. to aktualnie moj największy nemesis. nie opisałem dobrze tego problemu. bo nie chce pisać byle czego co może smiecić. boje się smiecenia bo ja samemu nie wiem czy to co pisze to prawda potem i jak ja nie moge ocenić to kto?\nDODATKOWO. to sie objawia inaczej\nbo ja czuje potencjał w czyms. i ja chce cos pokazac AI. ale wlasnie ja sie boje  tego bo jednak wiem ze cos jest tam napisane dobrze, a przynajhmniej przypuszczam ale tez przypuszczam że coś nie jest takie, i to wlasnie nazywam zaśmieceniem",
+      "type": "problem",
+      "x": -799.9394728945806,
+      "y": -213.7753037156217,
+      "createdAt": "2026-05-11T09:21:01.926Z"
+    },
+    {
+      "id": "f4a89032-8fe8-4ffe-8a20-36f6eda6d3ee",
+      "title": "edge case",
+      "content": "edge to coś co istnieje w hipotetycznej rzeczywistosci co sprawia że jest mala szansa na powtorzenie a przynajmniej tak mi mowi mozg.a przez to ze załozenie jest hipotetyczne i by tylko naprawilo 1 problem ktory moze nie istniec sprawia ze mozg to ignoruje jednoczesnie nie chcac ignorować. \nnp  chciałem wyslac AI screena 3 zrzutek ktore nie wiem czy maja jakakolwiek wartosc i nie wiem czy to zrozumie ale mialem cien nadziei. i wlasnie chcialem wyslac bo to est rzadka sytuacja kiedy czlowiek czuje ze bazowe Ai by nie ogarnelo. ale akurat mialem odpalone Ai z jakims kontekstem co jest rzadkie, plus sam kontekst był rzadki + symulacja pokazala mi że nie był bym w stanie tego potworzyć bo nie wiem jak, nie wiem nic. co zwiekszylo szanse co w ogole sprawilo ze pomyslalem o zrobieniu tego.  i pomyslalem wlasnie instynktowie o  tym  jak  to zwiekszyc?\nale jednoczesnie nawet nie wiem na czym by to polegalo i brak przewidzenia tego sprawil ze ledwo tego wszystkiego nie napisalem.",
+      "type": "przeblysk",
+      "x": 2627.3601510551534,
+      "y": -1286.7955624167223,
+      "createdAt": "2026-05-11T09:23:21.981Z"
+    },
+    {
+      "id": "1221ed54-ae09-42c1-9411-353da81bfbc8",
+      "title": "akceleracja",
+      "content": "Ogromny problem który cortex ma zaleczyć to to że ja instynktownie chce optymalizować wszysstko pod akceleracje. chce mieć coś, albo spsoob, albo cokowliek co pozwoli Mi albo AI ocenić kiedy cos nadaje sie do akceleracji przez AI. zachowując to u mnie jest tym czego nie umiem powtorzyć czyli kontekstem dla Ai w skrócie. czyli ciągla walka między bazowym Ai ktory nie ogarnia a Ai ktory ogarnia. i co by sie musualo stać żeby on to zrobił\nznowu czuje że zasmiecam.",
+      "type": "problem",
+      "x": -1305.9525922370026,
+      "y": -98.358196447316,
+      "createdAt": "2026-05-11T09:28:47.106Z"
+    },
+    {
+      "id": "dc11d67c-ffd0-4fcc-95e8-5ccbc1bcef24",
+      "title": "akceleracja 2",
+      "content": "Bo tu chodzi o to że ja jako człowiek mam wieczny problem w tym że ja moge myślec ale ja nie wiem czy ja cos wymysle i czy nie marnuje czasu. i wlasnie chialbym miec coś co pozwala mi jakoś to przejsc.  bo nie moge przewidziec przyszlosci JESZCZE. albo nie moge wymyslec sposobu zeby zbadać to zeby wiedziec kiedy moge myslec dalej samemu a keidy MOGLEM PO PROSTU ZAPYTAC O WGLĄD NP FLASHA",
+      "type": "problem",
+      "x": -1347.4496445837096,
+      "y": 210.641803552684,
+      "createdAt": "2026-05-11T09:31:37.751Z"
+    },
+    {
+      "id": "cb07b186-1385-44c6-a5ea-1b897047897c",
+      "title": "akceleracja 3",
+      "content": "i jak np wrzuce AI jakis SS. albo wiadomosc to mussze miec sposob tego żeby wziąc to. i napisac co jest dobrze, a co źle i po prostu stworzyć z tego kontekst. ktory zachowuje caly kontekst. nie jest to proste.",
+      "type": "problem",
+      "x": -1424.1645197353628,
+      "y": 489.641803552684,
+      "createdAt": "2026-05-11T09:34:54.539Z"
+    },
+    {
+      "id": "1b18ea56-ac95-478f-b2d7-5346cebd8f84",
+      "title": "Wątpliwość",
+      "content": "zawsze wchodzę jak cos chce napisac, czyli ja mowie sobie że pora cos zrobić wiec np wchodze w cortexa i mowi sobie pisz cos\nto mam na poczatku zawsze wątpliwosci co i jak przez brak znania terenu , nawet teraz jak to pisze to przez to że już chwile tu pisze dziś mimo że i tak mam wątpliwości - jest to  stan który odczywam zawsze, surowa obserwacja, nie wiem jaki cel mam tutaj ale nie moge go wyobrazic ale to nie zwalnia z nie pisania tego",
+      "type": "aksjomat",
+      "x": 11.997481966476329,
+      "y": 124.29243962942061,
+      "createdAt": "2026-05-11T10:06:40.692Z"
+    },
+    {
+      "id": "66fa65cb-5c4d-428c-8c1c-b68ba5f75a3a",
+      "title": "Cel - blueprint",
+      "content": "jednym z celów ogolnie tego cortexa jest wytworzenie schematów myślenia dokladnie, czyli blueprint na podstawie surowych danych i to potrzebuje do rozwoju.   np jak chcialbym wymyśleć jakis prompt do tego jak AI ma mi cos tlumaczyc pierw musiałbym zebrać informacje jawne ktore wiem o tym. oraz np pisanie o tym jak ja coś skracam i szukanie jakiegos wspolnego mianoiwnika.",
+      "type": "pewnik",
+      "x": -750.3619869332282,
+      "y": 185.29958199007683,
+      "createdAt": "2026-05-11T10:09:17.534Z"
+    },
+    {
+      "id": "9afa6048-2495-4918-b0b3-c24d450364f3",
+      "title": "Ogół",
+      "content": "też mam problem z  zapisem czegos co jest tylko pół prawda. np wiem o co ogolnie chodzil problem ale nie pamietam dokladnie czegoś itp i nie chce wtedy tego pisać żeby nie zasmiecać\nnp myslalem o  tym jakby moglo wygladac porownanie i po co. i co by mi to dalo\nale zapomnialem dokladnie czego.  wszystkiego co napisałem",
+      "type": "problem",
+      "x": -824.5487133760042,
+      "y": -360.71447845913775,
+      "createdAt": "2026-05-11T10:16:23.532Z"
+    },
+    {
+      "id": "0202dac8-72ba-48d1-80b0-2b52593b08de",
+      "title": "pom",
+      "content": "menu kategorii. gdzie moge zmieniac kolory kazdej i zmienaic nazwy, dodawac. usuwac. oraz to co tam usune, oraz ustawie kolejnosc potem pojawia w ogolnych kategoriach jak tworze notatke. w takie jsamej tabelce. zeby nie bylo dlugiej lineraniej listy",
+      "type": "rozrzutka",
+      "x": 360.97623844045154,
+      "y": -835.8843142895371,
+      "createdAt": "2026-05-11T13:47:21.917Z"
+    },
+    {
+      "id": "befc7db3-0673-41d0-8c7e-129405ddc14e",
+      "title": "Struktura",
+      "content": "Moje myślenie jest w jakimś stopniu jest strukturalne musze to zgłębić bo zawsze było to zbyt słabe wspomnienia i zbyt duzo. bo moje myślenie jest również takie, albo wszystko albo nic., musze tworzyc struktury ktore zatwierdze inaczej malo co zapamiętam. a jak za duzo i za ciezko to ciezko tak.",
+      "type": "pewnik",
+      "x": -166.03018380132812,
+      "y": 420.4644462980542,
+      "createdAt": "2026-05-11T13:53:42.191Z"
+    },
+    {
+      "id": "f509b9a9-49df-44f1-9433-758a2693582c",
+      "title": "CEL - inwestycja",
+      "content": "Celem sprzezonym z strachem i watpliwosciami jest to żeby odrazu wiedziec z czego trzeba robic funkcje na zawsze. bo lepiej odrazu inwestowac niz np 10 razy sie pierdolic i potem dopiero zauważyć ze coś warto zrobić. gdzie jakbym zrobil za 1 razem to by już mi to sie zwracało",
+      "type": "pewnik",
+      "x": -748.6950846084969,
+      "y": 317.9808953588741,
+      "createdAt": "2026-05-11T14:09:34.505Z"
+    },
+    {
+      "id": "f731fc00-9ec9-43ac-84c3-f3e8c3dd8c7d",
+      "title": "Pom - projekt flash",
+      "content": "18 kont antigravity podlaczyc flashe tutaj. zajebac end pointy i jakos przechodzic potencjalna weryfikacje - teoretycznie, nw jak w praktyce",
+      "type": "rozrzutka",
+      "x": -260.97443008828617,
+      "y": -1084.7476823562693,
+      "createdAt": "2026-05-11T14:13:24.507Z"
+    },
+    {
+      "id": "8632bec6-8a83-4a33-b017-d7c1ecc50334",
+      "title": "?",
+      "content": "co z pomysłami które juz spełnie. chyba bede musial manualnie je wypierdalac w tym momencie",
+      "type": "rozrzutka",
+      "x": -843.8885214048892,
+      "y": -930.5232758767171,
+      "createdAt": "2026-05-11T14:20:49.842Z"
+    },
+    {
+      "id": "d2ed1fe8-e957-46c8-9a93-81bc33d4b8e1",
+      "title": "?",
+      "content": "co zrobić. bo już wiem ze stare wpisy moge po czasie juz lepiej podporzadkować. ale nie chce mi sie ich czytac.",
+      "type": "rozrzutka",
+      "x": 2487.42872680398,
+      "y": -1068.4647920309974,
+      "createdAt": "2026-05-11T14:22:01.239Z"
+    },
+    {
+      "id": "3e08c499-4ec9-4c67-b8da-49b8e3780378",
+      "title": "Cortex - wszechstronność",
+      "content": "planuje cortexa dać np bratu. i kurde mega sie boje że to co działa na mnie może na niego nie działać. i nie pasować mu temu skupiam sie też na narzędziach do tworzenia wlasnych included  w samej apce przynajmniej te ktore moge obmyśleć",
+      "type": "pewnik",
+      "x": -767.2959031072277,
+      "y": -13.706356414578629,
+      "createdAt": "2026-05-11T14:33:17.007Z"
+    },
+    {
+      "id": "8a211151-ba3d-4b07-86e6-dcfeacdcf36a",
+      "title": "edge case",
+      "content": "zauważyłem problem - widze coś czego zapomnialem. 2 notatki ktore totalnei nie pamietam kontekstu. wiec wymyślilem dodanie jakies kategorii która np oznacza notatki ktore z czasem zapominam. i je lącze z nią",
+      "type": "rozrzutka",
+      "x": 2679.359825607677,
+      "y": -1494.7955624167223,
+      "createdAt": "2026-05-11T14:38:06.891Z"
+    },
+    {
+      "id": "afb45fd1-4692-4784-bbf6-17ddc408b8df",
+      "title": "Pomy",
+      "content": "Może system etykiet ? pomyslalem o czyms takim w czymś co wymaga interakcji z Ai i potrzebny jest kontekst",
+      "type": "rozrzutka",
+      "x": -430.30169006701834,
+      "y": -861.2266253412743,
+      "createdAt": "2026-05-11T14:41:44.092Z"
+    },
+    {
+      "id": "63068bcc-51c4-4fb1-9b46-a67483c7278d",
+      "title": "Obserwacje mnie",
+      "content": "Obserwowanie wszystkiego co pisze. jak pisze itp. bo calkowicie nie mam sposobu żeby  np umieć sobie wyobrazić w czym jestem inny od reszty ludzi. - AI powinno to robić. albo z automatu albo cyklicznie na zawołanie",
+      "type": "pewnik",
+      "x": -137.1945633997925,
+      "y": -198.88684808982953,
+      "createdAt": "2026-05-11T15:26:57.907Z"
+    },
+    {
+      "id": "0b524e58-47d2-4087-bf3f-a82a159b73b3",
+      "title": "Zrzut",
+      "content": "Nie jestem w stanie ogarnąc na raz 1 struktury z tego co napisałem w 2 dni. co tylko pokazuje nature tego.",
+      "type": "aksjomat",
+      "x": 1895.604768262162,
+      "y": -542.6057586607831,
+      "createdAt": "2026-05-11T15:28:59.971Z"
+    },
+    {
+      "id": "dc8516d1-d9e3-4f36-b080-6dfbdf9dc933",
+      "title": "zrzut",
+      "content": "Narazie ten system to tylko zajebista maszyna do dumpu, ale nie odzwierciedla tego jakby mogło akcelerować mój rozwoj bo to jest glowny punkt.  1 z 2 w sumie\n1. to projekty \n2. rozwoj. \nbo np projekty to cos co musze robic dla kasy albo dla rozwoju wiec troche to sie rozni",
+      "type": "aksjomat",
+      "x": 2278.8276198041694,
+      "y": -529.0863036905093,
+      "createdAt": "2026-05-11T15:31:04.511Z"
+    },
+    {
+      "id": "4863f4b6-6511-4a8d-84fc-de7f03222ea2",
+      "title": "zrzut",
+      "content": "ja po prostu bardzo potrzebuje pomocy zewnetrznej w celu akcelerowania tego czego nie widze.",
+      "type": "aksjomat",
+      "x": 2276.8139216186505,
+      "y": -718.6028039280488,
+      "createdAt": "2026-05-11T15:36:47.150Z"
+    },
+    {
+      "id": "28c42e89-489c-436f-8478-0e9ecf7d18a6",
+      "title": "notatha flash",
+      "content": "Diagnoza: Paradoks \"Obserwatora w Pętli\"\nWidzę, że najwięcej energii tracisz na obserwowanie tego, jak myślisz, zamiast po prostu myśleć. Notatki \"idk\" i \"idk 2\" to dowód na to, że Twój mózg próbuje jednocześnie:\n\nGenerować pomysł.\nOceniać, czy pomysł jest śmieciem.\nZapisywać go, zanim ucieknie.\nProjektować system, który to naprawi. To powoduje ogromny \"overheating\". Twoim największym wrogiem nie jest \"brak systemu\", ale brak zaufania, że system (AI) wyłapie wartość, zanim Ty ją ocenisz.\n\n. Rozwiązanie problemu \"Śmiecenia\"\nBoisz się śmieci, bo postrzegasz tablicę jako statyczne archiwum.\n\nWgląd: Jeśli tablica jest dynamiczna, \"śmieci\" nie istnieją. Są tylko \"dane o niskim priorytecie\", które system automatycznie ukrywa (fade out), gdy tracą na znaczeniu, i wyciąga (resurface), gdy nagle pasują do nowego problemu.\nTwoje \"idk\" to nie śmieci — to szum informacyjny, z którego AI powinno wyciągać sygnał. Nie musisz ich usuwać; system powinien je \"trawić\".\nTwoje \"śmiecenie\" to nie ilość i nie jakość — to niepewność epistemiczna\nBoisz się pisać, bo:\n\nNie wiesz, czy to prawda (bo może za godzinę zmienisz zdanie)\nNie wiesz, czy to ważne (bo sam nie widzisz połączeń)\nNie wiesz, czy ktoś/coś to oceni poprawnie (bo bazowe AI \"nie ogarnia\")",
+      "type": "rozrzutka",
+      "x": 1091.790065581733,
+      "y": -1542.215793683981,
+      "createdAt": "2026-05-11T15:54:47.519Z"
+    },
+    {
+      "id": "ab1f3808-6414-4c66-a182-9d650f1e3844",
+      "title": "System warstw",
+      "content": "Praca z Ai się warstwuje. przechodzi na  warstwy.\n1 warstwa to np surowy input\n2 warstwa to jak to zeskrinuje i wrzuce do ai\n3. to zebranie tego w projekt, wrzucenie skrina na ta sama tablice + output Ai.\nWarstwy nie tyczą sie tylko pracy z Ai. mogą powstać wszędzie",
+      "type": "pewnik",
+      "x": 170.47158194790626,
+      "y": 421.47088382128186,
+      "createdAt": "2026-05-11T16:14:46.805Z"
+    },
+    {
+      "id": "5f474251-7541-4e37-8453-9b33f401f1f9",
+      "title": "zrzut",
+      "content": "chce po prostu przebrnac przez to. zebrac dane, i za pomoca tego wyjsc z takimi logicznymi wnioskami ktore latwiej pozwolily by mi wiedziec wszystko i np zobaczyc ze 99% tego conapisalem okazalo sie wazne, wtedy np dalo by mi to icos. bo ja widze tunelowo. nie moge wyjsc z takimi wnioskami ktore istnieja, bo to czy ja to odkryje nie zmienia teog czy to prawda. czy nie, tylko tego nie widze. to jest ten glowny podmiot tego. widzenie rzeczy za mnie. albo pozwolenie mi ich zobaczyc mimo że nie widze.",
+      "type": "aksjomat",
+      "x": 2618.596455120949,
+      "y": -522.3803779393805,
+      "createdAt": "2026-05-11T16:29:27.612Z"
+    },
+    {
+      "id": "67de331c-f99f-46c7-b01c-34028f65bc34",
+      "title": "Geneza",
+      "content": "Ten system istnieje po 3rzeczy \n1. praca\n2. rozwój\n3. komfort(np automatyzacja)\nten problem uderza w tą 2 sfere.\nUważam że w tych materiałach jest ogromny potencjał.",
+      "type": "aksjomat",
+      "x": 553.2201963065603,
+      "y": -2613.748166868536,
+      "createdAt": "2026-05-11T17:13:46.892Z"
+    },
+    {
+      "id": "15d8c515-c817-4a14-97d6-a2149cd1a851",
+      "title": "Potencjał",
+      "content": "Reddit - różne posty z wiedzą.\noraz najważniejsze, komentarze, ludzie ktorzy piszą z doswiadczenia, czesto pisza aktualne dobre porady. rozne linki, narzędzia cokolwiek. oraz ogólna historia. jest to alternatywa w nauce z AI gdzie Ai nie ma doświadczenia z ktorego może opowiadać.\nYT to zaś tylko dobre źródło wiedzy\na Fb ostatnio też na moim front page. ciągle jakies posty o Ai i badania ktore mogą dać mi jakas wiedze która podswiadomie szukam ale nie chce mi sie samemu czytac bo  i tak nie rozumiem",
+      "type": "aksjomat",
+      "x": 905.3581711089298,
+      "y": -2613.2836740511875,
+      "createdAt": "2026-05-11T17:21:17.003Z"
+    },
+    {
+      "id": "21801542-b3ea-40f0-8ead-94fd2babc243",
+      "title": "Sposób",
+      "content": "Do ściągania z yt i reddita mam już program do ktorego tylko wrzucam link i robi to za mnie chociaż wolalbym je wklejać np do cortexa i flash by to zrobil za mnie? potem te materiały skladowac w czyms typu podpięta chromaDB. i miec ultra doprecyzowane prompty do tego.",
+      "type": "aksjomat",
+      "x": 575.00767601185,
+      "y": -2974.107739785164,
+      "createdAt": "2026-05-11T17:25:06.912Z"
+    },
+    {
+      "id": "7ded60aa-262c-43a9-9e55-b7fa4c9b8c40",
+      "title": "?",
+      "content": "Myśle nad może zrobieniem numeracji tablic. ze np to jest tablica 1. odpalam tablice 2. pusta. ale zawsze moge wrocic do 1. i jednoczesnie jesli mialbym juz AI w tablicach to mogło by do nich wracać",
+      "type": "rozrzutka",
+      "x": -406.9193190796082,
+      "y": -1253.0799600834584,
+      "createdAt": "2026-05-11T18:39:25.752Z"
+    },
+    {
+      "id": "2548679e-4a99-49e5-b740-64d04667df4b",
+      "title": "Funkcja systemu",
+      "content": "jest to przyszła abstrakcyjna funkcja",
+      "type": "pewnik",
+      "x": -137.1501693478878,
+      "y": -310.61466656335074,
+      "createdAt": "2026-05-11T18:45:17.803Z"
+    },
+    {
+      "id": "f886ac83-875a-4953-86a2-26537cba8ef0",
+      "title": "Update",
+      "content": "zaczałem czytać te notatki. jeśli czytam je po czasie na nowo jak juz to przejde to jednak jakoś sie zalecza ten problem tego że nie pamiętam.",
+      "type": "rozrzutka",
+      "x": 2832.809327152152,
+      "y": -1115.0809107813573,
+      "createdAt": "2026-05-11T18:46:53.764Z"
+    },
+    {
+      "id": "bceb6701-2caf-4f1c-a274-d33ae492ac77",
+      "title": "obserwacja",
+      "content": "Zauważyłem że zawsze zapominam prawie o czym byla notatka jesli podalem ogolny przyklad zamiast dokładnego.\nAle jednoczesnie czuje ze to na 100% zapamietam ten wniosek wiec nw czm pisze tą notatke. to raczej bedzie useless notatka",
+      "type": "przeblysk",
+      "x": 2161.634488680938,
+      "y": -1698.8919999626105,
+      "createdAt": "2026-05-11T18:48:33.719Z"
+    },
+    {
+      "id": "7a6faee6-b54b-4333-8cba-cb2bc35c12f9",
+      "title": "cel",
+      "content": "celem tego było pokazanie jak bardzo niszowe są moje pomysły  i to że ten problem ciągle nastepuja gdy badam nieznane wody i nie wiem jak sobie z tym radzić",
+      "type": "rozrzutka",
+      "x": 2683.849454351357,
+      "y": -1607.366647111176,
+      "createdAt": "2026-05-11T18:50:10.544Z"
+    },
+    {
+      "id": "07fabc00-b5c1-4cc9-90f8-32218bba0656",
+      "title": "Pomysł",
+      "content": "jakaś kategoria czy te oznaczenia czy cos co moge dokleic do czegoś co jest polaczone np  tym że mowi o cortexie ale jednak mowi o czyms innym. moze jakis kolor ? idk i w sumie ma to sens odnosnie tego jak np wracam po czasie do czegoś i nie mam sposobu oznaczania czegos po czasie",
+      "type": "rozrzutka",
+      "x": -102.14988164715582,
+      "y": -835.8843142895371,
+      "createdAt": "2026-05-11T18:51:22.781Z"
+    },
+    {
+      "id": "855b307f-2265-4f2e-ab34-11ea8d2bd07b",
+      "title": "róznica",
+      "content": "tak jak są one połączone 3. tak dwie są różne\ncel inwestycja i blueprint mówią o kluczowych funkcjach systemu ktory AI musi patrzec ważniej. tak wszechstronnosc to bardziej spoko jakby było, bo jednak nie jestem pewien czy tak sie da. i  czy tez moje domniemania są prawdziwe. jest to dobry przyklad tego jak cos moze sie roznic mimo połączenia",
+      "type": "rozrzutka",
+      "x": -449.72041650944016,
+      "y": 100.29762218098027,
+      "createdAt": "2026-05-11T18:59:17.850Z"
+    },
+    {
+      "id": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
+      "title": "Czystki",
+      "content": "Wyjebałem sporo notatek po spojrzeniu na nie z góry po kilku godzinach",
+      "type": "rozrzutka",
+      "x": 1364.0133785950566,
+      "y": -1545.9252903467075,
+      "createdAt": "2026-05-11T19:14:32.524Z"
+    },
+    {
+      "id": "01c6416b-c534-42fe-9225-466e752754ee",
+      "title": "info",
+      "content": "Połączone tym że nie mają kategorii",
+      "type": "rozrzutka",
+      "x": 1509.7806542585913,
+      "y": -1441.9252903467075,
+      "createdAt": "2026-05-11T19:27:25.970Z"
+    },
+    {
+      "id": "ce3e0d47-2566-481a-a12b-43f0dc5ab371",
+      "title": "info",
+      "content": "I np w tym momencie po tych 4 notatkach nie mam już pomyslu i potrzebuje wglądu od AI",
+      "type": "rozrzutka",
+      "x": 1026.0147785321035,
+      "y": -2841.251857869896,
+      "createdAt": "2026-05-11T19:35:44.453Z"
+    },
+    {
+      "id": "d2557f45-8c21-44ce-9b63-4ce96f448451",
+      "title": "",
+      "content": "",
+      "type": "rozrzutka",
+      "x": -70.17553195342155,
+      "y": -1005.2333760041328,
+      "createdAt": "2026-05-11T20:52:00.325Z"
+    }
+  ],
+  "links": [
+    {
+      "source": "b5bd0474-b9c1-4fe7-be78-ad02d4259bd8",
+      "target": "889ddba8-0c0e-4143-b014-fb273946837f"
+    },
+    {
+      "source": "dc11d67c-ffd0-4fcc-95e8-5ccbc1bcef24",
+      "target": "1221ed54-ae09-42c1-9411-353da81bfbc8"
+    },
+    {
+      "source": "cb07b186-1385-44c6-a5ea-1b897047897c",
+      "target": "dc11d67c-ffd0-4fcc-95e8-5ccbc1bcef24"
+    },
+    {
+      "source": "0b524e58-47d2-4087-bf3f-a82a159b73b3",
+      "target": "dc8516d1-d9e3-4f36-b080-6dfbdf9dc933"
+    },
+    {
+      "source": "4863f4b6-6511-4a8d-84fc-de7f03222ea2",
+      "target": "dc8516d1-d9e3-4f36-b080-6dfbdf9dc933"
+    },
+    {
+      "source": "dc8516d1-d9e3-4f36-b080-6dfbdf9dc933",
+      "target": "5f474251-7541-4e37-8453-9b33f401f1f9"
+    },
+    {
+      "source": "a87329d4-835a-468a-af63-a0a73f2e5562",
+      "target": "4863f4b6-6511-4a8d-84fc-de7f03222ea2"
+    },
+    {
+      "source": "67de331c-f99f-46c7-b01c-34028f65bc34",
+      "target": "8184af47-af6b-47e3-9e4a-f9af46b3ec75"
+    },
+    {
+      "source": "15d8c515-c817-4a14-97d6-a2149cd1a851",
+      "target": "67de331c-f99f-46c7-b01c-34028f65bc34"
+    },
+    {
+      "source": "8184af47-af6b-47e3-9e4a-f9af46b3ec75",
+      "target": "21801542-b3ea-40f0-8ead-94fd2babc243"
+    },
+    {
+      "source": "3e08c499-4ec9-4c67-b8da-49b8e3780378",
+      "target": "66fa65cb-5c4d-428c-8c1c-b68ba5f75a3a"
+    },
+    {
+      "source": "66fa65cb-5c4d-428c-8c1c-b68ba5f75a3a",
+      "target": "f509b9a9-49df-44f1-9433-758a2693582c"
+    },
+    {
+      "source": "befc7db3-0673-41d0-8c7e-129405ddc14e",
+      "target": "ab1f3808-6414-4c66-a182-9d650f1e3844"
+    },
+    {
+      "source": "63068bcc-51c4-4fb1-9b46-a67483c7278d",
+      "target": "2548679e-4a99-49e5-b740-64d04667df4b"
+    },
+    {
+      "source": "fffc475d-13f1-4abd-9cb1-0acb5be9c401",
+      "target": "f886ac83-875a-4953-86a2-26537cba8ef0"
+    },
+    {
+      "source": "7a6faee6-b54b-4333-8cba-cb2bc35c12f9",
+      "target": "8a211151-ba3d-4b07-86e6-dcfeacdcf36a"
+    },
+    {
+      "source": "855b307f-2265-4f2e-ab34-11ea8d2bd07b",
+      "target": "f509b9a9-49df-44f1-9433-758a2693582c"
+    },
+    {
+      "source": "855b307f-2265-4f2e-ab34-11ea8d2bd07b",
+      "target": "66fa65cb-5c4d-428c-8c1c-b68ba5f75a3a"
+    },
+    {
+      "source": "855b307f-2265-4f2e-ab34-11ea8d2bd07b",
+      "target": "3e08c499-4ec9-4c67-b8da-49b8e3780378"
+    },
+    {
+      "source": "d2ed1fe8-e957-46c8-9a93-81bc33d4b8e1",
+      "target": "fffc475d-13f1-4abd-9cb1-0acb5be9c401"
+    },
+    {
+      "source": "8a211151-ba3d-4b07-86e6-dcfeacdcf36a",
+      "target": "f4a89032-8fe8-4ffe-8a20-36f6eda6d3ee"
+    },
+    {
+      "source": "9cb19699-6597-4ed8-90c1-9a6f08e72b33",
+      "target": "f4a89032-8fe8-4ffe-8a20-36f6eda6d3ee"
+    },
+    {
+      "source": "7d11d3e6-221f-43a7-a599-4c16d111b081",
+      "target": "7fd98faf-813b-4043-bb9c-3e5ef87548f3"
+    },
+    {
+      "source": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
+      "target": "28c42e89-489c-436f-8478-0e9ecf7d18a6"
+    },
+    {
+      "source": "28c42e89-489c-436f-8478-0e9ecf7d18a6",
+      "target": "7d11d3e6-221f-43a7-a599-4c16d111b081"
+    },
+    {
+      "source": "01c6416b-c534-42fe-9225-466e752754ee",
+      "target": "7d11d3e6-221f-43a7-a599-4c16d111b081"
+    },
+    {
+      "source": "ce3e0d47-2566-481a-a12b-43f0dc5ab371",
+      "target": "8184af47-af6b-47e3-9e4a-f9af46b3ec75"
+    }
+  ],
+  "parking": [
+    {
+      "id": "991fd621-c9f6-4011-8775-ba2485ca88e4",
+      "title": "",
+      "content": "",
+      "type": "rozrzutka",
+      "x": 505.63300412298804,
+      "y": -1381.9649057549655,
+      "createdAt": "2026-05-11T08:29:01.136Z",
+      "parkedAt": "2026-05-11T08:29:06.907Z"
+    }
+  ],
+  "strokes": [
+    {
+      "id": "a757e7a3-db7f-4bc1-84e9-1e03be40756f",
+      "points": [
+        {
+          "x": 297.0923289083076,
+          "y": -658.0909236310822
+        },
+        {
+          "x": 307.29566090526106,
+          "y": -658.0909236310822
+        },
+        {
+          "x": 317.4989929022146,
+          "y": -658.0909236310822
+        },
+        {
+          "x": 332.075181469291,
+          "y": -658.0909236310822
+        },
+        {
+          "x": 351.02422660649034,
+          "y": -658.0909236310822
+        },
+        {
+          "x": 380.1766037406432,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 409.32898087479606,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 437.0237391522412,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 466.17611628639406,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 490.955636850424,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 511.362300844331,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 531.7689648382379,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 546.3451534053144,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 563.8365796858061,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 578.4127682528825,
+          "y": -659.5485424877899
+        },
+        {
+          "x": 590.0737191065436,
+          "y": -661.0061613444974
+        },
+        {
+          "x": 597.3618133900819,
+          "y": -661.0061613444974
+        },
+        {
+          "x": 604.6499076736201,
+          "y": -662.463780201205
+        },
+        {
+          "x": 611.9380019571583,
+          "y": -662.463780201205
+        },
+        {
+          "x": 619.2260962406965,
+          "y": -665.3790179146204
+        },
+        {
+          "x": 627.9718093809423,
+          "y": -665.3790179146204
+        },
+        {
+          "x": 632.3446659510653,
+          "y": -665.3790179146204
+        },
+        {
+          "x": 636.7175225211882,
+          "y": -665.3790179146204
+        },
+        {
+          "x": 638.1751413778959,
+          "y": -674.1247310548662
+        },
+        {
+          "x": 639.6327602346034,
+          "y": -688.7009196219426
+        },
+        {
+          "x": 641.0903790913111,
+          "y": -704.7347270457267
+        },
+        {
+          "x": 642.5479979480187,
+          "y": -719.3109156128031
+        },
+        {
+          "x": 642.5479979480187,
+          "y": -730.9718664664642
+        },
+        {
+          "x": 644.0056168047264,
+          "y": -738.2599607500025
+        },
+        {
+          "x": 645.463235661434,
+          "y": -744.090436176833
+        },
+        {
+          "x": 645.463235661434,
+          "y": -748.463292746956
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-10T12:17:24.263Z"
+    },
+    {
+      "id": "9f5c9184-551e-4ae6-8b14-4d27c1d0be47",
+      "points": [
+        {
+          "x": -432.3273166755825,
+          "y": -662.5645674024461
+        },
+        {
+          "x": -423.86812140671805,
+          "y": -662.5645674024461
+        },
+        {
+          "x": -401.8742137076705,
+          "y": -659.1808892949003
+        },
+        {
+          "x": -364.65375452466697,
+          "y": -659.1808892949003
+        },
+        {
+          "x": -312.20674385770747,
+          "y": -659.1808892949003
+        },
+        {
+          "x": -126.10444794268986,
+          "y": -659.1808892949003
+        },
+        {
+          "x": -100.72686213609656,
+          "y": -659.1808892949003
+        },
+        {
+          "x": -24.594104716316625,
+          "y": -659.1808892949003
+        },
+        {
+          "x": 43.079457434598865,
+          "y": -659.1808892949003
+        },
+        {
+          "x": 103.98566337042281,
+          "y": -659.1808892949003
+        },
+        {
+          "x": 154.74083498360943,
+          "y": -659.1808892949003
+        },
+        {
+          "x": 195.34497227415872,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 227.4899142958436,
+          "y": -664.256406456219
+        },
+        {
+          "x": 252.8675001024369,
+          "y": -665.9482455099918
+        },
+        {
+          "x": 274.86140780148446,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 296.85531550053196,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 317.1573841458066,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 337.4594527910813,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 361.1451995439017,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 384.8309462967221,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 408.51669304954254,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 433.8942788561358,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 455.8881865551834,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 474.49841614668514,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 491.416806684414,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 508.3351972221429,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 521.869909652326,
+          "y": -664.256406456219
+        },
+        {
+          "x": 535.404622082509,
+          "y": -664.256406456219
+        },
+        {
+          "x": 548.9393345126922,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 560.7822078891024,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 572.6250812655126,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 584.4679546419228,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 594.6189889645601,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 604.7700232871974,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 614.9210576098347,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 625.0720919324721,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 638.6068043626552,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 648.7578386852925,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 662.2925511154756,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 675.8272635456588,
+          "y": -662.5645674024461
+        },
+        {
+          "x": 687.670136922069,
+          "y": -665.9482455099918
+        },
+        {
+          "x": 696.1293321909334,
+          "y": -665.9482455099918
+        },
+        {
+          "x": 709.6640446211164,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 719.8150789437537,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 729.9661132663912,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 741.8089866428013,
+          "y": -667.6400845637647
+        },
+        {
+          "x": 750.2681819116658,
+          "y": -669.3319236175377
+        },
+        {
+          "x": 762.1110552880759,
+          "y": -671.0237626713105
+        },
+        {
+          "x": 770.5702505569404,
+          "y": -672.7156017250834
+        },
+        {
+          "x": 779.0294458258048,
+          "y": -672.7156017250834
+        },
+        {
+          "x": 784.1049629871235,
+          "y": -674.4074407788563
+        },
+        {
+          "x": 794.2559973097608,
+          "y": -676.0992798326291
+        },
+        {
+          "x": 801.0233535248524,
+          "y": -676.0992798326291
+        },
+        {
+          "x": 811.1743878474897,
+          "y": -677.791118886402
+        },
+        {
+          "x": 817.9417440625813,
+          "y": -679.482957940175
+        },
+        {
+          "x": 823.0172612238999,
+          "y": -681.1747969939479
+        },
+        {
+          "x": 828.0927783852186,
+          "y": -682.8666360477207
+        },
+        {
+          "x": 831.4764564927643,
+          "y": -684.5584751014936
+        },
+        {
+          "x": 833.1682955465373,
+          "y": -687.9421532090394
+        },
+        {
+          "x": 839.9356517616288,
+          "y": -698.0931875316767
+        },
+        {
+          "x": 846.7030079767203,
+          "y": -704.8605437467683
+        },
+        {
+          "x": 851.778525138039,
+          "y": -713.3197390156326
+        },
+        {
+          "x": 855.1622032455848,
+          "y": -720.0870952307242
+        },
+        {
+          "x": 860.2377204069035,
+          "y": -726.8544514458158
+        },
+        {
+          "x": 863.6213985144492,
+          "y": -733.6218076609074
+        },
+        {
+          "x": 865.3132375682221,
+          "y": -737.0054857684531
+        },
+        {
+          "x": 867.005076621995,
+          "y": -743.7728419835447
+        },
+        {
+          "x": 872.0805937833137,
+          "y": -748.8483591448634
+        },
+        {
+          "x": 875.4642718908594,
+          "y": -752.2320372524091
+        },
+        {
+          "x": 878.8479499984052,
+          "y": -755.6157153599548
+        },
+        {
+          "x": 882.231628105951,
+          "y": -760.6912325212735
+        },
+        {
+          "x": 885.6153062134968,
+          "y": -767.4585887363651
+        },
+        {
+          "x": 890.6908233748154,
+          "y": -770.8422668439109
+        },
+        {
+          "x": 894.0745014823611,
+          "y": -774.2259449514567
+        },
+        {
+          "x": 897.458179589907,
+          "y": -775.9177840052296
+        },
+        {
+          "x": 904.2255358049986,
+          "y": -780.9933011665482
+        },
+        {
+          "x": 910.99289202009,
+          "y": -784.376979274094
+        },
+        {
+          "x": 916.0684091814087,
+          "y": -787.7606573816397
+        },
+        {
+          "x": 922.8357653965003,
+          "y": -787.7606573816397
+        },
+        {
+          "x": 931.2949606653647,
+          "y": -792.8361745429584
+        },
+        {
+          "x": 938.0623168804563,
+          "y": -794.5280135967313
+        },
+        {
+          "x": 944.8296730955478,
+          "y": -796.2198526505042
+        },
+        {
+          "x": 949.9051902568665,
+          "y": -797.911691704277
+        },
+        {
+          "x": 956.6725464719581,
+          "y": -799.6035307580499
+        },
+        {
+          "x": 963.4399026870495,
+          "y": -801.2953698118229
+        },
+        {
+          "x": 966.8235807945954,
+          "y": -802.9872088655957
+        },
+        {
+          "x": 970.2072589021411,
+          "y": -802.9872088655957
+        },
+        {
+          "x": 976.9746151172327,
+          "y": -804.6790479193686
+        },
+        {
+          "x": 982.0501322785514,
+          "y": -804.6790479193686
+        },
+        {
+          "x": 987.12564943987,
+          "y": -808.0627260269143
+        },
+        {
+          "x": 993.8930056549616,
+          "y": -811.4464041344602
+        },
+        {
+          "x": 998.9685228162803,
+          "y": -813.1382431882331
+        },
+        {
+          "x": 1000.6603618700531,
+          "y": -816.5219212957788
+        },
+        {
+          "x": 1005.7358790313717,
+          "y": -819.9055994033246
+        },
+        {
+          "x": 1009.1195571389176,
+          "y": -823.2892775108704
+        },
+        {
+          "x": 1012.5032352464633,
+          "y": -826.6729556184162
+        },
+        {
+          "x": 1014.1950743002362,
+          "y": -830.0566337259619
+        },
+        {
+          "x": 1014.1950743002362,
+          "y": -833.4403118335077
+        },
+        {
+          "x": 1015.886913354009,
+          "y": -840.2076680485992
+        },
+        {
+          "x": 1015.886913354009,
+          "y": -850.3587023712365
+        },
+        {
+          "x": 1015.886913354009,
+          "y": -855.4342195325553
+        },
+        {
+          "x": 1014.1950743002362,
+          "y": -865.5852538551926
+        },
+        {
+          "x": 1007.4277180851446,
+          "y": -874.044449124057
+        },
+        {
+          "x": 1000.6603618700531,
+          "y": -884.1954834466943
+        },
+        {
+          "x": 993.8930056549616,
+          "y": -889.271000608013
+        },
+        {
+          "x": 983.7419713323242,
+          "y": -896.0383568231046
+        },
+        {
+          "x": 973.5909370096869,
+          "y": -902.8057130381961
+        },
+        {
+          "x": 963.4399026870495,
+          "y": -907.8812301995148
+        },
+        {
+          "x": 951.5970293106394,
+          "y": -912.9567473608334
+        },
+        {
+          "x": 939.7541559342292,
+          "y": -919.7241035759249
+        },
+        {
+          "x": 927.9112825578189,
+          "y": -923.1077816834708
+        },
+        {
+          "x": 916.0684091814087,
+          "y": -929.8751378985622
+        },
+        {
+          "x": 907.6092139125443,
+          "y": -933.2588160061081
+        },
+        {
+          "x": 899.1500186436798,
+          "y": -936.6424941136538
+        },
+        {
+          "x": 888.9989843210425,
+          "y": -938.3343331674267
+        },
+        {
+          "x": 882.231628105951,
+          "y": -941.7180112749725
+        },
+        {
+          "x": 870.3887547295408,
+          "y": -946.7935284362911
+        },
+        {
+          "x": 861.9295594606764,
+          "y": -951.8690455976098
+        },
+        {
+          "x": 850.0866860842661,
+          "y": -955.2527237051556
+        },
+        {
+          "x": 838.2438127078559,
+          "y": -960.3282408664743
+        },
+        {
+          "x": 826.4009393314457,
+          "y": -965.403758027793
+        },
+        {
+          "x": 814.5580659550355,
+          "y": -972.1711142428844
+        },
+        {
+          "x": 804.4070316323981,
+          "y": -975.5547923504303
+        },
+        {
+          "x": 795.9478363635337,
+          "y": -982.3221485655217
+        },
+        {
+          "x": 789.1804801484421,
+          "y": -990.7813438343862
+        },
+        {
+          "x": 782.4131239333507,
+          "y": -1002.6242172107965
+        },
+        {
+          "x": 777.337606772032,
+          "y": -1014.4670905872066
+        },
+        {
+          "x": 773.9539286644862,
+          "y": -1022.9262858560711
+        },
+        {
+          "x": 772.2620896107134,
+          "y": -1031.3854811249355
+        },
+        {
+          "x": 770.5702505569404,
+          "y": -1046.6120326088915
+        },
+        {
+          "x": 768.8784115031675,
+          "y": -1058.4549059853018
+        },
+        {
+          "x": 768.8784115031675,
+          "y": -1073.6814574692578
+        },
+        {
+          "x": 768.8784115031675,
+          "y": -1088.9080089532138
+        },
+        {
+          "x": 770.5702505569404,
+          "y": -1102.4427213833967
+        },
+        {
+          "x": 772.2620896107134,
+          "y": -1114.285594759807
+        },
+        {
+          "x": 775.6457677182591,
+          "y": -1124.4366290824444
+        },
+        {
+          "x": 777.337606772032,
+          "y": -1137.9713415126273
+        },
+        {
+          "x": 779.0294458258048,
+          "y": -1146.4305367814918
+        },
+        {
+          "x": 780.7212848795778,
+          "y": -1158.2734101579022
+        },
+        {
+          "x": 780.7212848795778,
+          "y": -1165.0407663729936
+        },
+        {
+          "x": 782.4131239333507,
+          "y": -1173.4999616418581
+        },
+        {
+          "x": 784.1049629871235,
+          "y": -1178.5754788031768
+        },
+        {
+          "x": 785.7968020408964,
+          "y": -1185.3428350182683
+        },
+        {
+          "x": 785.7968020408964,
+          "y": -1193.8020302871328
+        },
+        {
+          "x": 787.4886410946693,
+          "y": -1207.3367427173157
+        },
+        {
+          "x": 790.8723192022151,
+          "y": -1219.179616093726
+        },
+        {
+          "x": 790.8723192022151,
+          "y": -1234.406167577682
+        },
+        {
+          "x": 790.8723192022151,
+          "y": -1247.9408800078652
+        },
+        {
+          "x": 790.8723192022151,
+          "y": -1264.859270545594
+        },
+        {
+          "x": 789.1804801484421,
+          "y": -1281.7776610833228
+        },
+        {
+          "x": 785.7968020408964,
+          "y": -1298.6960516210518
+        },
+        {
+          "x": 782.4131239333507,
+          "y": -1312.2307640512347
+        },
+        {
+          "x": 780.7212848795778,
+          "y": -1327.457315535191
+        },
+        {
+          "x": 777.337606772032,
+          "y": -1344.3757060729197
+        },
+        {
+          "x": 773.9539286644862,
+          "y": -1352.8349013417842
+        },
+        {
+          "x": 767.1865724493946,
+          "y": -1361.2940966106485
+        },
+        {
+          "x": 763.8028943418489,
+          "y": -1368.0614528257402
+        },
+        {
+          "x": 763.8028943418489,
+          "y": -1371.4451309332858
+        },
+        {
+          "x": 760.4192162343031,
+          "y": -1373.1369699870588
+        },
+        {
+          "x": 758.7273771805302,
+          "y": -1376.5206480946044
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T14:21:32.881Z"
+    },
+    {
+      "id": "456cf008-0103-4bc5-8866-61d36f06bf3e",
+      "points": [
+        {
+          "x": -858.6707582263501,
+          "y": -652.4135330798088
+        },
+        {
+          "x": -858.6707582263501,
+          "y": -642.2624987571714
+        },
+        {
+          "x": -860.3625972801229,
+          "y": -620.2685910581239
+        },
+        {
+          "x": -862.0544363338959,
+          "y": -594.8910052515306
+        },
+        {
+          "x": -862.0544363338959,
+          "y": -562.7460632298457
+        },
+        {
+          "x": -862.0544363338959,
+          "y": -525.5256040468422
+        },
+        {
+          "x": -860.3625972801229,
+          "y": -486.6133058100658
+        },
+        {
+          "x": -858.6707582263501,
+          "y": -446.0091685195165
+        },
+        {
+          "x": -858.6707582263501,
+          "y": -408.78870933651297
+        },
+        {
+          "x": -858.6707582263501,
+          "y": -368.1845720459637
+        },
+        {
+          "x": -855.2870801188043,
+          "y": -329.27227380918725
+        },
+        {
+          "x": -855.2870801188043,
+          "y": -297.12733178750244
+        },
+        {
+          "x": -851.9034020112585,
+          "y": -268.3660678733633
+        },
+        {
+          "x": -851.9034020112585,
+          "y": -246.37216017431578
+        },
+        {
+          "x": -851.9034020112585,
+          "y": -229.4537696365869
+        },
+        {
+          "x": -851.9034020112585,
+          "y": -212.53537909885804
+        },
+        {
+          "x": -851.9034020112585,
+          "y": -193.92514950735628
+        },
+        {
+          "x": -850.2115629574856,
+          "y": -175.31491991585452
+        },
+        {
+          "x": -845.136045796167,
+          "y": -158.39652937812565
+        },
+        {
+          "x": -843.444206742394,
+          "y": -141.47813884039678
+        },
+        {
+          "x": -838.3686895810754,
+          "y": -129.63526546398657
+        },
+        {
+          "x": -833.2931724197567,
+          "y": -119.48423114134924
+        },
+        {
+          "x": -824.8339771508923,
+          "y": -107.64135776493903
+        },
+        {
+          "x": -814.682942828255,
+          "y": -99.1821624960746
+        },
+        {
+          "x": -802.8400694518448,
+          "y": -89.03112817343727
+        },
+        {
+          "x": -787.6135179678888,
+          "y": -78.88009385079995
+        },
+        {
+          "x": -774.0788055377058,
+          "y": -72.1127376357084
+        },
+        {
+          "x": -753.776736892431,
+          "y": -68.72905952816262
+        },
+        {
+          "x": -735.1665073009293,
+          "y": -65.34538142061685
+        },
+        {
+          "x": -711.4807605481088,
+          "y": -60.26986425929819
+        },
+        {
+          "x": -687.7950137952885,
+          "y": -56.88618615175241
+        },
+        {
+          "x": -669.1847842037866,
+          "y": -56.88618615175241
+        },
+        {
+          "x": -645.4990374509663,
+          "y": -58.5780252055253
+        },
+        {
+          "x": -620.121451644373,
+          "y": -65.34538142061685
+        },
+        {
+          "x": -594.7438658377797,
+          "y": -73.80457668948128
+        },
+        {
+          "x": -571.0581190849592,
+          "y": -85.6474500658915
+        },
+        {
+          "x": -550.7560504396846,
+          "y": -99.1821624960746
+        },
+        {
+          "x": -532.1458208481828,
+          "y": -114.40871398003058
+        },
+        {
+          "x": -518.6111084179997,
+          "y": -127.94342641021368
+        },
+        {
+          "x": -508.4600740953624,
+          "y": -143.16997789416968
+        },
+        {
+          "x": -501.69271788027083,
+          "y": -160.08836843189854
+        },
+        {
+          "x": -496.6172007189522,
+          "y": -175.31491991585452
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -199.00066666867494
+        },
+        {
+          "x": -493.23352261140644,
+          "y": -226.07009152904115
+        },
+        {
+          "x": -493.23352261140644,
+          "y": -254.83135544318023
+        },
+        {
+          "x": -493.23352261140644,
+          "y": -276.82526314222775
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -298.8191708412753
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -317.4294004327771
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -339.42330813182457
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -363.10905488464505
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -381.71928447614675
+        },
+        {
+          "x": -493.23352261140644,
+          "y": -398.63767501387565
+        },
+        {
+          "x": -489.84984450386065,
+          "y": -415.55606555160455
+        },
+        {
+          "x": -488.1580054500877,
+          "y": -429.09077798178765
+        },
+        {
+          "x": -486.46616639631486,
+          "y": -447.70100757328936
+        },
+        {
+          "x": -484.774327342542,
+          "y": -461.23572000347247
+        },
+        {
+          "x": -484.774327342542,
+          "y": -474.77043243365557
+        },
+        {
+          "x": -483.08248828876907,
+          "y": -486.6133058100658
+        },
+        {
+          "x": -483.08248828876907,
+          "y": -496.7643401327031
+        },
+        {
+          "x": -483.08248828876907,
+          "y": -510.29905256288623
+        },
+        {
+          "x": -483.08248828876907,
+          "y": -522.1419259392965
+        },
+        {
+          "x": -483.08248828876907,
+          "y": -532.2929602619338
+        },
+        {
+          "x": -484.774327342542,
+          "y": -545.8276726921168
+        },
+        {
+          "x": -486.46616639631486,
+          "y": -557.6705460685271
+        },
+        {
+          "x": -488.1580054500877,
+          "y": -572.897097552483
+        },
+        {
+          "x": -491.5416835576335,
+          "y": -586.4318099826661
+        },
+        {
+          "x": -493.23352261140644,
+          "y": -598.2746833590763
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -606.7338786279408
+        },
+        {
+          "x": -494.9253616651793,
+          "y": -613.5012348430323
+        },
+        {
+          "x": -496.6172007189522,
+          "y": -616.8849129505782
+        },
+        {
+          "x": -496.6172007189522,
+          "y": -620.2685910581239
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T14:21:41.091Z"
+    },
+    {
+      "id": "47712cc6-d006-4c17-8b09-289d66d2d243",
+      "points": [
+        {
+          "x": -1310.391785583711,
+          "y": -153.321012216807
+        },
+        {
+          "x": -1313.7754636912568,
+          "y": -153.321012216807
+        },
+        {
+          "x": -1320.5428199063483,
+          "y": -153.321012216807
+        },
+        {
+          "x": -1332.3856932827584,
+          "y": -146.55365600171544
+        },
+        {
+          "x": -1347.6122447667144,
+          "y": -131.32710451775947
+        },
+        {
+          "x": -1366.2224743582162,
+          "y": -109.33319681871193
+        },
+        {
+          "x": -1388.216382057264,
+          "y": -73.80457668948128
+        },
+        {
+          "x": -1413.5939678638572,
+          "y": -17.973887914976004
+        },
+        {
+          "x": -1438.9715536704505,
+          "y": 41.24047896707505
+        },
+        {
+          "x": -1460.965461369498,
+          "y": 107.22220206421765
+        },
+        {
+          "x": -1477.883851907227,
+          "y": 164.74472989249583
+        },
+        {
+          "x": -1494.8022424449557,
+          "y": 225.65093582831977
+        },
+        {
+          "x": -1511.7206329826845,
+          "y": 288.2489808179166
+        },
+        {
+          "x": -1528.6390235204135,
+          "y": 345.7715086461948
+        },
+        {
+          "x": -1548.9410921656881,
+          "y": 401.60219742070007
+        },
+        {
+          "x": -1565.859482703417,
+          "y": 450.6655299801138
+        },
+        {
+          "x": -1577.7023560798273,
+          "y": 487.8859891631173
+        },
+        {
+          "x": -1582.777873241146,
+          "y": 518.3390921310292
+        },
+        {
+          "x": -1586.1615513486915,
+          "y": 542.0248388838497
+        },
+        {
+          "x": -1587.8533904024646,
+          "y": 555.5595513140328
+        },
+        {
+          "x": -1587.8533904024646,
+          "y": 569.0942637442159
+        },
+        {
+          "x": -1584.4697122949187,
+          "y": 582.628976174399
+        },
+        {
+          "x": -1579.3941951336,
+          "y": 592.7800104970363
+        },
+        {
+          "x": -1565.859482703417,
+          "y": 608.0065619809923
+        },
+        {
+          "x": -1547.2492531119153,
+          "y": 624.9249525187212
+        },
+        {
+          "x": -1526.9471844666405,
+          "y": 640.1515040026771
+        },
+        {
+          "x": -1506.6451158213658,
+          "y": 650.3025383253145
+        },
+        {
+          "x": -1482.9593690685456,
+          "y": 660.4535726479518
+        },
+        {
+          "x": -1460.965461369498,
+          "y": 665.5290898092704
+        },
+        {
+          "x": -1432.2041974553588,
+          "y": 667.2209288630434
+        },
+        {
+          "x": -1401.7510944874468,
+          "y": 667.2209288630434
+        },
+        {
+          "x": -1371.297991519535,
+          "y": 667.2209288630434
+        },
+        {
+          "x": -1334.0775323365315,
+          "y": 657.069894540406
+        },
+        {
+          "x": -1296.8570731535278,
+          "y": 643.535182110223
+        },
+        {
+          "x": -1257.9447749167514,
+          "y": 626.6167915724941
+        },
+        {
+          "x": -1224.1079938412938,
+          "y": 604.6228838734465
+        },
+        {
+          "x": -1202.1140861422462,
+          "y": 580.9371371206261
+        },
+        {
+          "x": -1186.8875346582902,
+          "y": 564.0187465828973
+        },
+        {
+          "x": -1175.04466128188,
+          "y": 547.1003560451684
+        },
+        {
+          "x": -1161.509948851697,
+          "y": 523.4146092923479
+        },
+        {
+          "x": -1151.3589145290596,
+          "y": 498.0370234857546
+        },
+        {
+          "x": -1139.5160411526494,
+          "y": 470.96759862538846
+        },
+        {
+          "x": -1125.9813287224663,
+          "y": 442.2063347112493
+        },
+        {
+          "x": -1115.830294399829,
+          "y": 413.44507079711025
+        },
+        {
+          "x": -1103.9874210234188,
+          "y": 379.6082897216525
+        },
+        {
+          "x": -1090.4527085932357,
+          "y": 340.6959914848761
+        },
+        {
+          "x": -1078.6098352168253,
+          "y": 300.0918541943268
+        },
+        {
+          "x": -1065.0751227866424,
+          "y": 254.41219974245885
+        },
+        {
+          "x": -1054.924088464005,
+          "y": 207.040706236818
+        },
+        {
+          "x": -1046.4648931951406,
+          "y": 169.82024705381448
+        },
+        {
+          "x": -1039.697536980049,
+          "y": 137.67530503212964
+        },
+        {
+          "x": -1031.2383417111846,
+          "y": 112.29771922553633
+        },
+        {
+          "x": -1024.4709854960931,
+          "y": 95.37932868780744
+        },
+        {
+          "x": -1017.7036292810014,
+          "y": 78.46093815007858
+        },
+        {
+          "x": -1010.93627306591,
+          "y": 63.23438666612259
+        },
+        {
+          "x": -1005.8607559045913,
+          "y": 51.39151328971238
+        },
+        {
+          "x": -1002.4770777970455,
+          "y": 37.85680085952928
+        },
+        {
+          "x": -999.0933996894997,
+          "y": 27.705766536891954
+        },
+        {
+          "x": -995.709721581954,
+          "y": 19.246571268027516
+        },
+        {
+          "x": -994.0178825281811,
+          "y": 10.78737599916308
+        },
+        {
+          "x": -990.6342044206353,
+          "y": 0.6363416765257558
+        },
+        {
+          "x": -988.9423653668624,
+          "y": -9.514692646111568
+        },
+        {
+          "x": -988.9423653668624,
+          "y": -19.665726968748892
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T14:21:43.330Z"
+    },
+    {
+      "id": "67eb487c-0525-4a47-93ef-646af0d59e9b",
+      "points": [
+        {
+          "x": -151.5003790212808,
+          "y": -348.83225438690147
+        },
+        {
+          "x": -154.26099976799435,
+          "y": -346.0716336401879
+        },
+        {
+          "x": -158.86203434585028,
+          "y": -339.6301852311896
+        },
+        {
+          "x": -162.54286200813502,
+          "y": -332.26852990662013
+        },
+        {
+          "x": -168.06410350156213,
+          "y": -323.9866676664795
+        },
+        {
+          "x": -173.58534499498924,
+          "y": -311.1037708484829
+        },
+        {
+          "x": -180.02679340398754,
+          "y": -292.6996325370592
+        },
+        {
+          "x": -185.54803489741462,
+          "y": -272.4550803944931
+        },
+        {
+          "x": -188.30865564412818,
+          "y": -246.68928675849992
+        },
+        {
+          "x": -192.9096902219841,
+          "y": -220.92349312250676
+        },
+        {
+          "x": -195.67031096869766,
+          "y": -201.59914789551186
+        },
+        {
+          "x": -196.59051788426885,
+          "y": -185.03542341523053
+        },
+        {
+          "x": -197.51072479984003,
+          "y": -171.23231968166274
+        },
+        {
+          "x": -197.51072479984003,
+          "y": -158.34942286366618
+        },
+        {
+          "x": -197.51072479984003,
+          "y": -145.46652604566958
+        },
+        {
+          "x": -196.59051788426885,
+          "y": -135.34424997438654
+        },
+        {
+          "x": -193.8298971375553,
+          "y": -127.98259464981706
+        },
+        {
+          "x": -190.14906947527055,
+          "y": -123.38156007196113
+        },
+        {
+          "x": -186.4682418129858,
+          "y": -116.94011166296283
+        },
+        {
+          "x": -179.10658648841635,
+          "y": -109.57845633839337
+        },
+        {
+          "x": -172.66513807941806,
+          "y": -104.05721484496625
+        },
+        {
+          "x": -166.22368967041976,
+          "y": -99.45618026711033
+        },
+        {
+          "x": -160.70244817699265,
+          "y": -93.93493877368321
+        },
+        {
+          "x": -154.26099976799435,
+          "y": -90.25411111139847
+        },
+        {
+          "x": -146.89934444342487,
+          "y": -86.57328344911373
+        },
+        {
+          "x": -138.6174822032842,
+          "y": -81.05204195568662
+        },
+        {
+          "x": -129.41541304757234,
+          "y": -78.29142120897306
+        },
+        {
+          "x": -121.13355080743169,
+          "y": -74.61059354668834
+        },
+        {
+          "x": -112.85168856729102,
+          "y": -71.84997279997478
+        },
+        {
+          "x": -105.49003324272154,
+          "y": -70.9297658844036
+        },
+        {
+          "x": -97.20817100258088,
+          "y": -70.9297658844036
+        },
+        {
+          "x": -86.16568801572666,
+          "y": -70.9297658844036
+        },
+        {
+          "x": -74.20299811330125,
+          "y": -71.84997279997478
+        },
+        {
+          "x": -60.399894379733475,
+          "y": -73.69038663111715
+        },
+        {
+          "x": -46.5967906461657,
+          "y": -76.4510073778307
+        },
+        {
+          "x": -30.953273081455556,
+          "y": -80.13183504011543
+        },
+        {
+          "x": -13.469341685603043,
+          "y": -82.89245578682899
+        },
+        {
+          "x": 6.775210456963028,
+          "y": -85.65307653354255
+        },
+        {
+          "x": 27.939969515100284,
+          "y": -88.4136972802561
+        },
+        {
+          "x": 46.34410782652398,
+          "y": -90.25411111139847
+        },
+        {
+          "x": 63.828039222376496,
+          "y": -92.09452494254084
+        },
+        {
+          "x": 78.55134987151546,
+          "y": -93.93493877368321
+        },
+        {
+          "x": 93.27466052065442,
+          "y": -97.61576643596796
+        },
+        {
+          "x": 106.157557338651,
+          "y": -99.45618026711033
+        },
+        {
+          "x": 116.27983340993404,
+          "y": -101.2965940982527
+        },
+        {
+          "x": 126.40210948121708,
+          "y": -103.13700792939507
+        },
+        {
+          "x": 135.60417863692894,
+          "y": -105.89762867610862
+        },
+        {
+          "x": 142.96583396149842,
+          "y": -108.65824942282218
+        },
+        {
+          "x": 147.56686853935435,
+          "y": -111.41887016953572
+        },
+        {
+          "x": 153.08811003278143,
+          "y": -114.17949091624928
+        },
+        {
+          "x": 157.68914461063736,
+          "y": -117.86031857853402
+        },
+        {
+          "x": 163.21038610406447,
+          "y": -121.54114624081876
+        },
+        {
+          "x": 167.8114206819204,
+          "y": -127.98259464981706
+        },
+        {
+          "x": 171.49224834420514,
+          "y": -136.26445688995773
+        },
+        {
+          "x": 173.3326621753475,
+          "y": -146.38673296124077
+        },
+        {
+          "x": 174.2528690909187,
+          "y": -160.18983669480855
+        },
+        {
+          "x": 175.17307600648988,
+          "y": -173.9929404283763
+        },
+        {
+          "x": 175.17307600648988,
+          "y": -187.79604416194408
+        },
+        {
+          "x": 175.17307600648988,
+          "y": -198.8385271487983
+        },
+        {
+          "x": 173.3326621753475,
+          "y": -209.88101013565253
+        },
+        {
+          "x": 171.49224834420514,
+          "y": -219.08307929136438
+        },
+        {
+          "x": 170.57204142863395,
+          "y": -228.2851484470762
+        },
+        {
+          "x": 167.8114206819204,
+          "y": -235.6468037716457
+        },
+        {
+          "x": 162.29017918849328,
+          "y": -242.088252180644
+        },
+        {
+          "x": 157.68914461063736,
+          "y": -250.37011442078466
+        },
+        {
+          "x": 152.16790311721024,
+          "y": -258.65197666092536
+        },
+        {
+          "x": 144.8062477926408,
+          "y": -267.85404581663715
+        },
+        {
+          "x": 136.52438555250012,
+          "y": -277.9763218879202
+        },
+        {
+          "x": 129.16273022793064,
+          "y": -288.09859795920323
+        },
+        {
+          "x": 121.80107490336115,
+          "y": -297.3006671149151
+        },
+        {
+          "x": 111.67879883207812,
+          "y": -306.50273627062694
+        },
+        {
+          "x": 103.39693659193745,
+          "y": -312.94418467962527
+        },
+        {
+          "x": 94.1948674362256,
+          "y": -319.38563308862354
+        },
+        {
+          "x": 84.99279828051375,
+          "y": -322.1462538353371
+        },
+        {
+          "x": 75.7907291248019,
+          "y": -326.747288413193
+        },
+        {
+          "x": 65.66845305351887,
+          "y": -329.50790915990655
+        },
+        {
+          "x": 55.546176982235835,
+          "y": -331.3483229910489
+        },
+        {
+          "x": 44.50369399538161,
+          "y": -335.02915065333366
+        },
+        {
+          "x": 33.46121100852739,
+          "y": -336.86956448447603
+        },
+        {
+          "x": 23.338934937244357,
+          "y": -338.7099783156184
+        },
+        {
+          "x": 12.296451950390137,
+          "y": -339.6301852311896
+        },
+        {
+          "x": 0.3337620479647329,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -10.708720938889487,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -22.67141084131489,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -33.71389382816911,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -46.5967906461657,
+          "y": -339.6301852311896
+        },
+        {
+          "x": -57.63927363301992,
+          "y": -339.6301852311896
+        },
+        {
+          "x": -65.00092895758941,
+          "y": -339.6301852311896
+        },
+        {
+          "x": -72.36258428215888,
+          "y": -339.6301852311896
+        },
+        {
+          "x": -78.80403269115718,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -85.24548110015547,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -92.60713642472496,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -99.04858483372324,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -104.56982632715035,
+          "y": -341.470599062332
+        },
+        {
+          "x": -110.09106782057746,
+          "y": -341.470599062332
+        },
+        {
+          "x": -113.7718954828622,
+          "y": -341.470599062332
+        },
+        {
+          "x": -117.45272314514695,
+          "y": -341.470599062332
+        },
+        {
+          "x": -122.05375772300287,
+          "y": -341.470599062332
+        },
+        {
+          "x": -125.73458538528762,
+          "y": -341.470599062332
+        },
+        {
+          "x": -130.33561996314353,
+          "y": -341.470599062332
+        },
+        {
+          "x": -134.01644762542827,
+          "y": -341.470599062332
+        },
+        {
+          "x": -139.53768911885538,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -143.21851678114012,
+          "y": -340.55039214676077
+        },
+        {
+          "x": -147.81955135899605,
+          "y": -339.6301852311896
+        },
+        {
+          "x": -151.5003790212808,
+          "y": -339.6301852311896
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T18:46:01.868Z"
+    },
+    {
+      "id": "c5760c33-ded4-4d62-8c10-49150ec55eed",
+      "points": [
+        {
+          "x": -199.1748437452496,
+          "y": 421.5904764259069
+        },
+        {
+          "x": -195.98959074737462,
+          "y": 418.4052234280319
+        },
+        {
+          "x": -188.557333752333,
+          "y": 414.15821943086524
+        },
+        {
+          "x": -175.81632176083303,
+          "y": 410.9729664329903
+        },
+        {
+          "x": -160.95180777074978,
+          "y": 407.7877134351153
+        },
+        {
+          "x": -143.96379178208318,
+          "y": 403.54070943794864
+        },
+        {
+          "x": -129.0992777919999,
+          "y": 399.293705440782
+        },
+        {
+          "x": -114.23476380191661,
+          "y": 393.98495044432366
+        },
+        {
+          "x": -100.43200081112501,
+          "y": 389.737946447157
+        },
+        {
+          "x": -84.50573582175006,
+          "y": 384.4291914506987
+        },
+        {
+          "x": -69.6412218316668,
+          "y": 381.2439384528237
+        },
+        {
+          "x": -54.776707841583516,
+          "y": 380.18218745353204
+        },
+        {
+          "x": -39.91219385150024,
+          "y": 376.9969344556571
+        },
+        {
+          "x": -27.171181860000292,
+          "y": 375.9351834563654
+        },
+        {
+          "x": -16.553671867083665,
+          "y": 373.8116814577821
+        },
+        {
+          "x": -5.936161874167041,
+          "y": 372.74993045849044
+        },
+        {
+          "x": 4.681348118749583,
+          "y": 370.6264284599071
+        },
+        {
+          "x": 17.422360110249535,
+          "y": 369.5646774606154
+        },
+        {
+          "x": 30.163372101749484,
+          "y": 367.4411754620321
+        },
+        {
+          "x": 43.966135092541094,
+          "y": 367.4411754620321
+        },
+        {
+          "x": 62.01590208049936,
+          "y": 366.3794244627404
+        },
+        {
+          "x": 82.18917106704095,
+          "y": 366.3794244627404
+        },
+        {
+          "x": 105.54769305145753,
+          "y": 369.5646774606154
+        },
+        {
+          "x": 128.90621503587408,
+          "y": 371.68817945919875
+        },
+        {
+          "x": 153.32648801958234,
+          "y": 373.8116814577821
+        },
+        {
+          "x": 178.80851200258223,
+          "y": 375.9351834563654
+        },
+        {
+          "x": 202.1670339869988,
+          "y": 378.0586854549487
+        },
+        {
+          "x": 227.64905796999872,
+          "y": 380.18218745353204
+        },
+        {
+          "x": 247.8223269565403,
+          "y": 381.2439384528237
+        },
+        {
+          "x": 267.99559594308187,
+          "y": 382.30568945211536
+        },
+        {
+          "x": 290.2923669282068,
+          "y": 385.49094244999037
+        },
+        {
+          "x": 311.52738691404005,
+          "y": 388.6761954478653
+        },
+        {
+          "x": 333.82415789916496,
+          "y": 392.923199445032
+        },
+        {
+          "x": 352.9356758864149,
+          "y": 397.17020344219867
+        },
+        {
+          "x": 369.9236918750815,
+          "y": 399.293705440782
+        },
+        {
+          "x": 386.91170786374806,
+          "y": 402.47895843865695
+        },
+        {
+          "x": 400.7144708545397,
+          "y": 403.54070943794864
+        },
+        {
+          "x": 415.578984844623,
+          "y": 405.66421143653196
+        },
+        {
+          "x": 428.3199968361229,
+          "y": 406.7259624358236
+        },
+        {
+          "x": 438.93750682903953,
+          "y": 407.7877134351153
+        },
+        {
+          "x": 445.3080128247895,
+          "y": 408.84946443440697
+        },
+        {
+          "x": 451.6785188205395,
+          "y": 409.9112154336986
+        },
+        {
+          "x": 456.9872738169978,
+          "y": 412.0347174322819
+        },
+        {
+          "x": 461.23427781416444,
+          "y": 414.15821943086524
+        },
+        {
+          "x": 465.4812818113311,
+          "y": 418.4052234280319
+        },
+        {
+          "x": 469.7282858084978,
+          "y": 422.65222742519853
+        },
+        {
+          "x": 471.8517878070811,
+          "y": 425.83748042307354
+        },
+        {
+          "x": 475.03704080495606,
+          "y": 430.0844844202402
+        },
+        {
+          "x": 477.1605428035394,
+          "y": 434.33148841740683
+        },
+        {
+          "x": 479.2840448021227,
+          "y": 438.5784924145735
+        },
+        {
+          "x": 479.2840448021227,
+          "y": 442.8254964117401
+        },
+        {
+          "x": 479.2840448021227,
+          "y": 446.01074940961513
+        },
+        {
+          "x": 479.2840448021227,
+          "y": 451.31950440607346
+        },
+        {
+          "x": 475.03704080495606,
+          "y": 457.69001040182343
+        },
+        {
+          "x": 469.7282858084978,
+          "y": 465.122267396865
+        },
+        {
+          "x": 463.35777981274776,
+          "y": 472.5545243919067
+        },
+        {
+          "x": 456.9872738169978,
+          "y": 477.863279388365
+        },
+        {
+          "x": 449.5550168219562,
+          "y": 485.2955363834066
+        },
+        {
+          "x": 438.93750682903953,
+          "y": 491.66604237915664
+        },
+        {
+          "x": 421.94949084037296,
+          "y": 499.09829937419823
+        },
+        {
+          "x": 402.837972853123,
+          "y": 505.46880536994826
+        },
+        {
+          "x": 385.84995686445643,
+          "y": 511.8393113656982
+        },
+        {
+          "x": 370.9854428743731,
+          "y": 519.2715683607398
+        },
+        {
+          "x": 359.3061818821649,
+          "y": 523.5185723579065
+        },
+        {
+          "x": 349.7504228885399,
+          "y": 527.7655763550731
+        },
+        {
+          "x": 338.0711618963316,
+          "y": 532.0125803522398
+        },
+        {
+          "x": 324.26839890554,
+          "y": 537.3213353486981
+        },
+        {
+          "x": 312.5891379133317,
+          "y": 541.5683393458647
+        },
+        {
+          "x": 299.84812592183175,
+          "y": 547.9388453416148
+        },
+        {
+          "x": 290.2923669282068,
+          "y": 551.1240983394897
+        },
+        {
+          "x": 279.67485693529017,
+          "y": 553.2476003380731
+        },
+        {
+          "x": 269.05734694237356,
+          "y": 554.3093513373647
+        },
+        {
+          "x": 255.25458395158194,
+          "y": 556.432853335948
+        },
+        {
+          "x": 239.328318962207,
+          "y": 558.5563553345313
+        },
+        {
+          "x": 224.4638049721237,
+          "y": 559.618106333823
+        },
+        {
+          "x": 207.47578898345714,
+          "y": 559.618106333823
+        },
+        {
+          "x": 189.42602199549887,
+          "y": 560.6798573331147
+        },
+        {
+          "x": 169.25275300895728,
+          "y": 560.6798573331147
+        },
+        {
+          "x": 148.017733023124,
+          "y": 561.7416083324064
+        },
+        {
+          "x": 126.78271303729078,
+          "y": 561.7416083324064
+        },
+        {
+          "x": 105.54769305145753,
+          "y": 562.803359331698
+        },
+        {
+          "x": 84.31267306562427,
+          "y": 562.803359331698
+        },
+        {
+          "x": 62.01590208049936,
+          "y": 562.803359331698
+        },
+        {
+          "x": 41.84263309395777,
+          "y": 563.8651103309896
+        },
+        {
+          "x": 18.484111109541196,
+          "y": 563.8651103309896
+        },
+        {
+          "x": -0.6274068777087288,
+          "y": 565.988612329573
+        },
+        {
+          "x": -18.67717386566699,
+          "y": 565.988612329573
+        },
+        {
+          "x": -36.72694085362525,
+          "y": 565.988612329573
+        },
+        {
+          "x": -49.467952845125204,
+          "y": 565.988612329573
+        },
+        {
+          "x": -64.33246683520848,
+          "y": 565.988612329573
+        },
+        {
+          "x": -77.07347882670842,
+          "y": 564.9268613302813
+        },
+        {
+          "x": -90.87624181750004,
+          "y": 563.8651103309896
+        },
+        {
+          "x": -103.61725380899999,
+          "y": 562.803359331698
+        },
+        {
+          "x": -115.29651480120828,
+          "y": 562.803359331698
+        },
+        {
+          "x": -125.9140247941249,
+          "y": 560.6798573331147
+        },
+        {
+          "x": -137.59328578633318,
+          "y": 558.5563553345313
+        },
+        {
+          "x": -153.51955077570813,
+          "y": 555.3711023366563
+        },
+        {
+          "x": -168.3840647657914,
+          "y": 552.1858493387814
+        },
+        {
+          "x": -183.2485787558747,
+          "y": 549.0005963409064
+        },
+        {
+          "x": -194.92783974808296,
+          "y": 545.8153433430314
+        },
+        {
+          "x": -203.42184774241628,
+          "y": 541.5683393458647
+        },
+        {
+          "x": -210.8541047374579,
+          "y": 537.3213353486981
+        },
+        {
+          "x": -217.22461073320787,
+          "y": 532.0125803522398
+        },
+        {
+          "x": -221.47161473037454,
+          "y": 526.7038253557815
+        },
+        {
+          "x": -225.71861872754118,
+          "y": 520.3333193600315
+        },
+        {
+          "x": -228.90387172541617,
+          "y": 513.9628133642815
+        },
+        {
+          "x": -231.0273737239995,
+          "y": 508.6540583678232
+        },
+        {
+          "x": -233.1508757225828,
+          "y": 502.28355237207325
+        },
+        {
+          "x": -235.27437772116613,
+          "y": 495.9130463763233
+        },
+        {
+          "x": -237.39787971974945,
+          "y": 488.4807893812816
+        },
+        {
+          "x": -238.45963071904114,
+          "y": 481.04853238623997
+        },
+        {
+          "x": -238.45963071904114,
+          "y": 474.67802639049
+        },
+        {
+          "x": -239.5213817183328,
+          "y": 468.30752039474004
+        },
+        {
+          "x": -239.5213817183328,
+          "y": 464.0605163975734
+        },
+        {
+          "x": -239.5213817183328,
+          "y": 460.8752633996984
+        },
+        {
+          "x": -239.5213817183328,
+          "y": 457.69001040182343
+        },
+        {
+          "x": -239.5213817183328,
+          "y": 452.3812554053651
+        },
+        {
+          "x": -237.39787971974945,
+          "y": 447.0725004089068
+        },
+        {
+          "x": -234.21262672187447,
+          "y": 444.94899841032344
+        },
+        {
+          "x": -227.8421207261245,
+          "y": 441.7637454124485
+        },
+        {
+          "x": -223.59511672895786,
+          "y": 441.7637454124485
+        },
+        {
+          "x": -219.34811273179122,
+          "y": 439.64024341386516
+        },
+        {
+          "x": -212.97760673604122,
+          "y": 437.51674141528184
+        },
+        {
+          "x": -208.73060273887458,
+          "y": 435.3932394166985
+        },
+        {
+          "x": -205.5453497409996,
+          "y": 434.33148841740683
+        },
+        {
+          "x": -202.36009674312461,
+          "y": 432.2079864188235
+        },
+        {
+          "x": -200.2365947445413,
+          "y": 430.0844844202402
+        },
+        {
+          "x": -197.05134174666628,
+          "y": 426.8992314223652
+        },
+        {
+          "x": -194.92783974808296,
+          "y": 424.77572942378185
+        },
+        {
+          "x": -190.68083575091632,
+          "y": 421.5904764259069
+        },
+        {
+          "x": -189.61908475162465,
+          "y": 418.4052234280319
+        },
+        {
+          "x": -186.43383175374967,
+          "y": 415.21997043015693
+        },
+        {
+          "x": -184.31032975516635,
+          "y": 412.0347174322819
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T18:52:31.916Z"
+    },
+    {
+      "id": "246537e7-7250-4a94-9b35-aa6f94e8ba44",
+      "points": [
+        {
+          "x": 118.39966004454745,
+          "y": 93.05283584974357
+        },
+        {
+          "x": 112.96044800154941,
+          "y": 93.05283584974357
+        },
+        {
+          "x": 104.25770873275253,
+          "y": 93.05283584974357
+        },
+        {
+          "x": 91.20359982955722,
+          "y": 93.05283584974357
+        },
+        {
+          "x": 75.9738061091627,
+          "y": 93.05283584974357
+        },
+        {
+          "x": 54.21695793717052,
+          "y": 95.22852066694279
+        },
+        {
+          "x": 33.547952173777944,
+          "y": 98.49204789274161
+        },
+        {
+          "x": 13.966788818984982,
+          "y": 102.84341752714005
+        },
+        {
+          "x": -8.877901761606807,
+          "y": 108.2826295701381
+        },
+        {
+          "x": -27.37122270780016,
+          "y": 114.80968402173575
+        },
+        {
+          "x": -40.42533161099547,
+          "y": 121.3367384733334
+        },
+        {
+          "x": -52.39159810559117,
+          "y": 130.0394777421303
+        },
+        {
+          "x": -62.18217978298765,
+          "y": 137.65437460232755
+        },
+        {
+          "x": -69.79707664318491,
+          "y": 146.3571138711244
+        },
+        {
+          "x": -76.32413109478257,
+          "y": 153.97201073132166
+        },
+        {
+          "x": -80.675500729181,
+          "y": 161.58690759151892
+        },
+        {
+          "x": -81.76334313778061,
+          "y": 167.026119634517
+        },
+        {
+          "x": -83.93902795497984,
+          "y": 173.55317408611464
+        },
+        {
+          "x": -83.93902795497984,
+          "y": 180.0802285377123
+        },
+        {
+          "x": -81.76334313778061,
+          "y": 185.51944058071032
+        },
+        {
+          "x": -78.49981591198178,
+          "y": 193.1343374409076
+        },
+        {
+          "x": -70.88491905178452,
+          "y": 198.57354948390565
+        },
+        {
+          "x": -60.006494965788434,
+          "y": 205.1006039355033
+        },
+        {
+          "x": -45.864543653993515,
+          "y": 210.53981597850134
+        },
+        {
+          "x": -25.195537890600942,
+          "y": 218.1547128386986
+        },
+        {
+          "x": -5.61437453580798,
+          "y": 225.76960969889586
+        },
+        {
+          "x": 16.1424736361842,
+          "y": 232.2966641504935
+        },
+        {
+          "x": 36.81147939957677,
+          "y": 237.73587619349158
+        },
+        {
+          "x": 57.480485162969345,
+          "y": 240.9994034192904
+        },
+        {
+          "x": 75.9738061091627,
+          "y": 245.35077305368884
+        },
+        {
+          "x": 96.64281187255527,
+          "y": 248.61430027948765
+        },
+        {
+          "x": 115.13613281874862,
+          "y": 250.78998509668688
+        },
+        {
+          "x": 134.7172961735416,
+          "y": 250.78998509668688
+        },
+        {
+          "x": 149.94708989393612,
+          "y": 251.8778275052865
+        },
+        {
+          "x": 166.26472602293023,
+          "y": 251.8778275052865
+        },
+        {
+          "x": 183.67020456052398,
+          "y": 251.8778275052865
+        },
+        {
+          "x": 201.07568309811774,
+          "y": 250.78998509668688
+        },
+        {
+          "x": 218.4811616357115,
+          "y": 249.70214268808726
+        },
+        {
+          "x": 236.97448258190482,
+          "y": 247.52645787088804
+        },
+        {
+          "x": 256.5556459366978,
+          "y": 242.08724582789
+        },
+        {
+          "x": 277.22465170009036,
+          "y": 235.56019137629235
+        },
+        {
+          "x": 296.80581505488334,
+          "y": 227.9452945160951
+        },
+        {
+          "x": 313.1234511838775,
+          "y": 221.41824006449744
+        },
+        {
+          "x": 326.1775600870728,
+          "y": 213.80334320430018
+        },
+        {
+          "x": 337.05598417306885,
+          "y": 205.1006039355033
+        },
+        {
+          "x": 344.67088103326614,
+          "y": 196.39786466670643
+        },
+        {
+          "x": 350.11009307626415,
+          "y": 188.78296780650916
+        },
+        {
+          "x": 353.373620302063,
+          "y": 181.1680709463119
+        },
+        {
+          "x": 355.5493051192622,
+          "y": 174.64101649471425
+        },
+        {
+          "x": 356.6371475278618,
+          "y": 168.1139620431166
+        },
+        {
+          "x": 356.6371475278618,
+          "y": 163.76259240871815
+        },
+        {
+          "x": 356.6371475278618,
+          "y": 157.2355379571205
+        },
+        {
+          "x": 353.373620302063,
+          "y": 151.79632591412246
+        },
+        {
+          "x": 345.75872344186575,
+          "y": 143.0935866453256
+        },
+        {
+          "x": 334.8802993558696,
+          "y": 136.56653219372794
+        },
+        {
+          "x": 320.7383480440747,
+          "y": 130.0394777421303
+        },
+        {
+          "x": 301.1571846892818,
+          "y": 122.42458088193301
+        },
+        {
+          "x": 280.4881789258892,
+          "y": 116.98536883893496
+        },
+        {
+          "x": 263.08270038829545,
+          "y": 112.63399920453654
+        },
+        {
+          "x": 244.58937944210209,
+          "y": 109.3704719787377
+        },
+        {
+          "x": 228.27174331310795,
+          "y": 107.19478716153849
+        },
+        {
+          "x": 215.21763440991265,
+          "y": 106.10694475293887
+        },
+        {
+          "x": 201.07568309811774,
+          "y": 103.93125993573966
+        },
+        {
+          "x": 188.02157419492244,
+          "y": 102.84341752714005
+        },
+        {
+          "x": 177.14315010892633,
+          "y": 102.84341752714005
+        },
+        {
+          "x": 164.08904120573104,
+          "y": 101.75557511854043
+        },
+        {
+          "x": 151.0349323025357,
+          "y": 101.75557511854043
+        },
+        {
+          "x": 137.9808233993404,
+          "y": 101.75557511854043
+        },
+        {
+          "x": 123.8388720875455,
+          "y": 100.66773270994084
+        },
+        {
+          "x": 110.78476318435018,
+          "y": 98.49204789274161
+        },
+        {
+          "x": 99.9063390983541,
+          "y": 97.404205484142
+        },
+        {
+          "x": 90.11575742095762,
+          "y": 96.3163630755424
+        },
+        {
+          "x": 80.32517574356113,
+          "y": 95.22852066694279
+        },
+        {
+          "x": 71.62243647476426,
+          "y": 94.14067825834317
+        },
+        {
+          "x": 64.007539614567,
+          "y": 94.14067825834317
+        },
+        {
+          "x": 58.56832757156895,
+          "y": 94.14067825834317
+        },
+        {
+          "x": 55.304800345770126,
+          "y": 94.14067825834317
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T18:54:39.285Z"
+    },
+    {
+      "id": "29ed96e1-65af-428f-bf7f-27322220fa7b",
+      "points": [
+        {
+          "x": -765.2961906235064,
+          "y": 178.17377645176865
+        },
+        {
+          "x": -770.866213310387,
+          "y": 179.28778098914478
+        },
+        {
+          "x": -775.3222314598916,
+          "y": 184.8578036760254
+        },
+        {
+          "x": -779.7782496093961,
+          "y": 190.42782636290605
+        },
+        {
+          "x": -783.1202632215245,
+          "y": 198.22585812453895
+        },
+        {
+          "x": -786.4622768336528,
+          "y": 206.02388988617184
+        },
+        {
+          "x": -790.9182949831574,
+          "y": 210.47990803567637
+        },
+        {
+          "x": -793.1463040579097,
+          "y": 217.16393525993314
+        },
+        {
+          "x": -796.488317670038,
+          "y": 223.8479624841899
+        },
+        {
+          "x": -798.7163267447903,
+          "y": 231.6459942458228
+        },
+        {
+          "x": -799.8303312821664,
+          "y": 241.67203508220797
+        },
+        {
+          "x": -800.9443358195425,
+          "y": 251.69807591859313
+        },
+        {
+          "x": -800.9443358195425,
+          "y": 261.7241167549783
+        },
+        {
+          "x": -800.9443358195425,
+          "y": 272.86416212873957
+        },
+        {
+          "x": -800.9443358195425,
+          "y": 286.2322165772531
+        },
+        {
+          "x": -798.7163267447903,
+          "y": 298.4862664883905
+        },
+        {
+          "x": -796.488317670038,
+          "y": 311.85432093690406
+        },
+        {
+          "x": -795.3743131326619,
+          "y": 327.45038446016986
+        },
+        {
+          "x": -795.3743131326619,
+          "y": 343.04644798343566
+        },
+        {
+          "x": -793.1463040579097,
+          "y": 359.7565160440776
+        },
+        {
+          "x": -792.0322995205335,
+          "y": 374.23857502996725
+        },
+        {
+          "x": -788.6902859084051,
+          "y": 384.2646158663524
+        },
+        {
+          "x": -785.3482722962767,
+          "y": 390.9486430906092
+        },
+        {
+          "x": -782.0062586841484,
+          "y": 396.51866577748984
+        },
+        {
+          "x": -779.7782496093961,
+          "y": 399.8606793896182
+        },
+        {
+          "x": -776.4362359972677,
+          "y": 404.31669753912274
+        },
+        {
+          "x": -770.866213310387,
+          "y": 409.8867202260034
+        },
+        {
+          "x": -764.1821860861303,
+          "y": 415.456742912884
+        },
+        {
+          "x": -756.3841543244974,
+          "y": 419.91276106238854
+        },
+        {
+          "x": -748.5861225628645,
+          "y": 423.2547746745169
+        },
+        {
+          "x": -741.9020953386078,
+          "y": 426.59678828664534
+        },
+        {
+          "x": -735.2180681143509,
+          "y": 428.8247973613976
+        },
+        {
+          "x": -727.4200363527181,
+          "y": 431.05280643614987
+        },
+        {
+          "x": -720.7360091284613,
+          "y": 432.16681097352597
+        },
+        {
+          "x": -714.0519819042045,
+          "y": 432.16681097352597
+        },
+        {
+          "x": -705.1399456051955,
+          "y": 432.16681097352597
+        },
+        {
+          "x": -696.2279093061865,
+          "y": 432.16681097352597
+        },
+        {
+          "x": -682.8598548576729,
+          "y": 431.05280643614987
+        },
+        {
+          "x": -672.8338140212877,
+          "y": 429.9388018987737
+        },
+        {
+          "x": -663.9217777222788,
+          "y": 427.71079282402144
+        },
+        {
+          "x": -655.0097414232697,
+          "y": 426.59678828664534
+        },
+        {
+          "x": -648.325714199013,
+          "y": 424.36877921189307
+        },
+        {
+          "x": -640.52768243738,
+          "y": 422.1407701371408
+        },
+        {
+          "x": -632.7296506757472,
+          "y": 421.0267655997647
+        },
+        {
+          "x": -623.8176143767381,
+          "y": 419.91276106238854
+        },
+        {
+          "x": -616.0195826151052,
+          "y": 417.6847519876363
+        },
+        {
+          "x": -608.2215508534723,
+          "y": 415.456742912884
+        },
+        {
+          "x": -601.5375236292155,
+          "y": 414.3427383755079
+        },
+        {
+          "x": -593.7394918675826,
+          "y": 413.2287338381318
+        },
+        {
+          "x": -584.8274555685736,
+          "y": 411.00072476337954
+        },
+        {
+          "x": -578.1434283443168,
+          "y": 409.8867202260034
+        },
+        {
+          "x": -571.4594011200601,
+          "y": 408.7727156886273
+        },
+        {
+          "x": -567.0033829705555,
+          "y": 407.6587111512511
+        },
+        {
+          "x": -562.547364821051,
+          "y": 406.544706613875
+        },
+        {
+          "x": -559.2053512089226,
+          "y": 406.544706613875
+        },
+        {
+          "x": -552.5213239846659,
+          "y": 405.4307020764989
+        },
+        {
+          "x": -548.0653058351613,
+          "y": 404.31669753912274
+        },
+        {
+          "x": -541.3812786109046,
+          "y": 403.20269300174664
+        },
+        {
+          "x": -536.9252604614001,
+          "y": 403.20269300174664
+        },
+        {
+          "x": -533.5832468492716,
+          "y": 403.20269300174664
+        },
+        {
+          "x": -530.2412332371433,
+          "y": 403.20269300174664
+        },
+        {
+          "x": -525.7852150876388,
+          "y": 403.20269300174664
+        },
+        {
+          "x": -520.2151924007582,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -514.6451697138775,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -510.189151564373,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -506.84713795224457,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -503.5051243401162,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -497.93510165323556,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -492.36507896635493,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -485.68105174209813,
+          "y": 402.0886884643705
+        },
+        {
+          "x": -481.2250335925936,
+          "y": 400.9746839269944
+        },
+        {
+          "x": -475.65501090571297,
+          "y": 398.7466748522421
+        },
+        {
+          "x": -472.3129972935846,
+          "y": 398.7466748522421
+        },
+        {
+          "x": -468.9709836814562,
+          "y": 393.1766521653615
+        },
+        {
+          "x": -462.28695645719944,
+          "y": 382.03660679160015
+        },
+        {
+          "x": -457.8309383076949,
+          "y": 372.01056595521504
+        },
+        {
+          "x": -453.3749201581904,
+          "y": 364.21253419358214
+        },
+        {
+          "x": -448.9189020086859,
+          "y": 354.186493357197
+        },
+        {
+          "x": -446.69089293393364,
+          "y": 343.04644798343566
+        },
+        {
+          "x": -444.4628838591814,
+          "y": 333.0204071470505
+        },
+        {
+          "x": -443.34887932180527,
+          "y": 321.8803617732892
+        },
+        {
+          "x": -442.2348747844291,
+          "y": 309.6263118621518
+        },
+        {
+          "x": -442.2348747844291,
+          "y": 297.3722619510144
+        },
+        {
+          "x": -443.34887932180527,
+          "y": 287.34622111462926
+        },
+        {
+          "x": -444.4628838591814,
+          "y": 277.3201802782441
+        },
+        {
+          "x": -446.69089293393364,
+          "y": 269.5221485166112
+        },
+        {
+          "x": -447.80489747130974,
+          "y": 261.7241167549783
+        },
+        {
+          "x": -448.9189020086859,
+          "y": 253.92608499334537
+        },
+        {
+          "x": -450.032906546062,
+          "y": 243.90004415696023
+        },
+        {
+          "x": -453.3749201581904,
+          "y": 234.9880078579512
+        },
+        {
+          "x": -456.7169337703188,
+          "y": 223.8479624841899
+        },
+        {
+          "x": -458.94494284507107,
+          "y": 212.7079171104286
+        },
+        {
+          "x": -463.40096099457554,
+          "y": 204.9098853487957
+        },
+        {
+          "x": -465.6289700693278,
+          "y": 197.1118535871628
+        },
+        {
+          "x": -468.9709836814562,
+          "y": 190.42782636290605
+        },
+        {
+          "x": -470.08498821883234,
+          "y": 185.97180821340154
+        },
+        {
+          "x": -472.3129972935846,
+          "y": 180.40178552652088
+        },
+        {
+          "x": -475.65501090571297,
+          "y": 174.83176283964025
+        },
+        {
+          "x": -480.1110290552175,
+          "y": 169.26174015275961
+        },
+        {
+          "x": -482.33903812996977,
+          "y": 163.69171746587895
+        },
+        {
+          "x": -485.68105174209813,
+          "y": 161.46370839112672
+        },
+        {
+          "x": -489.0230653542265,
+          "y": 158.12169477899832
+        },
+        {
+          "x": -492.36507896635493,
+          "y": 157.00769024162219
+        },
+        {
+          "x": -499.04910619061167,
+          "y": 153.66567662949382
+        },
+        {
+          "x": -505.73313341486846,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -514.6451697138775,
+          "y": 151.43766755474155
+        },
+        {
+          "x": -520.2151924007582,
+          "y": 150.32366301736542
+        },
+        {
+          "x": -526.8992196250149,
+          "y": 149.2096584799893
+        },
+        {
+          "x": -532.4692423118955,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -540.2672740735285,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -548.0653058351613,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -555.8633375967943,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -563.6613693584271,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -571.4594011200601,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -579.2574328816929,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -585.9414601059497,
+          "y": 149.2096584799893
+        },
+        {
+          "x": -592.6254873302065,
+          "y": 149.2096584799893
+        },
+        {
+          "x": -598.1955100170871,
+          "y": 149.2096584799893
+        },
+        {
+          "x": -604.8795372413439,
+          "y": 149.2096584799893
+        },
+        {
+          "x": -611.5635644656006,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -618.2475916898575,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -623.8176143767381,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -628.2736325262426,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -634.9576597504994,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -640.52768243738,
+          "y": 148.09565394261315
+        },
+        {
+          "x": -648.325714199013,
+          "y": 149.2096584799893
+        },
+        {
+          "x": -656.1237459606458,
+          "y": 150.32366301736542
+        },
+        {
+          "x": -661.6937686475264,
+          "y": 151.43766755474155
+        },
+        {
+          "x": -669.4918004091594,
+          "y": 151.43766755474155
+        },
+        {
+          "x": -675.06182309604,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -682.8598548576729,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -687.3158730071774,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -692.885895694058,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -698.4559183809387,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -702.9119365304432,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -707.3679546799477,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -710.7099682920762,
+          "y": 152.55167209211768
+        },
+        {
+          "x": -714.0519819042045,
+          "y": 153.66567662949382
+        },
+        {
+          "x": -717.3939955163329,
+          "y": 154.77968116686992
+        },
+        {
+          "x": -720.7360091284613,
+          "y": 155.89368570424605
+        },
+        {
+          "x": -724.0780227405896,
+          "y": 157.00769024162219
+        },
+        {
+          "x": -728.5340408900942,
+          "y": 159.23569931637445
+        },
+        {
+          "x": -732.9900590395987,
+          "y": 160.34970385375058
+        },
+        {
+          "x": -737.4460771891032,
+          "y": 162.57771292850285
+        },
+        {
+          "x": -741.9020953386078,
+          "y": 163.69171746587895
+        },
+        {
+          "x": -745.2441089507361,
+          "y": 163.69171746587895
+        },
+        {
+          "x": -748.5861225628645,
+          "y": 164.80572200325508
+        },
+        {
+          "x": -751.9281361749929,
+          "y": 167.03373107800735
+        },
+        {
+          "x": -755.2701497871212,
+          "y": 168.14773561538348
+        },
+        {
+          "x": -758.6121633992497,
+          "y": 171.48974922751185
+        },
+        {
+          "x": -761.9541770113781,
+          "y": 173.71775830226412
+        },
+        {
+          "x": -766.4101951608826,
+          "y": 175.94576737701638
+        },
+        {
+          "x": -768.6382042356348,
+          "y": 178.17377645176865
+        },
+        {
+          "x": -769.7522087730109,
+          "y": 184.8578036760254
+        },
+        {
+          "x": -770.866213310387,
+          "y": 188.19981728815378
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T18:59:11.973Z"
+    },
+    {
+      "id": "f4e5eade-b87c-4fb1-8fce-8a3487581625",
+      "points": [
+        {
+          "x": -534.7502054595167,
+          "y": -1317.3031029263325
+        },
+        {
+          "x": -533.2835161173662,
+          "y": -1314.3697242420317
+        },
+        {
+          "x": -531.8168267752158,
+          "y": -1299.7028308205274
+        },
+        {
+          "x": -530.3501374330654,
+          "y": -1276.2358013461205
+        },
+        {
+          "x": -530.3501374330654,
+          "y": -1246.9020145031118
+        },
+        {
+          "x": -525.950069406614,
+          "y": -1213.168159633652
+        },
+        {
+          "x": -521.5500013801627,
+          "y": -1176.5009260798913
+        },
+        {
+          "x": -517.1499333537115,
+          "y": -1138.3670031839802
+        },
+        {
+          "x": -511.2831759851098,
+          "y": -1104.6331483145202
+        },
+        {
+          "x": -505.41641861650805,
+          "y": -1073.832672129361
+        },
+        {
+          "x": -502.4830399322072,
+          "y": -1051.8323319971048
+        },
+        {
+          "x": -502.4830399322072,
+          "y": -1038.632127917751
+        },
+        {
+          "x": -501.01635059005673,
+          "y": -1026.8986131805475
+        },
+        {
+          "x": -501.01635059005673,
+          "y": -1018.0984771276449
+        },
+        {
+          "x": -501.01635059005673,
+          "y": -1006.3649623904414
+        },
+        {
+          "x": -501.01635059005673,
+          "y": -997.5648263375389
+        },
+        {
+          "x": -501.01635059005673,
+          "y": -990.2313796267867
+        },
+        {
+          "x": -499.54966124790633,
+          "y": -979.9645542317337
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -972.6311075209816
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -963.8309714680789
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -959.4309034416277
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -950.6307673887251
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -940.3639419936721
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -931.5638059407695
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -919.830291203566
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -905.1633977820618
+        },
+        {
+          "x": -498.08297190575587,
+          "y": -890.4965043605575
+        },
+        {
+          "x": -496.61628256360547,
+          "y": -875.8296109390532
+        },
+        {
+          "x": -495.149593221455,
+          "y": -853.8292708067968
+        },
+        {
+          "x": -493.6829038793046,
+          "y": -836.2289987009916
+        },
+        {
+          "x": -490.74952519500374,
+          "y": -818.6287265951864
+        },
+        {
+          "x": -489.28283585285334,
+          "y": -805.4285225158326
+        },
+        {
+          "x": -487.8161465107029,
+          "y": -792.2283184364787
+        },
+        {
+          "x": -486.3494571685525,
+          "y": -779.0281143571249
+        },
+        {
+          "x": -483.4160784842516,
+          "y": -767.2945996199214
+        },
+        {
+          "x": -481.94938914210115,
+          "y": -755.561084882718
+        },
+        {
+          "x": -479.0160104578003,
+          "y": -742.3608808033641
+        },
+        {
+          "x": -476.08263177349943,
+          "y": -730.6273660661607
+        },
+        {
+          "x": -473.14925308919857,
+          "y": -723.2939193554085
+        },
+        {
+          "x": -473.14925308919857,
+          "y": -717.4271619868068
+        },
+        {
+          "x": -470.2158744048977,
+          "y": -713.0270939603555
+        },
+        {
+          "x": -467.28249572059684,
+          "y": -705.6936472496034
+        },
+        {
+          "x": -461.4157383519952,
+          "y": -698.3602005388512
+        },
+        {
+          "x": -457.01567032554385,
+          "y": -692.4934431702495
+        },
+        {
+          "x": -451.1489129569421,
+          "y": -685.1599964594974
+        },
+        {
+          "x": -445.2821555883404,
+          "y": -682.2266177751965
+        },
+        {
+          "x": -442.34877690403954,
+          "y": -676.3598604065947
+        },
+        {
+          "x": -436.48201953543787,
+          "y": -671.9597923801434
+        },
+        {
+          "x": -430.61526216683615,
+          "y": -669.0264136958426
+        },
+        {
+          "x": -424.7485047982344,
+          "y": -663.1596563272409
+        },
+        {
+          "x": -417.41505808748224,
+          "y": -660.2262776429401
+        },
+        {
+          "x": -413.01499006103097,
+          "y": -657.2928989586392
+        },
+        {
+          "x": -405.68154335027884,
+          "y": -654.3595202743384
+        },
+        {
+          "x": -399.8147859816771,
+          "y": -654.3595202743384
+        },
+        {
+          "x": -395.4147179552258,
+          "y": -654.3595202743384
+        },
+        {
+          "x": -389.5479605866241,
+          "y": -654.3595202743384
+        },
+        {
+          "x": -385.1478925601728,
+          "y": -654.3595202743384
+        },
+        {
+          "x": -379.2811351915711,
+          "y": -658.7595883007896
+        },
+        {
+          "x": -370.4809991386685,
+          "y": -660.2262776429401
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T19:17:33.231Z"
+    },
+    {
+      "id": "29912248-16e5-48fd-97f4-3d66b5be69b4",
+      "points": [
+        {
+          "x": 776.4700664229674,
+          "y": -1364.2371618751463
+        },
+        {
+          "x": 764.736551685764,
+          "y": -1364.2371618751463
+        },
+        {
+          "x": 750.0696582642597,
+          "y": -1368.6372299015975
+        },
+        {
+          "x": 729.5360074741537,
+          "y": -1373.037297928049
+        },
+        {
+          "x": 710.4690460261982,
+          "y": -1378.9040552966505
+        },
+        {
+          "x": 688.4687058939417,
+          "y": -1386.2375020074028
+        },
+        {
+          "x": 663.5349870773844,
+          "y": -1392.1042593760044
+        },
+        {
+          "x": 638.601268260827,
+          "y": -1400.904395428907
+        },
+        {
+          "x": 612.2008601021193,
+          "y": -1408.237842139659
+        },
+        {
+          "x": 582.8670732591107,
+          "y": -1415.5712888504113
+        },
+        {
+          "x": 553.5332864161021,
+          "y": -1419.9713568768625
+        },
+        {
+          "x": 525.666188915244,
+          "y": -1425.8381142454643
+        },
+        {
+          "x": 502.1991594408371,
+          "y": -1430.2381822719155
+        },
+        {
+          "x": 483.1321979928815,
+          "y": -1431.704871614066
+        },
+        {
+          "x": 465.53192588707634,
+          "y": -1433.1715609562164
+        },
+        {
+          "x": 450.8650324655721,
+          "y": -1434.6382502983668
+        },
+        {
+          "x": 436.1981390440678,
+          "y": -1436.1049396405174
+        },
+        {
+          "x": 422.9979349647139,
+          "y": -1437.5716289826678
+        },
+        {
+          "x": 408.3310415432096,
+          "y": -1439.0383183248182
+        },
+        {
+          "x": 393.6641481217053,
+          "y": -1439.0383183248182
+        },
+        {
+          "x": 377.5305653580506,
+          "y": -1441.971697009119
+        },
+        {
+          "x": 362.86367193654627,
+          "y": -1443.4383863512694
+        },
+        {
+          "x": 343.7967104885907,
+          "y": -1446.3717650355702
+        },
+        {
+          "x": 321.79637035633425,
+          "y": -1446.3717650355702
+        },
+        {
+          "x": 299.7960302240778,
+          "y": -1449.3051437198712
+        },
+        {
+          "x": 280.72906877612223,
+          "y": -1452.238522404172
+        },
+        {
+          "x": 260.1954179860162,
+          "y": -1453.7052117463224
+        },
+        {
+          "x": 244.0618352223615,
+          "y": -1455.1719010884729
+        },
+        {
+          "x": 226.46156311655633,
+          "y": -1455.1719010884729
+        },
+        {
+          "x": 210.32798035290162,
+          "y": -1456.6385904306233
+        },
+        {
+          "x": 194.19439758924688,
+          "y": -1458.1052797727737
+        },
+        {
+          "x": 182.46088285204345,
+          "y": -1458.1052797727737
+        },
+        {
+          "x": 170.72736811484,
+          "y": -1458.1052797727737
+        },
+        {
+          "x": 157.52716403548615,
+          "y": -1458.1052797727737
+        },
+        {
+          "x": 141.39358127183144,
+          "y": -1458.1052797727737
+        },
+        {
+          "x": 125.2599985081767,
+          "y": -1458.1052797727737
+        },
+        {
+          "x": 109.12641574452198,
+          "y": -1456.6385904306233
+        },
+        {
+          "x": 91.52614363871682,
+          "y": -1455.1719010884729
+        },
+        {
+          "x": 70.9924928486108,
+          "y": -1450.7718330620216
+        },
+        {
+          "x": 50.458842058504786,
+          "y": -1447.8384543777208
+        },
+        {
+          "x": 26.991812584097914,
+          "y": -1443.4383863512694
+        },
+        {
+          "x": 2.0580937675406097,
+          "y": -1433.1715609562164
+        },
+        {
+          "x": -21.408935706866263,
+          "y": -1427.3048035876147
+        },
+        {
+          "x": -46.34265452342357,
+          "y": -1418.504667534712
+        },
+        {
+          "x": -68.34299465568002,
+          "y": -1408.237842139659
+        },
+        {
+          "x": -91.81002413008689,
+          "y": -1399.4377060867566
+        },
+        {
+          "x": -112.3436749201929,
+          "y": -1389.1708806917036
+        },
+        {
+          "x": -132.87732571029892,
+          "y": -1378.9040552966505
+        },
+        {
+          "x": -150.47759781610407,
+          "y": -1370.103919243748
+        },
+        {
+          "x": -163.67780189545795,
+          "y": -1359.8370938486948
+        },
+        {
+          "x": -176.8780059748118,
+          "y": -1355.4370258222436
+        },
+        {
+          "x": -188.61152071201525,
+          "y": -1348.1035791114916
+        },
+        {
+          "x": -197.4116567649178,
+          "y": -1343.7035110850402
+        },
+        {
+          "x": -207.67848215997083,
+          "y": -1339.303443058589
+        },
+        {
+          "x": -217.94530755502385,
+          "y": -1336.3700643742882
+        },
+        {
+          "x": -231.1455116343777,
+          "y": -1331.9699963478367
+        },
+        {
+          "x": -248.74578374018284,
+          "y": -1329.036617663536
+        },
+        {
+          "x": -273.67950255674015,
+          "y": -1329.036617663536
+        },
+        {
+          "x": -300.0799107154479,
+          "y": -1329.036617663536
+        },
+        {
+          "x": -327.9470082163061,
+          "y": -1327.5699283213855
+        },
+        {
+          "x": -352.8807270328634,
+          "y": -1327.5699283213855
+        },
+        {
+          "x": -376.3477565072702,
+          "y": -1327.5699283213855
+        },
+        {
+          "x": -399.8147859816771,
+          "y": -1327.5699283213855
+        },
+        {
+          "x": -423.28181545608396,
+          "y": -1329.036617663536
+        },
+        {
+          "x": -443.81546624619,
+          "y": -1331.9699963478367
+        },
+        {
+          "x": -459.9490490098447,
+          "y": -1331.9699963478367
+        },
+        {
+          "x": -473.14925308919857,
+          "y": -1333.4366856899871
+        },
+        {
+          "x": -483.4160784842516,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -489.28283585285334,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -496.61628256360547,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -502.4830399322072,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -506.88310795865846,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -512.7498653272602,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -517.1499333537115,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -524.4833800644636,
+          "y": -1334.9033750321375
+        },
+        {
+          "x": -531.8168267752158,
+          "y": -1333.4366856899871
+        },
+        {
+          "x": -539.1502734859679,
+          "y": -1331.9699963478367
+        },
+        {
+          "x": -546.48372019672,
+          "y": -1330.5033070056863
+        },
+        {
+          "x": -549.4170988810209,
+          "y": -1329.036617663536
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T19:17:36.973Z"
+    },
+    {
+      "id": "9b18a448-e10f-4765-b1da-c1443253d54e",
+      "points": [
+        {
+          "x": 2616.3204974959526,
+          "y": -1660.6282990680959
+        },
+        {
+          "x": 2613.4522793329143,
+          "y": -1656.8040081840452
+        },
+        {
+          "x": 2607.7158430068384,
+          "y": -1641.5068446478422
+        },
+        {
+          "x": 2598.1551157967115,
+          "y": -1615.6928811804999
+        },
+        {
+          "x": 2585.7261704235466,
+          "y": -1577.4499723399927
+        },
+        {
+          "x": 2572.341152329369,
+          "y": -1534.426699894422
+        },
+        {
+          "x": 2557.043988793166,
+          "y": -1489.491282006826
+        },
+        {
+          "x": 2545.571116141014,
+          "y": -1449.3362277242934
+        },
+        {
+          "x": 2536.9664616519,
+          "y": -1418.7419006518876
+        },
+        {
+          "x": 2534.098243488862,
+          "y": -1391.01579174252
+        },
+        {
+          "x": 2535.0543162098747,
+          "y": -1365.2018282751776
+        },
+        {
+          "x": 2542.702897977976,
+          "y": -1343.2121556918858
+        },
+        {
+          "x": 2554.175770630128,
+          "y": -1325.0467739926448
+        },
+        {
+          "x": 2567.560788724306,
+          "y": -1310.7056831774546
+        },
+        {
+          "x": 2582.8579522605087,
+          "y": -1303.0571014093532
+        },
+        {
+          "x": 2601.0233339597494,
+          "y": -1296.3645923622644
+        },
+        {
+          "x": 2625.881224706079,
+          "y": -1288.716010594163
+        },
+        {
+          "x": 2651.6951881734217,
+          "y": -1282.979574268087
+        },
+        {
+          "x": 2681.333442524815,
+          "y": -1278.1992106630235
+        },
+        {
+          "x": 2713.839915039246,
+          "y": -1274.3749197789728
+        },
+        {
+          "x": 2743.478169390639,
+          "y": -1274.3749197789728
+        },
+        {
+          "x": 2775.98464190507,
+          "y": -1274.3749197789728
+        },
+        {
+          "x": 2810.4032598615267,
+          "y": -1275.3309924999855
+        },
+        {
+          "x": 2842.909732375958,
+          "y": -1277.243137942011
+        },
+        {
+          "x": 2878.284423053427,
+          "y": -1281.0674288260616
+        },
+        {
+          "x": 2909.8348228468453,
+          "y": -1281.0674288260616
+        },
+        {
+          "x": 2932.78056815115,
+          "y": -1281.0674288260616
+        },
+        {
+          "x": 2955.726313455454,
+          "y": -1281.0674288260616
+        },
+        {
+          "x": 2980.584204201784,
+          "y": -1281.0674288260616
+        },
+        {
+          "x": 3003.529949506088,
+          "y": -1284.8917197101123
+        },
+        {
+          "x": 3026.4756948103927,
+          "y": -1289.6720833151758
+        },
+        {
+          "x": 3045.597149230646,
+          "y": -1296.3645923622644
+        },
+        {
+          "x": 3063.762530929887,
+          "y": -1307.8374650144167
+        },
+        {
+          "x": 3083.840058071153,
+          "y": -1327.914992155683
+        },
+        {
+          "x": 3101.0493670493815,
+          "y": -1351.816810181
+        },
+        {
+          "x": 3109.6540215384957,
+          "y": -1378.586846369355
+        },
+        {
+          "x": 3114.434385143559,
+          "y": -1410.1372461627734
+        },
+        {
+          "x": 3115.390457864572,
+          "y": -1437.8633550721413
+        },
+        {
+          "x": 3110.6100942595085,
+          "y": -1463.6773185394836
+        },
+        {
+          "x": 3100.0932943283688,
+          "y": -1486.623063843788
+        },
+        {
+          "x": 3084.796130792166,
+          "y": -1511.4809545901176
+        },
+        {
+          "x": 3062.8064582088746,
+          "y": -1539.2070634994855
+        },
+        {
+          "x": 3033.1682038574813,
+          "y": -1567.889245129866
+        },
+        {
+          "x": 2996.8374404589995,
+          "y": -1596.5714267602464
+        },
+        {
+          "x": 2958.594531618492,
+          "y": -1619.5171720645506
+        },
+        {
+          "x": 2920.351622777985,
+          "y": -1639.5946992058168
+        },
+        {
+          "x": 2884.0208593795032,
+          "y": -1655.8479354630324
+        },
+        {
+          "x": 2851.514386865072,
+          "y": -1670.1890262782226
+        },
+        {
+          "x": 2821.876132513679,
+          "y": -1679.7497534883496
+        },
+        {
+          "x": 2795.106096325324,
+          "y": -1688.3544079774636
+        },
+        {
+          "x": 2767.379987415956,
+          "y": -1695.0469170245524
+        },
+        {
+          "x": 2745.3903148326644,
+          "y": -1701.7394260716412
+        },
+        {
+          "x": 2725.312787691398,
+          "y": -1707.4758623977173
+        },
+        {
+          "x": 2709.0595514341826,
+          "y": -1711.300153281768
+        },
+        {
+          "x": 2694.718460618992,
+          "y": -1712.2562260027807
+        },
+        {
+          "x": 2682.2895152458273,
+          "y": -1712.2562260027807
+        },
+        {
+          "x": 2670.816642593675,
+          "y": -1712.2562260027807
+        },
+        {
+          "x": 2658.3876972205103,
+          "y": -1707.4758623977173
+        },
+        {
+          "x": 2645.9587518473454,
+          "y": -1701.7394260716412
+        },
+        {
+          "x": 2634.4858791951933,
+          "y": -1695.0469170245524
+        },
+        {
+          "x": 2623.0130065430412,
+          "y": -1686.4422625354382
+        },
+        {
+          "x": 2612.496206611902,
+          "y": -1677.8376080463242
+        },
+        {
+          "x": 2601.979406680762,
+          "y": -1671.1450989992354
+        },
+        {
+          "x": 2594.330824912661,
+          "y": -1665.4086626731594
+        },
+        {
+          "x": 2587.638315865572,
+          "y": -1661.5843717891087
+        },
+        {
+          "x": 2584.770097702534,
+          "y": -1656.8040081840452
+        },
+        {
+          "x": 2582.8579522605087,
+          "y": -1653.935790021007
+        },
+        {
+          "x": 2580.945806818483,
+          "y": -1649.1554264159438
+        },
+        {
+          "x": 2580.945806818483,
+          "y": -1644.3750628108803
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T19:21:46.498Z"
+    },
+    {
+      "id": "14637845-6b7b-43af-aa57-02601c8feaf6",
+      "points": [
+        {
+          "x": 2073.2711919607495,
+          "y": -1605.1760812493603
+        },
+        {
+          "x": 2073.2711919607495,
+          "y": -1598.4835722022717
+        },
+        {
+          "x": 2079.007628286826,
+          "y": -1594.6592813182208
+        },
+        {
+          "x": 2088.568355496953,
+          "y": -1587.9667722711322
+        },
+        {
+          "x": 2103.8655190331556,
+          "y": -1583.1864086660687
+        },
+        {
+          "x": 2123.943046174422,
+          "y": -1579.362117782018
+        },
+        {
+          "x": 2150.7130823627767,
+          "y": -1575.5378268979673
+        },
+        {
+          "x": 2184.1756275982207,
+          "y": -1571.7135360139166
+        },
+        {
+          "x": 2227.198900043791,
+          "y": -1567.889245129866
+        },
+        {
+          "x": 2269.2660997683492,
+          "y": -1565.0210269668278
+        },
+        {
+          "x": 2310.3772267718946,
+          "y": -1564.0649542458152
+        },
+        {
+          "x": 2350.532281054427,
+          "y": -1563.1088815248024
+        },
+        {
+          "x": 2387.8191171739218,
+          "y": -1565.0210269668278
+        },
+        {
+          "x": 2417.457371525315,
+          "y": -1567.889245129866
+        },
+        {
+          "x": 2440.403116829619,
+          "y": -1571.7135360139166
+        },
+        {
+          "x": 2456.6563530868348,
+          "y": -1577.4499723399927
+        },
+        {
+          "x": 2468.129225738987,
+          "y": -1584.1424813870815
+        },
+        {
+          "x": 2474.8217347860755,
+          "y": -1591.7910631551829
+        },
+        {
+          "x": 2481.5142438331645,
+          "y": -1599.4396449232843
+        },
+        {
+          "x": 2487.2506801592403,
+          "y": -1609.9564448544238
+        },
+        {
+          "x": 2492.031043764304,
+          "y": -1619.5171720645506
+        },
+        {
+          "x": 2496.8114073693673,
+          "y": -1630.03397199569
+        },
+        {
+          "x": 2499.679625532405,
+          "y": -1642.462917368855
+        },
+        {
+          "x": 2500.635698253418,
+          "y": -1653.935790021007
+        },
+        {
+          "x": 2500.635698253418,
+          "y": -1663.496517231134
+        },
+        {
+          "x": 2495.8553346483545,
+          "y": -1674.969389883286
+        },
+        {
+          "x": 2486.294607438228,
+          "y": -1687.398335256451
+        },
+        {
+          "x": 2470.0413711810124,
+          "y": -1698.871207908603
+        },
+        {
+          "x": 2449.0077713187334,
+          "y": -1710.3440805607552
+        },
+        {
+          "x": 2427.9741714564543,
+          "y": -1718.9487350498694
+        },
+        {
+          "x": 2402.1602079891118,
+          "y": -1725.6412440969582
+        },
+        {
+          "x": 2371.565880916706,
+          "y": -1732.333753144047
+        },
+        {
+          "x": 2341.927626565313,
+          "y": -1739.0262621911356
+        },
+        {
+          "x": 2310.3772267718946,
+          "y": -1743.8066257961991
+        },
+        {
+          "x": 2279.782899699489,
+          "y": -1747.6309166802498
+        },
+        {
+          "x": 2253.9689362321465,
+          "y": -1749.5430621222752
+        },
+        {
+          "x": 2227.198900043791,
+          "y": -1752.4112802853133
+        },
+        {
+          "x": 2203.297082018474,
+          "y": -1754.3234257273386
+        },
+        {
+          "x": 2185.1317003192335,
+          "y": -1754.3234257273386
+        },
+        {
+          "x": 2166.9663186199923,
+          "y": -1753.3673530063259
+        },
+        {
+          "x": 2147.844864199739,
+          "y": -1749.5430621222752
+        },
+        {
+          "x": 2128.7234097794853,
+          "y": -1742.8505530751863
+        },
+        {
+          "x": 2107.6898099172063,
+          "y": -1734.2458985860724
+        },
+        {
+          "x": 2086.656210054927,
+          "y": -1725.6412440969582
+        },
+        {
+          "x": 2068.4908283556865,
+          "y": -1715.1244441658187
+        },
+        {
+          "x": 2051.281519377458,
+          "y": -1702.6954987926538
+        },
+        {
+          "x": 2038.8525740042933,
+          "y": -1693.134771582527
+        },
+        {
+          "x": 2032.1600649572044,
+          "y": -1687.398335256451
+        },
+        {
+          "x": 2028.3357740731537,
+          "y": -1682.6179716513875
+        },
+        {
+          "x": 2025.4675559101156,
+          "y": -1675.9254626042987
+        },
+        {
+          "x": 2023.5554104680903,
+          "y": -1669.23295355721
+        },
+        {
+          "x": 2022.5993377470777,
+          "y": -1660.6282990680959
+        },
+        {
+          "x": 2022.5993377470777,
+          "y": -1652.9797172999945
+        },
+        {
+          "x": 2024.511483189103,
+          "y": -1645.331135531893
+        },
+        {
+          "x": 2027.379701352141,
+          "y": -1638.6386264848043
+        },
+        {
+          "x": 2031.2039922361917,
+          "y": -1632.9021901587282
+        },
+        {
+          "x": 2036.940428562268,
+          "y": -1628.1218265536647
+        },
+        {
+          "x": 2042.676864888344,
+          "y": -1625.2536083906266
+        },
+        {
+          "x": 2049.3693739354326,
+          "y": -1624.297535669614
+        },
+        {
+          "x": 2053.1936648194833,
+          "y": -1622.3853902275887
+        },
+        {
+          "x": 2057.017955703534,
+          "y": -1622.3853902275887
+        },
+        {
+          "x": 2064.6665374716354,
+          "y": -1622.3853902275887
+        },
+        {
+          "x": 2067.5347556346737,
+          "y": -1623.3414629486012
+        },
+        {
+          "x": 2072.315119239737,
+          "y": -1624.297535669614
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T19:21:48.364Z"
+    },
+    {
+      "id": "3fd8f4ac-7461-4f4a-8b1a-e5b6b8eafb93",
+      "points": [
+        {
+          "x": 2421.053037796758,
+          "y": -1136.051685127593
+        },
+        {
+          "x": 2421.053037796758,
+          "y": -1118.2224242208185
+        },
+        {
+          "x": 2421.053037796758,
+          "y": -1093.2614589513346
+        },
+        {
+          "x": 2428.1847421594675,
+          "y": -1054.0370849564313
+        },
+        {
+          "x": 2438.882298703532,
+          "y": -1005.3037718112483
+        },
+        {
+          "x": 2455.522942216521,
+          "y": -960.1363108474203
+        },
+        {
+          "x": 2479.2952900922205,
+          "y": -916.1574672773771
+        },
+        {
+          "x": 2501.8790205741343,
+          "y": -884.0647976451835
+        },
+        {
+          "x": 2517.331046693339,
+          "y": -862.6696845570544
+        },
+        {
+          "x": 2529.2172206311884,
+          "y": -848.4062758316351
+        },
+        {
+          "x": 2541.103394569038,
+          "y": -837.7087192875705
+        },
+        {
+          "x": 2551.800951113102,
+          "y": -829.3883975310758
+        },
+        {
+          "x": 2563.6871250509516,
+          "y": -822.2566931683662
+        },
+        {
+          "x": 2576.761916382586,
+          "y": -812.7477540180865
+        },
+        {
+          "x": 2588.6480903204356,
+          "y": -806.8046670491618
+        },
+        {
+          "x": 2601.72288165207,
+          "y": -800.861580080237
+        },
+        {
+          "x": 2615.9862903774897,
+          "y": -796.1071105050972
+        },
+        {
+          "x": 2633.8155512842636,
+          "y": -791.3526409299575
+        },
+        {
+          "x": 2661.1537513413177,
+          "y": -788.9754061423876
+        },
+        {
+          "x": 2696.812273154866,
+          "y": -786.5981713548176
+        },
+        {
+          "x": 2731.2821775746297,
+          "y": -786.5981713548176
+        },
+        {
+          "x": 2765.7520819943934,
+          "y": -786.5981713548176
+        },
+        {
+          "x": 2796.656134232802,
+          "y": -784.2209365672478
+        },
+        {
+          "x": 2826.3715690774256,
+          "y": -779.4664669921079
+        },
+        {
+          "x": 2858.464238709619,
+          "y": -777.089232204538
+        },
+        {
+          "x": 2884.613821372888,
+          "y": -774.7119974169682
+        },
+        {
+          "x": 2907.1975518548024,
+          "y": -773.5233800231832
+        },
+        {
+          "x": 2929.7812823367162,
+          "y": -774.7119974169682
+        },
+        {
+          "x": 2948.7991606372752,
+          "y": -779.4664669921079
+        },
+        {
+          "x": 2964.25118675648,
+          "y": -785.4095539610327
+        },
+        {
+          "x": 2982.080447663254,
+          "y": -798.4843452926672
+        },
+        {
+          "x": 3007.041412932738,
+          "y": -821.0680757745812
+        },
+        {
+          "x": 3032.0023782022217,
+          "y": -849.5948932254199
+        },
+        {
+          "x": 3059.340578259276,
+          "y": -888.8192672203234
+        },
+        {
+          "x": 3080.735691347405,
+          "y": -926.8550238214417
+        },
+        {
+          "x": 3096.1877174666092,
+          "y": -956.5704586660654
+        },
+        {
+          "x": 3105.696656616889,
+          "y": -983.9086587231193
+        },
+        {
+          "x": 3111.6397435858134,
+          "y": -1004.1151544174634
+        },
+        {
+          "x": 3112.8283609795985,
+          "y": -1025.5102675055925
+        },
+        {
+          "x": 3114.0169783733836,
+          "y": -1046.9053805937217
+        },
+        {
+          "x": 3110.451126192029,
+          "y": -1071.8663458632057
+        },
+        {
+          "x": 3106.8852740106736,
+          "y": -1090.8842241637647
+        },
+        {
+          "x": 3102.130804435534,
+          "y": -1108.713485070539
+        },
+        {
+          "x": 3099.753569647964,
+          "y": -1120.5996590083885
+        },
+        {
+          "x": 3096.1877174666092,
+          "y": -1131.297215552453
+        },
+        {
+          "x": 3089.0560131038997,
+          "y": -1144.3720068840876
+        },
+        {
+          "x": 3078.358456559835,
+          "y": -1157.4467982157219
+        },
+        {
+          "x": 3065.2836652282003,
+          "y": -1169.3329721535715
+        },
+        {
+          "x": 3051.020256502781,
+          "y": -1177.653293910066
+        },
+        {
+          "x": 3034.379612989792,
+          "y": -1183.5963808789909
+        },
+        {
+          "x": 3017.7389694768026,
+          "y": -1185.9736156665606
+        },
+        {
+          "x": 3002.2869433575984,
+          "y": -1188.3508504541305
+        },
+        {
+          "x": 2982.080447663254,
+          "y": -1191.9167026354855
+        },
+        {
+          "x": 2957.11948239377,
+          "y": -1191.9167026354855
+        },
+        {
+          "x": 2934.535751911856,
+          "y": -1191.9167026354855
+        },
+        {
+          "x": 2908.386169248587,
+          "y": -1191.9167026354855
+        },
+        {
+          "x": 2881.0479691915334,
+          "y": -1191.9167026354855
+        },
+        {
+          "x": 2851.3325343469096,
+          "y": -1193.1053200292704
+        },
+        {
+          "x": 2818.051247320931,
+          "y": -1194.2939374230552
+        },
+        {
+          "x": 2783.5813429011673,
+          "y": -1196.6711722106252
+        },
+        {
+          "x": 2749.111438481404,
+          "y": -1197.8597896044103
+        },
+        {
+          "x": 2717.01876884921,
+          "y": -1200.2370243919802
+        },
+        {
+          "x": 2689.6805687921565,
+          "y": -1202.61425917955
+        },
+        {
+          "x": 2662.342368735103,
+          "y": -1204.9914939671198
+        },
+        {
+          "x": 2638.5700208594035,
+          "y": -1204.9914939671198
+        },
+        {
+          "x": 2615.9862903774897,
+          "y": -1206.180111360905
+        },
+        {
+          "x": 2595.7797946831456,
+          "y": -1206.180111360905
+        },
+        {
+          "x": 2575.5732989888015,
+          "y": -1204.9914939671198
+        },
+        {
+          "x": 2555.366803294457,
+          "y": -1203.802876573335
+        },
+        {
+          "x": 2537.537542387683,
+          "y": -1200.2370243919802
+        },
+        {
+          "x": 2518.5196640871236,
+          "y": -1196.6711722106252
+        },
+        {
+          "x": 2500.6904031803497,
+          "y": -1193.1053200292704
+        },
+        {
+          "x": 2484.0497596673604,
+          "y": -1185.9736156665606
+        },
+        {
+          "x": 2473.3522031232956,
+          "y": -1180.0305286976359
+        },
+        {
+          "x": 2465.031881366801,
+          "y": -1174.0874417287112
+        },
+        {
+          "x": 2457.9001770040913,
+          "y": -1169.3329721535715
+        },
+        {
+          "x": 2453.1457074289515,
+          "y": -1163.3898851846466
+        },
+        {
+          "x": 2447.2026204600265,
+          "y": -1156.258180821937
+        },
+        {
+          "x": 2442.448150884887,
+          "y": -1144.3720068840876
+        },
+        {
+          "x": 2440.070916097317,
+          "y": -1133.674450340023
+        },
+        {
+          "x": 2438.882298703532,
+          "y": -1127.7313633710983
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T19:21:51.121Z"
+    },
+    {
+      "id": "9e833630-1384-463c-ba5c-50c9d3321434",
+      "points": [
+        {
+          "x": 1063.5897308531949,
+          "y": -1598.0014724788423
+        },
+        {
+          "x": 1058.366567353145,
+          "y": -1592.7783089787924
+        },
+        {
+          "x": 1055.232669253115,
+          "y": -1587.5551454787428
+        },
+        {
+          "x": 1051.0541384530754,
+          "y": -1578.153451178653
+        },
+        {
+          "x": 1045.8309749530256,
+          "y": -1560.3946952784838
+        },
+        {
+          "x": 1041.6524441529857,
+          "y": -1540.5466739782946
+        },
+        {
+          "x": 1037.4739133529458,
+          "y": -1521.7432853781154
+        },
+        {
+          "x": 1037.4739133529458,
+          "y": -1497.7167332778865
+        },
+        {
+          "x": 1041.6524441529857,
+          "y": -1474.7348138776674
+        },
+        {
+          "x": 1050.0095057530655,
+          "y": -1446.5297309773985
+        },
+        {
+          "x": 1061.500465453175,
+          "y": -1419.3692807771397
+        },
+        {
+          "x": 1076.1253232533143,
+          "y": -1394.2980959769006
+        },
+        {
+          "x": 1094.9287118534935,
+          "y": -1372.3608092766915
+        },
+        {
+          "x": 1113.7321004536727,
+          "y": -1351.4681552764923
+        },
+        {
+          "x": 1134.624754453872,
+          "y": -1334.754032076333
+        },
+        {
+          "x": 1157.606673854091,
+          "y": -1320.1291742761937
+        },
+        {
+          "x": 1184.7671240543498,
+          "y": -1303.4150510760344
+        },
+        {
+          "x": 1207.749043454569,
+          "y": -1292.968724075935
+        },
+        {
+          "x": 1230.730962854788,
+          "y": -1286.700927875875
+        },
+        {
+          "x": 1253.712882255007,
+          "y": -1282.5223970758352
+        },
+        {
+          "x": 1286.0964959553157,
+          "y": -1277.2992335757856
+        },
+        {
+          "x": 1321.6140077556543,
+          "y": -1275.2099681757657
+        },
+        {
+          "x": 1359.2207849560127,
+          "y": -1274.1653354757557
+        },
+        {
+          "x": 1399.9614602564009,
+          "y": -1275.2099681757657
+        },
+        {
+          "x": 1440.7021355567892,
+          "y": -1280.4331316758153
+        },
+        {
+          "x": 1483.5320762571976,
+          "y": -1287.745560575885
+        },
+        {
+          "x": 1525.317384257596,
+          "y": -1291.924091375925
+        },
+        {
+          "x": 1563.968794157964,
+          "y": -1296.1026221759648
+        },
+        {
+          "x": 1601.5755713583226,
+          "y": -1299.2365202759945
+        },
+        {
+          "x": 1635.0038177586414,
+          "y": -1302.3704183760244
+        },
+        {
+          "x": 1667.38743145895,
+          "y": -1308.6382145760842
+        },
+        {
+          "x": 1697.6817797592387,
+          "y": -1318.0399088761737
+        },
+        {
+          "x": 1723.7975972594877,
+          "y": -1333.709399376323
+        },
+        {
+          "x": 1744.6902512596869,
+          "y": -1352.5127879765023
+        },
+        {
+          "x": 1763.493639859866,
+          "y": -1373.4054419767015
+        },
+        {
+          "x": 1772.8953341599556,
+          "y": -1393.2534632768907
+        },
+        {
+          "x": 1778.1184976600055,
+          "y": -1412.05685187707
+        },
+        {
+          "x": 1779.1631303600154,
+          "y": -1432.949505877269
+        },
+        {
+          "x": 1774.9845995599755,
+          "y": -1456.9760579774982
+        },
+        {
+          "x": 1764.538272559876,
+          "y": -1476.8240792776874
+        },
+        {
+          "x": 1746.7795166597066,
+          "y": -1497.7167332778865
+        },
+        {
+          "x": 1724.8422299594977,
+          "y": -1516.5201218780655
+        },
+        {
+          "x": 1701.8603105592786,
+          "y": -1531.1449796782051
+        },
+        {
+          "x": 1673.6552276590096,
+          "y": -1546.8144701783544
+        },
+        {
+          "x": 1639.182348558681,
+          "y": -1558.3054298784639
+        },
+        {
+          "x": 1598.441673258293,
+          "y": -1568.7517568785636
+        },
+        {
+          "x": 1553.5224671578646,
+          "y": -1578.153451178653
+        },
+        {
+          "x": 1506.5139956574167,
+          "y": -1588.5997781787528
+        },
+        {
+          "x": 1459.5055241569685,
+          "y": -1599.0461051788523
+        },
+        {
+          "x": 1410.4077872565006,
+          "y": -1608.4477994789418
+        },
+        {
+          "x": 1363.3993157560524,
+          "y": -1615.7602283790116
+        },
+        {
+          "x": 1318.4801096556243,
+          "y": -1622.0280245790714
+        },
+        {
+          "x": 1272.5162708551861,
+          "y": -1630.385086179151
+        },
+        {
+          "x": 1231.775595554798,
+          "y": -1636.6528823792107
+        },
+        {
+          "x": 1199.3919818544891,
+          "y": -1641.8760458792606
+        },
+        {
+          "x": 1167.0083681541805,
+          "y": -1645.0099439792903
+        },
+        {
+          "x": 1138.8032852539118,
+          "y": -1647.0992093793102
+        },
+        {
+          "x": 1117.9106312537126,
+          "y": -1647.0992093793102
+        },
+        {
+          "x": 1097.0179772535134,
+          "y": -1646.0545766793002
+        },
+        {
+          "x": 1077.1699559533242,
+          "y": -1642.9206785792705
+        },
+        {
+          "x": 1058.366567353145,
+          "y": -1635.6082496792008
+        },
+        {
+          "x": 1039.5631787529658,
+          "y": -1627.251188079121
+        },
+        {
+          "x": 1021.8044228527965,
+          "y": -1617.8494937790315
+        },
+        {
+          "x": 1006.1349323526472,
+          "y": -1607.403166778932
+        },
+        {
+          "x": 993.5993399525277,
+          "y": -1598.0014724788423
+        },
+        {
+          "x": 985.242278352448,
+          "y": -1589.6444108787625
+        },
+        {
+          "x": 982.1083802524182,
+          "y": -1582.331981978693
+        },
+        {
+          "x": 978.9744821523883,
+          "y": -1577.1088184786431
+        },
+        {
+          "x": 977.9298494523783,
+          "y": -1572.9302876786032
+        },
+        {
+          "x": 976.8852167523684,
+          "y": -1569.7963895785736
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T19:27:13.692Z"
+    },
+    {
+      "id": "02a6a1aa-f990-47b4-88bb-f566d2a7bfb6",
+      "points": [
+        {
+          "x": 987.8584014627496,
+          "y": -2840.453011160591
+        },
+        {
+          "x": 983.8031097430226,
+          "y": -2837.7494833474393
+        },
+        {
+          "x": 981.0995819298712,
+          "y": -2835.045955534288
+        },
+        {
+          "x": 977.0442902101441,
+          "y": -2828.2871360014096
+        },
+        {
+          "x": 972.9889984904172,
+          "y": -2822.880080375107
+        },
+        {
+          "x": 967.5819428641145,
+          "y": -2813.417733029077
+        },
+        {
+          "x": 963.5266511443874,
+          "y": -2802.6036217764718
+        },
+        {
+          "x": 958.1195955180847,
+          "y": -2791.7895105238663
+        },
+        {
+          "x": 955.4160677049334,
+          "y": -2779.6236353646855
+        },
+        {
+          "x": 954.0643037983577,
+          "y": -2768.80952411208
+        },
+        {
+          "x": 954.0643037983577,
+          "y": -2759.3471767660503
+        },
+        {
+          "x": 958.1195955180847,
+          "y": -2752.588357233172
+        },
+        {
+          "x": 962.1748872378117,
+          "y": -2745.8295377002937
+        },
+        {
+          "x": 966.2301789575388,
+          "y": -2740.422482073991
+        },
+        {
+          "x": 970.2854706772658,
+          "y": -2735.0154264476882
+        },
+        {
+          "x": 978.3960541167198,
+          "y": -2729.6083708213855
+        },
+        {
+          "x": 985.1548736495982,
+          "y": -2726.904843008234
+        },
+        {
+          "x": 993.2654570890522,
+          "y": -2724.2013151950828
+        },
+        {
+          "x": 1005.4313322482334,
+          "y": -2722.849551288507
+        },
+        {
+          "x": 1014.8936795942631,
+          "y": -2721.497787381931
+        },
+        {
+          "x": 1024.3560269402928,
+          "y": -2721.497787381931
+        },
+        {
+          "x": 1032.4666103797467,
+          "y": -2720.146023475356
+        },
+        {
+          "x": 1039.2254299126253,
+          "y": -2720.146023475356
+        },
+        {
+          "x": 1044.632485538928,
+          "y": -2718.79425956878
+        },
+        {
+          "x": 1048.687777258655,
+          "y": -2718.79425956878
+        },
+        {
+          "x": 1052.7430689783819,
+          "y": -2717.4424956622042
+        }
+      ],
+      "color": "#ffffff",
+      "width": 2,
+      "createdAt": "2026-05-11T19:36:08.282Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "aksjomat",
+      "name": "Aksjomat",
+      "color": "#e5a54b",
+      "order": 0
+    },
+    {
+      "id": "pewnik",
+      "name": "Pewnik",
+      "color": "#c4a43a",
+      "order": 1
+    },
+    {
+      "id": "przeblysk",
+      "name": "Przebłysk",
+      "color": "#4da8a0",
+      "order": 2
+    },
+    {
+      "id": "rozrzutka",
+      "name": "Rozrzutka",
+      "color": "#7c6cb5",
+      "order": 3
+    },
+    {
+      "id": "problem",
+      "name": "Problem",
+      "color": "#c45c5c",
+      "order": 4
+    }
+  ]
+}

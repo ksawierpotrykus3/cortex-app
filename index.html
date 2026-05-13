@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cortex — Personal Knowledge Graph</title>
+    <title>Cortex — Nieskończona Tablica</title>
+    <meta name="description" content="Przestrzenny bufor operacyjny — nieskończona tablica do łapania i łączenia myśli." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -17,19 +18,10 @@
           <span class="logo-icon">⬡</span>
           <h1>CORTEX</h1>
         </div>
-        
-        <div class="search-container">
-          <input type="text" id="search-input" placeholder="Szukaj w bazie wiedzy... (Ctrl+K)" />
-        </div>
 
-        <nav class="filters" id="type-filters">
-          <button class="filter-btn active" data-type="all">Wszystko</button>
-          <button class="filter-btn" data-type="aksjomat">Aksjomaty</button>
-          <button class="filter-btn" data-type="pewnik">Pewniki</button>
-          <button class="filter-btn" data-type="przeblysk">Przebłyski</button>
-          <button class="filter-btn" data-type="rozrzutka">Rozrzutki</button>
-          <button class="filter-btn" data-type="problem">Problemy</button>
-        </nav>
+        <div class="search-container">
+          <input type="text" id="search-input" placeholder="Szukaj... (Ctrl+F)" />
+        </div>
 
         <div class="top-actions">
           <button id="parking-toggle" title="Parking (nie-teraz)">
@@ -38,31 +30,52 @@
           <button id="export-btn" title="Eksportuj JSON">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>
-          <button id="reset-db-btn" title="Wyczyść wszystko" style="color: #ef4444; border: none; background: none; cursor: pointer;">🗑️</button>
+          <button id="settings-btn" title="Ustawienia (API key)" style="font-size: 16px;">⚙️</button>
+          <button id="category-btn" title="Kategorie" style="font-size: 16px;">🏷️</button>
+          <button id="flash-toggle" title="Flash Chat" style="font-size: 16px;">⚡</button>
+          <button id="reset-db-btn" title="Wyczyść wszystko" style="color: #ef4444;">🗑️</button>
+          <button id="help-btn" title="Pomoc (?)" style="font-size: 16px; font-weight: 700; color: var(--text-muted);">?</button>
         </div>
       </header>
 
-      <main id="graph-container">
-        <!-- D3 Graph will be rendered here -->
+      <!-- INFINITE CANVAS -->
+      <main id="canvas-container">
+        <!-- SVG canvas will be rendered here by canvas.js -->
       </main>
 
+      <!-- HUD — always visible shortcuts reference -->
+      <div id="hud" class="hud">
+        <div class="hud-title">⌨ SKRÓTY</div>
+        <div class="hud-row"><kbd>2×klik tło</kbd> Nowa notatka</div>
+        <div class="hud-row"><kbd>2×klik kartę</kbd> Edytuj</div>
+        <div class="hud-row"><kbd>Tab</kbd> Tryb łączenia</div>
+        <div class="hud-row"><kbd>Shift+klik</kbd> Multi-select</div>
+        <div class="hud-row"><kbd>Ctrl+Scroll</kbd> Rozmiar kartki</div>
+        <div class="hud-row"><kbd>D</kbd> Tryb rysowania</div>
+        <div class="hud-row"><kbd>X</kbd> Gumka (w rysowaniu)</div>
+        <div class="hud-row"><kbd>[ ]</kbd> Rozmiar pędzla</div>
+        <div class="hud-row"><kbd>E</kbd> Rozwiń / zwiń</div>
+        <div class="hud-row"><kbd>Ctrl+V</kbd> Wklej screenshot</div>
+        <div class="hud-row"><kbd>Ctrl+Z</kbd> Cofnij rysunek</div>
+        <div class="hud-row"><kbd>Esc</kbd> Zamknij / anuluj</div>
+      </div>
+
+      <!-- Side Panel -->
       <aside id="side-panel" class="side-panel hidden">
         <div class="panel-header">
           <div id="panel-type-badge" class="type-badge">ROZRZUTKA</div>
           <button id="panel-close">&times;</button>
         </div>
         <div class="panel-content">
-          <h2 id="panel-title">Tytuł node'a</h2>
-          <div id="panel-meta" class="meta">Dodano: 2024-05-08</div>
+          <h2 id="panel-title">Tytuł</h2>
+          <div id="panel-meta" class="meta">Dodano: —</div>
           <div id="panel-body-container">
-            <p id="panel-body">Treść node'a pojawi się tutaj...</p>
+            <p id="panel-body">Treść...</p>
           </div>
-          
+
           <section class="connections-section">
             <h3>Połączenia</h3>
-            <ul id="panel-connections" class="connections-list">
-              <!-- Connections list -->
-            </ul>
+            <ul id="panel-connections" class="connections-list"></ul>
             <button id="add-link-btn" class="secondary-btn">Połącz z innym...</button>
           </section>
         </div>
@@ -73,7 +86,8 @@
         </div>
       </aside>
 
-      <footer class="bottom-bar">
+      <!-- Quick Add bar -->
+      <div class="bottom-bar">
         <div class="quick-add-container">
           <div class="type-picker" id="quick-add-types">
             <button class="type-btn active" data-type="rozrzutka" title="Rozrzutka">R</button>
@@ -84,18 +98,108 @@
           </div>
           <input type="text" id="quick-add-input" placeholder="Złap myśl i naciśnij Enter..." />
         </div>
-      </footer>
+      </div>
 
-      <!-- Modals / Overlays -->
+      <!-- Batch Actions -->
+      <div id="batch-actions" class="hidden">
+        <span id="batch-count">0 zaznaczonych</span>
+        <button id="batch-delete-links" class="batch-btn">Usuń linie</button>
+        <button id="batch-delete-nodes" class="batch-btn danger">Usuń notatki</button>
+        <button id="batch-cancel" class="batch-btn">Anuluj</button>
+      </div>
+
+      <!-- Parking Modal -->
       <div id="parking-view" class="modal hidden">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>Parking (Magazyn nie-teraz)</h2>
+            <h2>Parking (nie-teraz)</h2>
             <button id="close-parking">&times;</button>
           </div>
-          <div id="parking-list" class="parking-list">
-            <!-- List of parked nodes -->
+          <div id="parking-list" class="parking-list"></div>
+        </div>
+      </div>
+
+      <!-- Help Modal -->
+      <div id="help-modal" class="modal hidden">
+        <div class="modal-content" style="width: 520px;">
+          <div class="modal-header">
+            <h2>Komendy i interakcje</h2>
+            <button id="close-help">×</button>
           </div>
+          <div style="padding: 20px; overflow-y: auto; max-height: 60vh;">
+            <div class="help-section">
+              <h3 class="help-heading">🖱️ Myszka</h3>
+              <div class="help-row"><span class="help-key">Klik na kartę</span><span>Otwórz panel</span></div>
+              <div class="help-row"><span class="help-key">2×klik na kartę</span><span>Szybka edycja</span></div>
+              <div class="help-row"><span class="help-key">Drag kartę</span><span>Przesuń (pozycja zostaje)</span></div>
+              <div class="help-row"><span class="help-key">2×klik na tło</span><span>Nowa notatka tu</span></div>
+              <div class="help-row"><span class="help-key">Scroll</span><span>Zoom in/out</span></div>
+              <div class="help-row"><span class="help-key">Drag tło</span><span>Przesuń cały widok</span></div>
+              <div class="help-row"><span class="help-key">Klik na linię</span><span class="help-danger">Usuń połączenie</span></div>
+              <div class="help-row"><span class="help-key">Hover linię</span><span>Podświetla na czerwono</span></div>
+            </div>
+            <div class="help-section">
+              <h3 class="help-heading">⌨️ Klawiatura</h3>
+              <div class="help-row"><span class="help-key">Tab</span><span>Tryb łączenia (chain)</span></div>
+              <div class="help-row"><span class="help-key">Ctrl+K</span><span>Focus na quick add</span></div>
+              <div class="help-row"><span class="help-key">Ctrl+F</span><span>Focus na search</span></div>
+              <div class="help-row"><span class="help-key">D</span><span>Tryb rysowania (toggle)</span></div>
+              <div class="help-row"><span class="help-key">E</span><span>Rozwiń / zwiń wszystko</span></div>
+              <div class="help-row"><span class="help-key">Ctrl+Z</span><span>Cofnij rysunek</span></div>
+              <div class="help-row"><span class="help-key">Shift+Klik</span><span>Multi-select</span></div>
+              <div class="help-row"><span class="help-key">Escape</span><span>Zamknij / anuluj</span></div>
+            </div>
+            <div class="help-section">
+              <h3 class="help-heading">⚡ Quick Add</h3>
+              <div class="help-row"><span class="help-key">[!] tekst</span><span>Auto-typ: Przebłysk</span></div>
+              <div class="help-row"><span class="help-key">[aksjomat] tekst</span><span>Auto-typ: Aksjomat</span></div>
+              <div class="help-row"><span class="help-key">[problem] tekst</span><span>Auto-typ: Problem</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Settings Modal (API Key) -->
+      <div id="settings-modal" class="modal hidden">
+        <div class="modal-content" style="width: 420px;">
+          <div class="modal-header">
+            <h2>⚙️ Ustawienia</h2>
+            <button id="close-settings">&times;</button>
+          </div>
+          <div style="padding: 20px;">
+            <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:8px;">Gemini API Key (AI Studio)</label>
+            <input type="password" id="api-key-input" placeholder="AIzaSy..." style="width:100%;background:var(--bg-primary);border:1px solid var(--border);padding:10px 14px;border-radius:8px;color:white;font-family:JetBrains Mono,monospace;font-size:13px;" />
+            <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Potrzebny do analizy screenshotów przez Flash Vision. Pobierz z <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">AI Studio</a>.</p>
+            <button id="save-api-key" class="action-btn" style="margin-top:16px;width:100%;">Zapisz</button>
+          </div>
+        </div>
+      </div>
+      <!-- Category Manager Modal -->
+      <div id="category-modal" class="modal hidden">
+        <div class="modal-content" style="width: 460px;">
+          <div class="modal-header">
+            <h2>🏷️ Kategorie</h2>
+            <button id="close-categories">&times;</button>
+          </div>
+          <div style="padding: 20px;">
+            <div id="category-list" class="category-list"></div>
+            <div class="category-add-row">
+              <input type="color" id="new-category-color" value="#6b7280" class="category-color-input" title="Kolor" />
+              <input type="text" id="new-category-name" placeholder="Nazwa nowej kategorii..." class="category-name-input" style="flex:1;" />
+              <button id="add-category-btn" class="action-btn" style="padding:6px 14px;">+ Dodaj</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Flash Chat Panel -->
+      <div id="flash-panel" class="flash-panel hidden">
+        <div class="flash-header">
+          <span>⚡ Flash Chat</span>
+          <span style="font-size:10px;color:var(--text-muted);">Kontekst: wszystkie notatki</span>
+        </div>
+        <div id="flash-messages" class="flash-messages"></div>
+        <div class="flash-input-row">
+          <input type="text" id="flash-input" placeholder="Zapytaj o swoje notatki..." />
+          <button id="flash-send-btn">Wyślij</button>
         </div>
       </div>
     </div>

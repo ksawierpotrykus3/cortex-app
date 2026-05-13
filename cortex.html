@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cortex — Graf Wiedzy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0a0a14;
+    color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* TOP BAR */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px;
+    background: rgba(15, 15, 30, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  }
+
+  #topbar h1 {
+    font-size: 16px; font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-right: 20px;
+  }
+
+  #quickadd {
+    flex: 1; max-width: 500px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 10px 16px;
+    color: #e0e0e0; font-size: 14px; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
+  }
+  #quickadd:focus { border-color: #a78bfa; }
+  #quickadd::placeholder { color: #555; }
+
+  #addbtn {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    border: none; border-radius: 10px; padding: 10px 20px;
+    color: white; font-weight: 600; font-size: 13px; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+  }
+  #addbtn:hover { transform: scale(1.04); box-shadow: 0 4px 20px rgba(124,58,237,0.4); }
+
+  #typepicker {
+    display: flex; gap: 4px;
+  }
+  .typebtn {
+    padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04); color: #888; font-size: 11px;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .typebtn.active { border-color: #a78bfa; color: #a78bfa; background: rgba(167,139,250,0.1); }
+
+  /* GRAPH */
+  #graph { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; }
+  svg { width: 100%; height: 100%; }
+
+  .link { stroke-opacity: 0.3; }
+  .node { cursor: pointer; }
+  .node circle { transition: filter 0.2s; }
+  .node:hover circle { filter: brightness(1.3) drop-shadow(0 0 12px currentColor); }
+  .node text { font-family: 'Inter', sans-serif; pointer-events: none; }
+  .label-main { font-size: 11px; fill: #ccc; font-weight: 500; }
+  .label-type { font-size: 8px; fill: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* DETAIL PANEL */
+  #panel {
+    position: fixed; top: 56px; right: -420px; width: 400px; bottom: 0;
+    background: rgba(15, 15, 30, 0.92);
+    backdrop-filter: blur(24px);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    padding: 28px 24px; overflow-y: auto;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+  }
+  #panel.open { right: 0; }
+
+  #panel-close {
+    position: absolute; top: 12px; right: 16px;
+    background: none; border: none; color: #666; font-size: 20px;
+    cursor: pointer; padding: 4px 8px;
+  }
+  #panel-close:hover { color: #fff; }
+
+  .panel-type {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; margin-bottom: 8px; padding: 4px 10px;
+    border-radius: 6px; display: inline-block;
+  }
+  .panel-type.aksjomat { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .panel-type.przeblysk { background: rgba(45,212,191,0.15); color: #2dd4bf; }
+  .panel-type.rozrzutka { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .panel-type.pewnik { background: rgba(250,204,21,0.15); color: #facc15; }
+  .panel-type.problem { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+  .panel-title { font-size: 18px; font-weight: 600; margin: 12px 0 16px; line-height: 1.4; }
+  .panel-text { font-size: 13px; line-height: 1.7; color: #aaa; margin-bottom: 20px; }
+  .panel-meta { font-size: 11px; color: #555; margin-bottom: 20px; }
+
+  .panel-connections h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: #666; margin-bottom: 10px;
+  }
+  .conn-item {
+    padding: 8px 12px; margin-bottom: 6px;
+    background: rgba(255,255,255,0.03); border-radius: 8px;
+    font-size: 12px; color: #999; cursor: pointer; transition: background 0.15s;
+  }
+  .conn-item:hover { background: rgba(255,255,255,0.07); color: #ccc; }
+
+  /* LEGEND */
+  #legend {
+    position: fixed; bottom: 20px; left: 20px;
+    background: rgba(15,15,30,0.8); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+    padding: 14px 18px; z-index: 50;
+  }
+  #legend h4 { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 11px; color: #888; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* STATS */
+  #stats {
+    position: fixed; bottom: 20px; right: 20px;
+    font-size: 11px; color: #444; z-index: 50;
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>⬡ CORTEX</h1>
+  <input id="quickadd" type="text" placeholder="Wrzuć rozrzutkę... (Enter = dodaj)" />
+  <div id="typepicker">
+    <button class="typebtn active" data-type="rozrzutka">rozrzutka</button>
+    <button class="typebtn" data-type="przeblysk">[!]</button>
+    <button class="typebtn" data-type="aksjomat">aksjomat</button>
+  </div>
+  <button id="addbtn">Dodaj</button>
+</div>
+
+<div id="graph"></div>
+
+<div id="panel">
+  <button id="panel-close">✕</button>
+  <div id="panel-content"></div>
+</div>
+
+<div id="legend">
+  <h4>Typy</h4>
+  <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div> Aksjomat</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div> Przebłysk</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Rozrzutka</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#facc15"></div> Pewnik</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Problem</div>
+</div>
+
+<div id="stats"></div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// ============ TWOJE DANE (z workspace_problem_x.md + MAPA_ROZUMIENIA.md) ============
+
+const nodes = [
+  // AKSJOMATY
+  { id: "a1", type: "aksjomat", label: "Stres czasowego zaniku wartości", text: "Ciągle odczuwam stres że robię coś za późno. Pomysły — stresuję się bo im szybciej je zrobię tym większy zysk. Często nie mogę ocenić czy ta 1 rzecz jest warta wysiłku. Efekt: nie mogę ocenić wartości w czasie → ROI nie ma danych → blokada.", date: "07.05 22:11" },
+  { id: "a2", type: "aksjomat", label: "Pętla przewidywania odpowiedzi AI", text: "Podczas pisania do AI ciągle przewiduję co AI odpowie. I to mnie zniechęca, bo przewiduję rozwiązanie jednorazowe. ZAKAZ dawania takich rozwiązań. Chcę rzeczy które ZOSTAJĄ i SKALUJĄ.", date: "07.05 22:17" },
+  { id: "a3", type: "aksjomat", label: "Utrata przykładów = utrata wzorca", text: "Każdy przykład jest dowodem na wzorzec — jak zgubię przykład, zgubię wzorzec. A bez wzorca → nie mogę generalizować → nie mogę budować.", date: "07.05 22:17" },
+
+  // PEWNIKI (z MAPA_ROZUMIENIA)
+  { id: "p1", type: "pewnik", label: "Rozrzutki szybciej niż łapanie", text: "Podczas pracy i podczas luźnego myślenia które przypadkowo wchodzi na symulację pracy. To jest NORMA.", date: "08.05" },
+  { id: "p2", type: "pewnik", label: "Filtr na bzdury blokuje WŁASNE pomysły", text: "Odrzuca nawet potencjalnie dobre/prawdziwe rzeczy jeśli nie ma dowodu.", date: "08.05" },
+  { id: "p3", type: "pewnik", label: "Po kilku godzinach ZAWSZE coś wychodzi", text: "Jeśli faktycznie kilka godzin, to zawsze.", date: "08.05" },
+  { id: "p4", type: "pewnik", label: "Plik liniowy nie ogarnie rozrzutek", text: "PEWNIK. Aktywnie szuka rozwiązania. Potrzebna sieć/graf.", date: "08.05" },
+  { id: "p5", type: "pewnik", label: "Przetworzone = martwe, ZERO wyjątków", text: "Nigdy nie czyta tego co sam napisał o sobie.", date: "08.05" },
+  { id: "p6", type: "pewnik", label: "ROI szuka najkrótszej I najlepszej drogi", text: "Oba jednocześnie, nie tylko najkrótszej.", date: "08.05" },
+
+  // PRZEBŁYSKI
+  { id: "b1", type: "przeblysk", label: "1 plik na 1 pomysł NIGDY nie działa", text: "To nie jest lenistwo — próbowałem, nigdy nie działały. Workspace ma to rozwiązywać — wiele rzeczy w jednym pliku, w sekcjach.", date: "07.05 22:17" },
+  { id: "b2", type: "przeblysk", label: "Przebłyski toną w tekście", text: "Często pisze przebłyski które DLA NIEGO są ważne, ale jak wrzuci je w tekst do AI → AI nie uzna tego za ważne. Przebłysk ginie w szumie. Najgorszy problem TERAZ.", date: "07.05" },
+  { id: "b3", type: "przeblysk", label: "Wszystko jest ze sobą połączone", text: "Każda rozrzutka łączy się z innymi. PEWNIK: nie da się tego zlinearyzować w jeden plik bez utraty połączeń. Potrzebna sieć/graf.", date: "07.05" },
+
+  // ROZRZUTKI
+  { id: "r1", type: "rozrzutka", label: "Kompresja kontekstu jak ludzki mózg", text: "Mechanika która działa jak ludzki mózg — bezstratna kompresja dla AI.", date: "07.05" },
+  { id: "r2", type: "rozrzutka", label: "Badator nisz", text: "Badator tego czy coś jest niszowe czy nie — meta-rozrzutka o rozrzutkach. Pokazuje że strumień jest rekurencyjny.", date: "07.05 20:53" },
+  { id: "r3", type: "rozrzutka", label: "AI dające zadania domowe", text: "Chciałbym żeby AI mi dawało zadania domowe — ale to powinien być inny plik/temat.", date: "07.05 22:17" },
+  { id: "r4", type: "rozrzutka", label: "Brak magazynu na nie-teraz", text: "Nie ma gdzie wrzucić rzeczy które nie pasują do aktualnego problemu ale będą potrzebne kiedyś.", date: "08.05" },
+
+  // PROBLEMY (otwarte dziury)
+  { id: "x1", type: "problem", label: "Jak łapać rozrzutki poza kompem?", text: "Otwarta dziura. Brak rozwiązania.", date: "" },
+  { id: "x2", type: "problem", label: "Jak łamać pat 'wszystko równie ważne'?", text: "Częściowa odpowiedź: 100% ogólnego obrazu najpierw → szczegóły łatwe. Ale jak zbudować ten widok z góry?", date: "" },
+  { id: "x3", type: "problem", label: "Narzędzie do networked thinking?", text: "Jak ogarnąć że wszystko jest ze sobą połączone? Jakie narzędzie?", date: "" },
+];
+
+const links = [
+  // Aksjomaty ↔ Pewniki
+  { source: "a1", target: "p6" }, // stres zaniku ↔ ROI
+  { source: "a2", target: "p2" }, // pętla przewidywania ↔ filtr blokuje
+  { source: "a3", target: "p5" }, // utrata wzorca ↔ przetworzone=martwe
+
+  // Przebłyski ↔ Pewniki
+  { source: "b1", target: "p4" }, // 1 plik nie działa ↔ liniowy nie ogarnie
+  { source: "b2", target: "p1" }, // toną w tekście ↔ szybciej niż łapanie
+  { source: "b3", target: "p4" }, // wszystko połączone ↔ liniowy nie ogarnie
+
+  // Rozrzutki ↔ inne
+  { source: "r1", target: "p5" }, // kompresja ↔ przetworzone=martwe
+  { source: "r4", target: "x1" }, // magazyn ↔ łapanie poza kompem
+
+  // Problemy ↔ inne
+  { source: "x1", target: "p1" }, // łapanie poza kompem ↔ szybciej niż łapanie
+  { source: "x2", target: "a1" }, // pat ↔ stres zaniku
+  { source: "x3", target: "b3" }, // networked thinking ↔ wszystko połączone
+  { source: "x3", target: "p4" }, // networked thinking ↔ liniowy nie ogarnie
+
+  // Cross connections
+  { source: "a2", target: "r3" }, // pętla przewidywania ↔ AI zadania domowe
+  { source: "r2", target: "p1" }, // badator nisz ↔ rozrzutki szybciej
+  { source: "b2", target: "a2" }, // toną w tekście ↔ pętla przewidywania
+];
+
+// ============ GRAPH RENDERING ============
+
+const colors = {
+  aksjomat: "#fb923c",
+  pewnik: "#facc15",
+  przeblysk: "#2dd4bf",
+  rozrzutka: "#a78bfa",
+  problem: "#ef4444"
+};
+
+const sizes = { aksjomat: 22, pewnik: 18, przeblysk: 16, rozrzutka: 12, problem: 14 };
+
+const container = document.getElementById("graph");
+const width = window.innerWidth;
+const height = window.innerHeight - 56;
+
+const svg = d3.select("#graph").append("svg")
+  .attr("width", width).attr("height", height);
+
+// Background gradient
+const defs = svg.append("defs");
+const bgGrad = defs.append("radialGradient").attr("id", "bgGrad")
+  .attr("cx", "50%").attr("cy", "50%").attr("r", "60%");
+bgGrad.append("stop").attr("offset", "0%").attr("stop-color", "#0f0f24");
+bgGrad.append("stop").attr("offset", "100%").attr("stop-color", "#060610");
+svg.append("rect").attr("width", width).attr("height", height).attr("fill", "url(#bgGrad)");
+
+// Glow filter
+const glow = defs.append("filter").attr("id", "glow");
+glow.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "blur");
+const feMerge = glow.append("feMerge");
+feMerge.append("feMergeNode").attr("in", "blur");
+feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+const g = svg.append("g");
+
+// Zoom
+const zoom = d3.zoom().scaleExtent([0.3, 4]).on("zoom", (e) => g.attr("transform", e.transform));
+svg.call(zoom);
+
+// Simulation
+const sim = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(links).id(d => d.id).distance(120))
+  .force("charge", d3.forceManyBody().strength(-400))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collision", d3.forceCollide().radius(d => sizes[d.type] + 20));
+
+// Links
+const link = g.append("g").selectAll("line").data(links).join("line")
+  .attr("class", "link")
+  .attr("stroke", "#334")
+  .attr("stroke-width", 1.5);
+
+// Nodes
+const node = g.append("g").selectAll("g").data(nodes).join("g")
+  .attr("class", "node")
+  .call(d3.drag()
+    .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+    .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+    .on("end", (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+  );
+
+node.append("circle")
+  .attr("r", d => sizes[d.type])
+  .attr("fill", d => colors[d.type])
+  .attr("fill-opacity", 0.15)
+  .attr("stroke", d => colors[d.type])
+  .attr("stroke-width", 2)
+  .attr("filter", "url(#glow)");
+
+node.append("text")
+  .attr("class", "label-type")
+  .attr("text-anchor", "middle")
+  .attr("dy", d => -sizes[d.type] - 8)
+  .text(d => d.type === "przeblysk" ? "[!]" : d.type.toUpperCase());
+
+node.append("text")
+  .attr("class", "label-main")
+  .attr("text-anchor", "middle")
+  .attr("dy", 4)
+  .text(d => d.label.length > 25 ? d.label.slice(0, 25) + "…" : d.label);
+
+// Click → panel
+node.on("click", (e, d) => {
+  e.stopPropagation();
+  showPanel(d);
+});
+
+svg.on("click", () => document.getElementById("panel").classList.remove("open"));
+
+sim.on("tick", () => {
+  link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+// ============ PANEL ============
+
+function showPanel(d) {
+  const panel = document.getElementById("panel");
+  const connected = links
+    .filter(l => l.source.id === d.id || l.target.id === d.id)
+    .map(l => l.source.id === d.id ? l.target : l.source);
+
+  document.getElementById("panel-content").innerHTML = `
+    <div class="panel-type ${d.type}">${d.type === "przeblysk" ? "[!] PRZEBŁYSK" : d.type.toUpperCase()}</div>
+    <div class="panel-title">${d.label}</div>
+    <div class="panel-text">${d.text}</div>
+    <div class="panel-meta">${d.date ? "📅 " + d.date : ""}  •  ID: ${d.id}</div>
+    <div class="panel-connections">
+      <h3>Połączenia (${connected.length})</h3>
+      ${connected.map(c => `
+        <div class="conn-item" onclick="focusNode('${c.id}')">
+          <span style="color:${colors[c.type]}">●</span> ${c.label}
+        </div>
+      `).join("")}
+    </div>
+  `;
+  panel.classList.add("open");
+}
+
+function focusNode(id) {
+  const d = nodes.find(n => n.id === id);
+  if (d) showPanel(d);
+}
+
+document.getElementById("panel-close").onclick = () =>
+  document.getElementById("panel").classList.remove("open");
+
+// ============ QUICK ADD ============
+
+const quickadd = document.getElementById("quickadd");
+let selectedType = "rozrzutka";
+
+document.querySelectorAll(".typebtn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".typebtn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedType = btn.dataset.type;
+  };
+});
+
+function addNode() {
+  const text = quickadd.value.trim();
+  if (!text) return;
+
+  const id = selectedType[0] + (nodes.length + 1);
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+
+  const newNode = {
+    id, type: selectedType, label: text.slice(0, 60),
+    text, date: dateStr,
+    x: width / 2 + (Math.random() - 0.5) * 100,
+    y: height / 2 + (Math.random() - 0.5) * 100
+  };
+
+  nodes.push(newNode);
+  sim.nodes(nodes);
+  sim.alpha(0.5).restart();
+
+  // Re-render
+  const newG = g.select("g:last-of-type").selectAll("g").data(nodes, d => d.id).join(
+    enter => {
+      const ne = enter.append("g").attr("class", "node")
+        .call(d3.drag()
+          .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+          .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+          .on("end", (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+        );
+      ne.append("circle")
+        .attr("r", d => sizes[d.type])
+        .attr("fill", d => colors[d.type]).attr("fill-opacity", 0.15)
+        .attr("stroke", d => colors[d.type]).attr("stroke-width", 2)
+        .attr("filter", "url(#glow)");
+      ne.append("text").attr("class", "label-type").attr("text-anchor", "middle")
+        .attr("dy", d => -sizes[d.type] - 8)
+        .text(d => d.type === "przeblysk" ? "[!]" : d.type.toUpperCase());
+      ne.append("text").attr("class", "label-main").attr("text-anchor", "middle").attr("dy", 4)
+        .text(d => d.label.length > 25 ? d.label.slice(0, 25) + "…" : d.label);
+      ne.on("click", (e, d) => { e.stopPropagation(); showPanel(d); });
+      return ne;
+    }
+  );
+
+  quickadd.value = "";
+  updateStats();
+}
+
+document.getElementById("addbtn").onclick = addNode;
+quickadd.addEventListener("keydown", e => { if (e.key === "Enter") addNode(); });
+
+// Stats
+function updateStats() {
+  const counts = {};
+  nodes.forEach(n => counts[n.type] = (counts[n.type] || 0) + 1);
+  document.getElementById("stats").textContent =
+    `${nodes.length} nodes • ${links.length} connections`;
+}
+updateStats();
+</script>
+</body>
+</html>

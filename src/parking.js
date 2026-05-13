@@ -1,5 +1,5 @@
 import { store } from './store.js';
-import { graph } from './graph.js';
+import { canvas } from './canvas.js';
 
 class Parking {
   constructor() {
@@ -7,15 +7,14 @@ class Parking {
     this.list = document.getElementById('parking-list');
     this.toggleBtn = document.getElementById('parking-toggle');
     this.closeBtn = document.getElementById('close-parking');
-    
+
     this.init();
   }
 
   init() {
     this.toggleBtn.addEventListener('click', () => this.show());
     this.closeBtn.addEventListener('click', () => this.hide());
-    
-    // Close on overlay click
+
     this.view.addEventListener('click', (e) => {
       if (e.target === this.view) this.hide();
     });
@@ -43,11 +42,11 @@ class Parking {
       const item = document.createElement('div');
       item.className = 'parking-item';
       item.style.cssText = `
-        padding: 16px;
+        padding: 14px;
         background: var(--bg-primary);
         border: 1px solid var(--border);
         border-radius: 8px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
@@ -67,7 +66,7 @@ class Parking {
       restoreBtn.addEventListener('click', () => {
         store.restoreNode(node.id);
         this.render();
-        graph.setData({ nodes: store.getNodes(), links: store.getLinks() });
+        canvas.render();
       });
 
       actions.appendChild(restoreBtn);

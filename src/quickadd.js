@@ -1,17 +1,17 @@
 import { store } from './store.js';
-import { graph } from './graph.js';
+import { canvas } from './canvas.js';
+import { CANVAS_CONFIG } from './constants.js';
 
 class QuickAdd {
   constructor() {
     this.input = document.getElementById('quick-add-input');
     this.typeBtns = document.querySelectorAll('#quick-add-types .type-btn');
     this.currentType = 'rozrzutka';
-    
+
     this.init();
   }
 
   init() {
-    // Type selection
     this.typeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         this.typeBtns.forEach(b => b.classList.remove('active'));
@@ -21,14 +21,13 @@ class QuickAdd {
       });
     });
 
-    // Enter to add
     this.input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        e.preventDefault();
         this.submit();
       }
     });
 
-    // Global focus shortcut (already in main.js, but let's keep it robust)
     window.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
@@ -41,7 +40,6 @@ class QuickAdd {
     const text = this.input.value.trim();
     if (!text) return;
 
-    // Logic: if first chars are markers like [!], override type
     let type = this.currentType;
     let title = text;
 
@@ -56,23 +54,22 @@ class QuickAdd {
       title = text.replace(/\[problem\]/i, '').trim();
     }
 
+    // Place new note at viewport center with small random offset
+    const center = canvas.getViewportCenter();
+    const spread = CANVAS_CONFIG.newNoteSpread;
+
     const newNode = store.addNode({
-      title: title,
-      type: type,
-      content: '' // Description can be added later via Edit
+      title,
+      type,
+      content: '',
+      x: center.x - 120 + (Math.random() - 0.5) * spread * 2,
+      y: center.y - 40 + (Math.random() - 0.5) * spread * 2,
     });
 
-    // Update Graph
-    graph.setData({ 
-      nodes: store.getNodes(), 
-      links: store.getLinks() 
-    });
-
-    // Visual feedback
+    canvas.render();
     this.input.value = '';
-    
-    // Optional: focus the new node
-    setTimeout(() => graph.focusNode(newNode.id), 100);
+
+    setTimeout(() => canvas.focusNode(newNode.id), 50);
   }
 }
 
