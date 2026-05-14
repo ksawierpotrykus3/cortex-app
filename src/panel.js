@@ -2,7 +2,6 @@ import { store } from './store.js';
 import { canvas } from './canvas.js';
 import { COLORS } from './constants.js';
 import { vision } from './vision.js';
-import { PLAN_KINDS, getEndpointId } from './schema.js';
 
 class Panel {
   constructor() {
@@ -35,11 +34,11 @@ class Panel {
 
     document.getElementById('edit-node-btn')?.addEventListener('click', () => this.toggleEdit());
     document.getElementById('delete-node-btn')?.addEventListener('click', () => this.handleDelete());
-    document.getElementById('park-node-btn')?.addEventListener('click', () => this.handlePark());
-    document.getElementById('add-link-btn')?.addEventListener('click', () => {
-      canvas.startLinking(false);
-      canvas.linkSourceId = this.currentNodeId;
-      this.hide();
+    document.getElementById('add-link-btn')?.addEventListener('click', () => this.openGlobalLinkPicker());
+    document.getElementById('close-link-picker')?.addEventListener('click', () => this.closeGlobalLinkPicker());
+    document.getElementById('link-picker-search')?.addEventListener('input', () => this.renderGlobalLinkPicker());
+    document.getElementById('link-picker-modal')?.addEventListener('click', (e) => {
+      if (e.target?.id === 'link-picker-modal') this.closeGlobalLinkPicker();
     });
 
     this.projectSelect?.addEventListener('change', () => this.handleProjectChange());
@@ -81,7 +80,8 @@ class Panel {
     this.metaEl.textContent = `Dodano: ${dateStr} · ${projectName} · ${layerName} · ${stageName} · P${node.priority || 1}`;
 
     let imageHtml = '';
-    if (node.image) {
+    const isHidden = node.rawState === 'hidden';
+    if (node.image && !isHidden) {
       imageHtml = `<div class="panel-image-preview">
         <img src="${node.image}" alt="Screenshot" />
       </div>
@@ -97,7 +97,11 @@ class Panel {
     }
 
     const emptyText = node.image ? 'Brak własnej notatki' : 'Brak opisu';
-    this.bodyEl.innerHTML = `${imageHtml}<p id="panel-body-text">${node.content ? escapeHtml(node.content) : `<span style="opacity:0.4">${emptyText}</span>`}</p>`;
+    if (isHidden) {
+      this.bodyEl.innerHTML = '<p id="panel-body-text"><span style="opacity:0.55">Schowane: treść i obraz nie są pokazywane w widoku ani eksporcie AI.</span></p>';
+    } else {
+      this.bodyEl.innerHTML = `${imageHtml}<p id="panel-body-text">${node.content ? escapeHtml(node.content) : `<span style="opacity:0.4">${emptyText}</span>`}</p>`;
+    }
 
     document.getElementById('edit-node-btn').textContent = 'Edytuj';
     this.renderProjectControls(node);
@@ -151,6 +155,51 @@ class Panel {
 
   renderConnections(nodeId) {
     this.connectionsEl.innerHTML = '';
+    const allConnections = store.getAllConnectionsForNode(nodeId);
+    allConnections.forEach(connection => {
+      const li = document.createElement('li');
+      li.className = 'connection-item';
+      if (!connection.isVisible) li.classList.add('external');
+
+      const span = document.createElement('span');
+      span.innerHTML = `${escapeHtml(connection.title || '(bez tytułu)')}<small class="connection-meta">${escapeHtml(connection.projectName || 'Workspace')}</small>`;
+      span.style.color = store.getCategoryColor(connection.type) || COLORS.textSecondary;
+      span.addEventListener('click', () => this.navigateToNode(connection.nodeId));
+
+      const jumpBtn = document.createElement('button');
+      jumpBtn.className = 'connection-jump-btn';
+      jumpBtn.textContent = connection.isVisible ? 'Pokaż' : 'Idź';
+      jumpBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.navigateToNode(connection.nodeId);
+      });
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-link-btn';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.title = 'Usuń połączenie';
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        store.deleteLink(nodeId, connection.nodeId);
+        this.renderConnections(nodeId);
+        canvas.render();
+      });
+
+      li.appendChild(span);
+      li.appendChild(jumpBtn);
+      li.appendChild(removeBtn);
+      this.connectionsEl.appendChild(li);
+    });
+
+    if (allConnections.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'Brak połączeń';
+      li.style.cursor = 'default';
+      li.style.opacity = '0.4';
+      this.connectionsEl.appendChild(li);
+    }
+    return;
+
     const links = store.getVisibleLinks();
     const nodes = store.getVisibleNodes();
 
@@ -199,6 +248,22 @@ class Panel {
     }
   }
 
+  navigateToNode(nodeId) {
+    const node = store.getNodeById(nodeId);
+    if (!node) return;
+    const layerId = node.layerId || 'root';
+    if (layerId !== 'root') {
+      store.setActiveLayerId(layerId);
+    } else {
+      store.setActiveProjectId(node.projectId || 'all');
+    }
+    canvas.render();
+    this.show(node.id);
+    canvas.focusNode(node.id);
+    canvas.highlightNeighborhood(node.id);
+    window.dispatchEvent(new CustomEvent('scope-changed'));
+  }
+
   renderProjectControls(node) {
     if (!this.projectSelect || !this.stageBtn) return;
 
@@ -219,6 +284,34 @@ class Panel {
   }
 
   renderSemanticControls(node) {
+    const config = store.getSemanticConfig();
+    if (this.prioritySelect) {
+      this.prioritySelect.innerHTML = Array.from({ length: 10 }, (_, index) => {
+        const value = index + 1;
+        return `<option value="${value}">Priorytet ${value}</option>`;
+      }).join('');
+      this.prioritySelect.value = String(node.priority || 1);
+    }
+
+    if (this.rawStateSelect) {
+      const rawStates = config.rawStates || {};
+      this.rawStateSelect.innerHTML = ['raw', 'extracted', 'hidden', 'archived']
+        .map(id => `<option value="${id}">${escapeHtml(rawStates[id]?.label || id)}</option>`)
+        .join('');
+      this.rawStateSelect.value = node.rawState || 'raw';
+    }
+
+    if (this.planKindSelect) {
+      const planKinds = config.planKinds || [];
+      this.planKindSelect.innerHTML = `
+        <option value="">Typ planu...</option>
+        ${planKinds.map(kind => `<option value="${kind.id}">${escapeHtml(kind.label || kind.id)}</option>`).join('')}
+      `;
+      this.planKindSelect.value = node.planKind || '';
+      this.planKindSelect.disabled = node.stage !== 'plan';
+    }
+    return;
+
     if (this.prioritySelect) {
       this.prioritySelect.innerHTML = Array.from({ length: 10 }, (_, index) => {
         const value = index + 1;
@@ -256,6 +349,68 @@ class Panel {
       this.renameLayerBtn.disabled = !layer;
       this.renameLayerBtn.textContent = layer?.titleMode === 'bound' ? 'Nadaj własny tytuł warstwy' : 'Zmień tytuł warstwy';
     }
+  }
+
+  openGlobalLinkPicker() {
+    if (!this.currentNodeId) return;
+    const modal = document.getElementById('link-picker-modal');
+    const search = document.getElementById('link-picker-search');
+    if (!modal || !search) return;
+    search.value = '';
+    modal.classList.remove('hidden');
+    this.renderGlobalLinkPicker();
+    setTimeout(() => search.focus(), 0);
+  }
+
+  closeGlobalLinkPicker() {
+    document.getElementById('link-picker-modal')?.classList.add('hidden');
+  }
+
+  renderGlobalLinkPicker() {
+    const results = document.getElementById('link-picker-results');
+    const search = document.getElementById('link-picker-search');
+    if (!results || !this.currentNodeId) return;
+    const query = (search?.value || '').trim().toLowerCase();
+    const sourceId = this.currentNodeId;
+    const existing = new Set(store.getAllConnectionsForNode(sourceId).map(connection => connection.nodeId));
+
+    const nodes = store.getNodes()
+      .filter(node => node.id !== sourceId)
+      .filter(node => {
+        if (!query) return true;
+        const projectName = node.projectId ? store.getProjectById(node.projectId)?.name || '' : 'Workspace';
+        return [node.title, node.content, node.type, projectName].some(value => String(value || '').toLowerCase().includes(query));
+      })
+      .sort((a, b) => String(a.title || a.content || a.id).localeCompare(String(b.title || b.content || b.id)))
+      .slice(0, 80);
+
+    results.innerHTML = '';
+    if (!nodes.length) {
+      const empty = document.createElement('div');
+      empty.className = 'inbox-empty';
+      empty.textContent = 'Brak wyników.';
+      results.appendChild(empty);
+      return;
+    }
+
+    nodes.forEach(node => {
+      const item = document.createElement('button');
+      item.className = 'link-picker-item';
+      item.disabled = existing.has(node.id);
+      const projectName = node.projectId ? store.getProjectById(node.projectId)?.name || node.projectId : 'Workspace';
+      item.innerHTML = `
+        <div class="link-picker-title">${escapeHtml(node.title || node.content || '(bez tytułu)')}</div>
+        <div class="link-picker-meta">${escapeHtml(projectName)} · ${escapeHtml(store.getLayerTitle(node.layerId || 'root'))}${existing.has(node.id) ? ' · już połączone' : ''}</div>
+      `;
+      item.addEventListener('click', () => {
+        if (item.disabled) return;
+        store.addLink(sourceId, node.id);
+        this.closeGlobalLinkPicker();
+        this.show(sourceId);
+        canvas.render();
+      });
+      results.appendChild(item);
+    });
   }
 
   handleProjectChange() {

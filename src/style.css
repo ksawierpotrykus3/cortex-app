@@ -150,6 +150,21 @@ input, textarea {
   color: var(--text-primary);
 }
 
+.inbox-top-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.inbox-top-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ============ CANVAS ============ */
 
 #canvas-container {
@@ -176,6 +191,71 @@ input, textarea {
 
 .note-card-group .note-bg {
   transition: filter 0.15s ease, stroke 0.15s ease;
+}
+
+.selection-rect {
+  fill: rgba(251, 191, 36, 0.12);
+  stroke: var(--selected);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+
+.layer-preview-popover {
+  position: fixed;
+  width: 260px;
+  z-index: 300;
+  pointer-events: none;
+  background: rgba(23, 23, 28, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+  padding: 10px;
+}
+
+.layer-preview-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-preview-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin: 2px 0 8px;
+}
+
+.layer-preview-svg {
+  width: 240px;
+  height: 140px;
+  display: block;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.layer-preview-svg line {
+  stroke: var(--text-muted);
+  stroke-width: 1.4;
+  opacity: 0.7;
+}
+
+.layer-preview-svg rect {
+  fill: var(--surface-hover);
+  stroke: var(--border);
+}
+
+.layer-preview-svg text {
+  fill: var(--text-secondary);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.layer-preview-empty {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 14px 0 4px;
 }
 
 /* ============ HUD ============ */
@@ -682,6 +762,237 @@ input, textarea {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+}
+
+/* ============ INBOX ============ */
+
+.inbox-panel {
+  position: fixed;
+  top: var(--top-bar-h);
+  left: 16px;
+  width: 360px;
+  max-height: calc(100vh - var(--top-bar-h) - 24px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 0 10px 10px;
+  z-index: 160;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.42);
+}
+
+.inbox-panel.hidden {
+  display: none;
+}
+
+.inbox-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.inbox-header button {
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.inbox-list {
+  min-height: 120px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.inbox-message {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 10px;
+  margin-bottom: 8px;
+}
+
+.inbox-message-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.inbox-message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.inbox-delete {
+  color: var(--danger);
+  font-size: 10px;
+}
+
+.inbox-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 18px 6px;
+}
+
+.inbox-compose {
+  border-top: 1px solid var(--border);
+  padding: 12px;
+}
+
+#inbox-input {
+  width: 100%;
+  min-height: 74px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+#inbox-input:focus {
+  border-color: var(--accent);
+}
+
+.inbox-actions {
+  margin-top: 8px;
+}
+
+/* ============ LINK PICKER ============ */
+
+.link-picker-body {
+  padding: 16px;
+}
+
+#link-picker-search {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+#link-picker-search:focus {
+  border-color: var(--accent);
+}
+
+.link-picker-results {
+  margin-top: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.link-picker-item {
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-primary);
+  padding: 9px 10px;
+  color: var(--text-primary);
+}
+
+.link-picker-item:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+}
+
+.link-picker-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.link-picker-meta {
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.connection-item.external {
+  border-style: dashed;
+}
+
+.connection-meta {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.connection-jump-btn {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  margin-right: 6px;
+}
+
+.connection-jump-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ============ SEMANTIC SETTINGS ============ */
+
+.semantic-settings-block {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.semantic-settings-block h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.semantic-field-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.semantic-field-list label,
+.semantic-label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.semantic-field-list input,
+.semantic-textarea {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 7px 8px;
+}
+
+.semantic-textarea {
+  margin-top: 4px;
+  resize: vertical;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.45;
 }
 
 /* ============ HELP ============ */

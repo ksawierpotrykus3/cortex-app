@@ -28,9 +28,17 @@ class Canvas {
     this.draggedNoteId = null;
     this.dragOffsetX = 0;
     this.dragOffsetY = 0;
+    this.dragGroupIds = [];
+    this.dragGroupStartPositions = new Map();
+    this.dragStartWorld = null;
 
     // Selection
     this.selectedIds = new Set();
+    this.isRectSelecting = false;
+    this.selectionStartWorld = null;
+    this.selectionRectEl = null;
+    this._suppressNextBackgroundClick = false;
+    this._layerPreviewEl = null;
 
     // Linking
     this.isLinking = false;
@@ -75,6 +83,10 @@ class Canvas {
     this.drawingLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     this.drawingLayer.setAttribute('id', 'drawing-layer');
     this.mainGroup.appendChild(this.drawingLayer);
+
+    this.selectionLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    this.selectionLayer.setAttribute('id', 'selection-layer');
+    this.mainGroup.appendChild(this.selectionLayer);
 
     this.noteLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     this.noteLayer.setAttribute('id', 'note-layer');
@@ -165,6 +177,13 @@ class Canvas {
         if (!node) return;
         this.draggedNoteId = id;
         const worldPos = this._screenToWorld(e.clientX, e.clientY);
+        this.dragStartWorld = worldPos;
+        this.dragGroupIds = this.selectedIds.has(id) ? [...this.selectedIds] : [id];
+        this.dragGroupStartPositions.clear();
+        this.dragGroupIds.forEach(groupId => {
+          const groupNode = store.getNodeById(groupId);
+          if (groupNode) this.dragGroupStartPositions.set(groupId, { x: groupNode.x, y: groupNode.y });
+        });
         this.dragOffsetX = worldPos.x - node.x;
         this.dragOffsetY = worldPos.y - node.y;
         this.svg.style.cursor = 'grabbing';
@@ -172,6 +191,10 @@ class Canvas {
         this._dragMoved = false;
       } else if (target === this.svg || target === this.mainGroup || target.closest('#grid-layer') || target.closest('#link-layer') || target.closest('#drawing-layer')) {
         if (this.isLinking) return;
+        if (e.shiftKey) {
+          this._startRectSelection(e);
+          return;
+        }
         this.isPanning = true;
         this.panStartX = e.clientX - this.offsetX;
         this.panStartY = e.clientY - this.offsetY;
@@ -190,14 +213,30 @@ class Canvas {
         this.offsetX = e.clientX - this.panStartX;
         this.offsetY = e.clientY - this.panStartY;
         this._updateTransform();
+      } else if (this.isRectSelecting) {
+        this._updateRectSelection(e);
       } else if (this.draggedNoteId) {
         this._dragMoved = true;
         const worldPos = this._screenToWorld(e.clientX, e.clientY);
-        const nx = worldPos.x - this.dragOffsetX;
-        const ny = worldPos.y - this.dragOffsetY;
-        store.updateNodePosition(this.draggedNoteId, nx, ny);
-        this._moveNote(this.draggedNoteId, nx, ny);
-        this._updateLinksForNode(this.draggedNoteId);
+        if (this.dragGroupIds.length > 1 && this.dragStartWorld) {
+          const dx = worldPos.x - this.dragStartWorld.x;
+          const dy = worldPos.y - this.dragStartWorld.y;
+          this.dragGroupIds.forEach(id => {
+            const start = this.dragGroupStartPositions.get(id);
+            if (!start) return;
+            const nx = start.x + dx;
+            const ny = start.y + dy;
+            store.updateNodePosition(id, nx, ny);
+            this._moveNote(id, nx, ny);
+            this._updateLinksForNode(id);
+          });
+        } else {
+          const nx = worldPos.x - this.dragOffsetX;
+          const ny = worldPos.y - this.dragOffsetY;
+          store.updateNodePosition(this.draggedNoteId, nx, ny);
+          this._moveNote(this.draggedNoteId, nx, ny);
+          this._updateLinksForNode(this.draggedNoteId);
+        }
       }
 
       if (this.isLinking && this.linkSourceId) {
@@ -223,6 +262,9 @@ class Canvas {
       if (this.isPanning) {
         this.isPanning = false;
         this.svg.style.cursor = this._getCursor();
+      } else if (this.isRectSelecting) {
+        this._finishRectSelection();
+        this.svg.style.cursor = this._getCursor();
       } else if (this.draggedNoteId) {
         const wasClick = !this._dragMoved && (Date.now() - this._dragStartTime) < 250;
         if (wasClick) {
@@ -233,12 +275,19 @@ class Canvas {
           }
         }
         this.draggedNoteId = null;
+        this.dragGroupIds = [];
+        this.dragGroupStartPositions.clear();
+        this.dragStartWorld = null;
         this.svg.style.cursor = this._getCursor();
       }
     });
 
     // Click on empty space
     this.svg.addEventListener('click', (e) => {
+      if (this._suppressNextBackgroundClick) {
+        this._suppressNextBackgroundClick = false;
+        return;
+      }
       const target = e.target;
       if (target === this.svg || target.closest('#grid-layer')) {
         if (this.onBackgroundClickCallback) this.onBackgroundClickCallback();
@@ -304,6 +353,54 @@ class Canvas {
       }
     });
   }
+
+  _startRectSelection(e) {
+    const worldPos = this._screenToWorld(e.clientX, e.clientY);
+    this.isRectSelecting = true;
+    this.selectionStartWorld = worldPos;
+    this._suppressNextBackgroundClick = true;
+    this.selectionLayer.innerHTML = '';
+
+    this.selectionRectEl = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    this.selectionRectEl.classList.add('selection-rect');
+    this.selectionRectEl.setAttribute('x', worldPos.x);
+    this.selectionRectEl.setAttribute('y', worldPos.y);
+    this.selectionRectEl.setAttribute('width', '0');
+    this.selectionRectEl.setAttribute('height', '0');
+    this.selectionRectEl.style.pointerEvents = 'none';
+    this.selectionLayer.appendChild(this.selectionRectEl);
+    this.svg.style.cursor = 'crosshair';
+  }
+
+  _updateRectSelection(e) {
+    if (!this.selectionRectEl || !this.selectionStartWorld) return;
+    const current = this._screenToWorld(e.clientX, e.clientY);
+    const rect = normalizeRect(this.selectionStartWorld, current);
+    this.selectionRectEl.setAttribute('x', rect.left);
+    this.selectionRectEl.setAttribute('y', rect.top);
+    this.selectionRectEl.setAttribute('width', rect.right - rect.left);
+    this.selectionRectEl.setAttribute('height', rect.bottom - rect.top);
+  }
+
+  _finishRectSelection() {
+    if (!this.selectionStartWorld) return;
+    const x = Number(this.selectionRectEl?.getAttribute('x')) || this.selectionStartWorld.x;
+    const y = Number(this.selectionRectEl?.getAttribute('y')) || this.selectionStartWorld.y;
+    const width = Number(this.selectionRectEl?.getAttribute('width')) || 0;
+    const height = Number(this.selectionRectEl?.getAttribute('height')) || 0;
+    const selected = width < 4 && height < 4
+      ? []
+      : store.selectNodesInRect({ left: x, top: y, right: x + width, bottom: y + height });
+
+    this.isRectSelecting = false;
+    this.selectionStartWorld = null;
+    this.selectionLayer.innerHTML = '';
+    this.selectionRectEl = null;
+    this.selectedIds = new Set(selected);
+    this.render();
+    this._emitSelectionChanged();
+  }
+
   // --- Mode Helpers ---
 
   _getCursor() {
@@ -346,6 +443,10 @@ class Canvas {
     // Calculate expanded heights for each node
     const expandedHeights = new Map();
     nodes.forEach(n => {
+      if (n.rawState === 'hidden') {
+        expandedHeights.set(n.id, 38);
+        return;
+      }
       const lines = (n.content || '').split('\n');
       let totalLines = 0;
       lines.forEach(line => {
@@ -443,10 +544,18 @@ class Canvas {
   }
 
   _renderNoteExpanded(node, h) {
+    const isHidden = node.rawState === 'hidden';
+    const isArchived = node.rawState === 'archived';
+    const cardHeight = isHidden ? 38 : h;
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.classList.add('note-card-group');
+    if (isHidden) g.classList.add('is-hidden');
+    if (isArchived) g.classList.add('is-archived');
     g.dataset.id = node.id;
+    g.dataset.hidden = String(isHidden);
+    g.dataset.baseHeight = String(cardHeight);
     g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+    g.style.opacity = this._nodeVisualOpacity(node);
 
     const color = store.getCategoryColor(node.type);
     const w = NOTE_CONFIG.width;
@@ -455,7 +564,7 @@ class Canvas {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.classList.add('note-bg');
     rect.setAttribute('width', w);
-    rect.setAttribute('height', h);
+    rect.setAttribute('height', cardHeight);
     rect.setAttribute('rx', NOTE_CONFIG.borderRadius);
     rect.setAttribute('ry', NOTE_CONFIG.borderRadius);
     rect.setAttribute('fill', COLORS.surface);
@@ -468,7 +577,7 @@ class Canvas {
     bar.setAttribute('x', '0');
     bar.setAttribute('y', '0');
     bar.setAttribute('width', NOTE_CONFIG.accentBarWidth);
-    bar.setAttribute('height', h);
+    bar.setAttribute('height', cardHeight);
     bar.setAttribute('rx', '0');
     bar.setAttribute('fill', color);
     const clipId = `clip-exp-${node.id}`;
@@ -476,7 +585,7 @@ class Canvas {
     clipPath.setAttribute('id', clipId);
     const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     clipRect.setAttribute('width', w);
-    clipRect.setAttribute('height', h);
+    clipRect.setAttribute('height', cardHeight);
     clipRect.setAttribute('rx', NOTE_CONFIG.borderRadius);
     clipPath.appendChild(clipRect);
     g.appendChild(clipPath);
@@ -507,19 +616,7 @@ class Canvas {
     priorityLabel.textContent = `P${node.priority || 1}`;
     g.appendChild(priorityLabel);
 
-    if (store.getLayers().some(layer => layer.originNodeId === node.id)) {
-      const layerMark = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      layerMark.setAttribute('x', w - NOTE_CONFIG.padding);
-      layerMark.setAttribute('y', h - 10);
-      layerMark.setAttribute('fill', COLORS.accent);
-      layerMark.setAttribute('font-size', '12');
-      layerMark.setAttribute('font-weight', '700');
-      layerMark.setAttribute('text-anchor', 'end');
-      layerMark.style.pointerEvents = 'none';
-      layerMark.style.userSelect = 'none';
-      layerMark.textContent = 'L';
-      g.appendChild(layerMark);
-    }
+    this._appendLayerBadge(g, node, w, cardHeight);
 
     if (node.stage === 'plan') {
       const stageLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -539,7 +636,7 @@ class Canvas {
     // Title
     const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     title.setAttribute('x', NOTE_CONFIG.padding + NOTE_CONFIG.accentBarWidth);
-    title.setAttribute('y', '34');
+    title.setAttribute('y', isHidden ? '25' : '34');
     title.setAttribute('fill', COLORS.textPrimary);
     title.setAttribute('font-size', NOTE_CONFIG.titleFontSize);
     title.setAttribute('font-weight', '600');
@@ -549,7 +646,7 @@ class Canvas {
     g.appendChild(title);
 
     // Full content (no truncation)
-    if (node.content) {
+    if (node.content && !isHidden) {
       const allLines = node.content.split('\n');
       let yOffset = 52;
       allLines.forEach(rawLine => {
@@ -674,14 +771,21 @@ class Canvas {
 
   _renderNote(node) {
     const s = node.cardScale || 1;
+    const isHidden = node.rawState === 'hidden';
+    const isArchived = node.rawState === 'archived';
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.classList.add('note-card-group');
+    if (isHidden) g.classList.add('is-hidden');
+    if (isArchived) g.classList.add('is-archived');
     g.dataset.id = node.id;
+    g.dataset.hidden = String(isHidden);
     g.setAttribute('transform', `translate(${node.x}, ${node.y}) scale(${s})`);
+    g.style.opacity = this._nodeVisualOpacity(node);
 
     const color = store.getCategoryColor(node.type);
     const w = NOTE_CONFIG.width;
-    const h = NOTE_CONFIG.minHeight;
+    const h = isHidden ? 38 : NOTE_CONFIG.minHeight;
+    g.dataset.baseHeight = String(h);
 
     // Card background
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -744,29 +848,17 @@ class Canvas {
     priorityLabel.textContent = node.stage === 'plan' ? `PLAN P${node.priority || 1}` : `P${node.priority || 1}`;
     g.appendChild(priorityLabel);
 
-    if (store.getLayers().some(layer => layer.originNodeId === node.id)) {
-      const layerMark = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      layerMark.setAttribute('x', w - NOTE_CONFIG.padding);
-      layerMark.setAttribute('y', h - 10);
-      layerMark.setAttribute('fill', COLORS.accent);
-      layerMark.setAttribute('font-size', '12');
-      layerMark.setAttribute('font-weight', '700');
-      layerMark.setAttribute('text-anchor', 'end');
-      layerMark.style.pointerEvents = 'none';
-      layerMark.style.userSelect = 'none';
-      layerMark.textContent = 'L';
-      g.appendChild(layerMark);
-    }
+    this._appendLayerBadge(g, node, w, h);
 
     // Title + Content layout
     const hasTitle = node.title && node.title.trim().length > 0;
-    let contentStartY = 54;
+    let contentStartY = isHidden ? 0 : 54;
 
     if (hasTitle) {
       const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       title.classList.add('note-title');
       title.setAttribute('x', NOTE_CONFIG.padding + NOTE_CONFIG.accentBarWidth);
-      title.setAttribute('y', '36');
+      title.setAttribute('y', isHidden ? '25' : '36');
       title.setAttribute('fill', COLORS.textPrimary);
       title.setAttribute('font-size', NOTE_CONFIG.titleFontSize);
       title.setAttribute('font-weight', '600');
@@ -777,11 +869,11 @@ class Canvas {
       g.appendChild(title);
     } else {
       // No title — content takes title's position
-      contentStartY = 34;
+      contentStartY = isHidden ? 0 : 34;
     }
 
     // Content preview (truncated, 2-3 lines)
-    if (node.content) {
+    if (node.content && !isHidden) {
       const maxLines = hasTitle ? 2 : 3;
       const contentLines = node.content.split('\n').slice(0, maxLines);
       contentLines.forEach((line, i) => {
@@ -823,11 +915,18 @@ class Canvas {
   /** Render a screenshot note card — 1:1 image size */
   _renderScreenshotNote(node) {
     const s = node.cardScale || 1;
+    if (node.rawState === 'hidden') {
+      this._renderHiddenScreenshotNote(node, s);
+      return;
+    }
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.classList.add('note-card-group', 'screenshot-card');
+    if (node.rawState === 'archived') g.classList.add('is-archived');
     g.dataset.id = node.id;
+    g.dataset.hidden = 'false';
     g.setAttribute('transform', `translate(${node.x}, ${node.y}) scale(${s})`);
     g.style.filter = 'drop-shadow(0 6px 12px rgba(0,0,0,0.35))';
+    g.style.opacity = this._nodeVisualOpacity(node);
 
     const color = store.getCategoryColor(node.type);
     const imgW = node.imageWidth || 400;
@@ -871,7 +970,172 @@ class Canvas {
       rect.setAttribute('stroke-width', '3');
     }
 
+    this._appendLayerBadge(g, node, imgW, imgH);
     this.noteLayer.appendChild(g);
+  }
+
+  _renderHiddenScreenshotNote(node, scale) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.classList.add('note-card-group', 'screenshot-card', 'is-hidden');
+    g.dataset.id = node.id;
+    g.dataset.hidden = 'true';
+    g.dataset.baseHeight = '38';
+    g.setAttribute('transform', `translate(${node.x}, ${node.y}) scale(${scale})`);
+
+    const color = store.getCategoryColor(node.type);
+    const w = NOTE_CONFIG.width;
+    const h = 38;
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.classList.add('note-bg');
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('rx', NOTE_CONFIG.borderRadius);
+    rect.setAttribute('ry', NOTE_CONFIG.borderRadius);
+    rect.setAttribute('fill', COLORS.surface);
+    rect.setAttribute('stroke', this.selectedIds.has(node.id) ? '#fbbf24' : COLORS.border);
+    rect.setAttribute('stroke-width', this.selectedIds.has(node.id) ? '2.5' : '1');
+    g.appendChild(rect);
+
+    const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bar.classList.add('note-accent-bar');
+    bar.setAttribute('width', NOTE_CONFIG.accentBarWidth);
+    bar.setAttribute('height', h);
+    bar.setAttribute('fill', color);
+    g.appendChild(bar);
+
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    title.classList.add('note-title');
+    title.setAttribute('x', NOTE_CONFIG.padding + NOTE_CONFIG.accentBarWidth);
+    title.setAttribute('y', '25');
+    title.setAttribute('fill', COLORS.textPrimary);
+    title.setAttribute('font-size', NOTE_CONFIG.titleFontSize);
+    title.setAttribute('font-weight', '600');
+    title.style.pointerEvents = 'none';
+    title.style.userSelect = 'none';
+    title.textContent = node.title || 'Schowany screen';
+    g.appendChild(title);
+
+    const state = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    state.setAttribute('x', w - NOTE_CONFIG.padding);
+    state.setAttribute('y', '25');
+    state.setAttribute('fill', COLORS.textMuted);
+    state.setAttribute('font-size', '9');
+    state.setAttribute('font-weight', '700');
+    state.setAttribute('text-anchor', 'end');
+    state.style.pointerEvents = 'none';
+    state.style.userSelect = 'none';
+    state.textContent = 'SCHOWANE';
+    g.appendChild(state);
+
+    this._appendLayerBadge(g, node, w, h);
+    this.noteLayer.appendChild(g);
+  }
+
+  _appendLayerBadge(group, node, width, height) {
+    const preview = store.getLayerPreview(node.id);
+    if (!preview) return;
+
+    const count = preview.counts.items;
+    const badgeWidth = count > 99 ? 36 : 30;
+    const x = Math.max(8, width - badgeWidth - 8);
+    const y = Math.max(8, height - 24);
+
+    const badge = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    badge.classList.add('layer-badge');
+    badge.setAttribute('x', x);
+    badge.setAttribute('y', y);
+    badge.setAttribute('width', badgeWidth);
+    badge.setAttribute('height', '18');
+    badge.setAttribute('rx', '5');
+    badge.setAttribute('fill', 'rgba(79, 70, 229, 0.9)');
+    badge.style.pointerEvents = 'none';
+    group.appendChild(badge);
+
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.classList.add('layer-badge-label');
+    label.setAttribute('x', x + badgeWidth / 2);
+    label.setAttribute('y', y + 13);
+    label.setAttribute('fill', '#ffffff');
+    label.setAttribute('font-size', '10');
+    label.setAttribute('font-weight', '700');
+    label.setAttribute('text-anchor', 'middle');
+    label.style.pointerEvents = 'none';
+    label.style.userSelect = 'none';
+    label.textContent = `Z${count}`;
+    group.appendChild(label);
+
+    group.addEventListener('mouseenter', (event) => this._showLayerPreview(node.id, event));
+    group.addEventListener('mousemove', (event) => this._positionLayerPreview(event));
+    group.addEventListener('mouseleave', () => this._hideLayerPreview());
+  }
+
+  _showLayerPreview(nodeId, event) {
+    const preview = store.getLayerPreview(nodeId);
+    if (!preview) return;
+    if (!this._layerPreviewEl) {
+      this._layerPreviewEl = document.createElement('div');
+      this._layerPreviewEl.className = 'layer-preview-popover';
+      document.body.appendChild(this._layerPreviewEl);
+    }
+
+    this._layerPreviewEl.innerHTML = `
+      <div class="layer-preview-title">${escapeHtml(preview.title)}</div>
+      <div class="layer-preview-meta">${preview.counts.items} elementow · ${preview.counts.connections} polaczen</div>
+      ${this._renderLayerPreviewSvg(preview)}
+    `;
+    this._positionLayerPreview(event);
+  }
+
+  _renderLayerPreviewSvg(preview) {
+    if (!preview.items.length) return '<div class="layer-preview-empty">Pusta warstwa</div>';
+    const bounds = preview.items.reduce((acc, item) => ({
+      left: Math.min(acc.left, item.x),
+      top: Math.min(acc.top, item.y),
+      right: Math.max(acc.right, item.x + 80),
+      bottom: Math.max(acc.bottom, item.y + 36),
+    }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+    const width = Math.max(1, bounds.right - bounds.left);
+    const height = Math.max(1, bounds.bottom - bounds.top);
+    const scale = Math.min(1, 220 / width, 120 / height);
+    const offsetX = 10 - bounds.left * scale;
+    const offsetY = 10 - bounds.top * scale;
+    const byId = new Map(preview.items.map(item => [item.id, item]));
+    const lines = preview.connections.map(connection => {
+      const source = byId.get(connection.source);
+      const target = byId.get(connection.target);
+      if (!source || !target) return '';
+      const x1 = source.x * scale + offsetX + 40 * scale;
+      const y1 = source.y * scale + offsetY + 18 * scale;
+      const x2 = target.x * scale + offsetX + 40 * scale;
+      const y2 = target.y * scale + offsetY + 18 * scale;
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" />`;
+    }).join('');
+    const notes = preview.items.slice(0, 20).map(item => {
+      const x = item.x * scale + offsetX;
+      const y = item.y * scale + offsetY;
+      const label = escapeHtml((item.title || item.id).slice(0, 18));
+      return `<g><rect x="${x}" y="${y}" width="${80 * scale}" height="${36 * scale}" rx="4" /><text x="${x + 6}" y="${y + 16}" font-size="9">${label}</text></g>`;
+    }).join('');
+    return `<svg class="layer-preview-svg" viewBox="0 0 240 140" aria-hidden="true">${lines}${notes}</svg>`;
+  }
+
+  _positionLayerPreview(event) {
+    if (!this._layerPreviewEl) return;
+    const rect = this._layerPreviewEl.getBoundingClientRect();
+    const left = Math.min(window.innerWidth - rect.width - 12, event.clientX + 14);
+    const top = Math.min(window.innerHeight - rect.height - 12, event.clientY + 14);
+    this._layerPreviewEl.style.left = `${Math.max(12, left)}px`;
+    this._layerPreviewEl.style.top = `${Math.max(12, top)}px`;
+  }
+
+  _hideLayerPreview() {
+    if (this._layerPreviewEl) this._layerPreviewEl.remove();
+    this._layerPreviewEl = null;
+  }
+
+  _nodeVisualOpacity(node) {
+    return node.rawState === 'archived' ? '0.55' : '1';
   }
 
   /** After card resize, push overlapping cards apart */
@@ -964,6 +1228,8 @@ class Canvas {
       const title = g.querySelector('.note-title');
       const contents = g.querySelectorAll('.note-content');
       const dot = g.querySelector('.note-dot');
+      const baseHeight = Number(g.dataset.baseHeight) || NOTE_CONFIG.minHeight;
+      const titleY = g.dataset.hidden === 'true' ? '25' : '36';
 
       if (this.scale < CANVAS_CONFIG.zoomSemanticDot) {
         // Dot mode — just colored circle
@@ -983,10 +1249,10 @@ class Canvas {
         if (dot) dot.setAttribute('opacity', '0');
       } else {
         // Full mode
-        if (bg) { bg.setAttribute('opacity', '1'); bg.setAttribute('height', NOTE_CONFIG.minHeight); }
-        if (bar) { bar.setAttribute('opacity', '1'); bar.setAttribute('height', NOTE_CONFIG.minHeight); }
+        if (bg) { bg.setAttribute('opacity', '1'); bg.setAttribute('height', baseHeight); }
+        if (bar) { bar.setAttribute('opacity', '1'); bar.setAttribute('height', baseHeight); }
         if (typeLabel) typeLabel.setAttribute('opacity', '1');
-        if (title) { title.setAttribute('opacity', '1'); title.setAttribute('y', '36'); }
+        if (title) { title.setAttribute('opacity', '1'); title.setAttribute('y', titleY); }
         contents.forEach(c => c.setAttribute('opacity', '1'));
         if (dot) dot.setAttribute('opacity', '0');
       }
@@ -1052,18 +1318,23 @@ class Canvas {
       this.selectedIds.add(id);
     }
     this.render();
-    window.dispatchEvent(new CustomEvent('selection-changed', {
-      detail: { selectedIds: [...this.selectedIds] }
-    }));
+    this._emitSelectionChanged();
   }
 
   clearSelection() {
     this.selectedIds.clear();
     this.render();
+    this._emitSelectionChanged();
   }
 
   getSelectedIds() {
     return [...this.selectedIds];
+  }
+
+  _emitSelectionChanged() {
+    window.dispatchEvent(new CustomEvent('selection-changed', {
+      detail: { selectedIds: [...this.selectedIds] }
+    }));
   }
 
   // --- Highlight ---
@@ -1079,7 +1350,8 @@ class Canvas {
     });
 
     this.noteLayer.querySelectorAll('.note-card-group').forEach(g => {
-      g.style.opacity = connectedIds.has(g.dataset.id) ? '1' : '0.15';
+      const node = store.getNodeById(g.dataset.id);
+      g.style.opacity = connectedIds.has(g.dataset.id) ? this._nodeVisualOpacity(node || {}) : '0.15';
     });
 
     this.linkLayer.querySelectorAll('.canvas-link').forEach(line => {
@@ -1092,7 +1364,8 @@ class Canvas {
 
   clearHighlight() {
     this.noteLayer.querySelectorAll('.note-card-group').forEach(g => {
-      g.style.opacity = '1';
+      const node = store.getNodeById(g.dataset.id);
+      g.style.opacity = this._nodeVisualOpacity(node || {});
     });
     this.linkLayer.querySelectorAll('.canvas-link').forEach(line => {
       line.setAttribute('stroke', COLORS.border);
@@ -1129,6 +1402,23 @@ class Canvas {
   onNoteDblClick(cb) { this.onNoteDblClickCallback = cb; }
   onBackgroundClick(cb) { this.onBackgroundClickCallback = cb; }
   onBackgroundDblClick(cb) { this.onBackgroundDblClickCallback = cb; }
+}
+
+function normalizeRect(start, end) {
+  return {
+    left: Math.min(start.x, end.x),
+    top: Math.min(start.y, end.y),
+    right: Math.max(start.x, end.x),
+    bottom: Math.max(start.y, end.y),
+  };
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 export const canvas = new Canvas('canvas-container');

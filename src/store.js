@@ -56,6 +56,8 @@ export class Store {
   getNodes() { return this.state.nodes; }
   getLinks() { return this.state.links; }
   getParking() { return this.state.parking; }
+  getInboxMessages() { return this.state.inboxMessages || []; }
+  getSemanticConfig() { return this.state.semanticConfig || {}; }
   getProjects() { return this.state.projects || []; }
   getLayers() { return this.state.layers || []; }
   getActiveProjectId() { return this.state.activeProjectId || 'all'; }
@@ -76,6 +78,32 @@ export class Store {
       const target = getEndpointId(link.target);
       return visibleIds.has(source) && visibleIds.has(target);
     });
+  }
+
+  getAllConnectionsForNode(nodeId) {
+    const node = this.getNodeById(nodeId);
+    if (!node) return [];
+
+    return this.state.links
+      .map(link => {
+        const source = getEndpointId(link.source);
+        const target = getEndpointId(link.target);
+        if (source !== nodeId && target !== nodeId) return null;
+        const otherId = source === nodeId ? target : source;
+        const otherNode = this.getNodeById(otherId);
+        if (!otherNode) return null;
+        const project = otherNode.projectId ? this.getProjectById(otherNode.projectId) : null;
+        return {
+          nodeId: otherNode.id,
+          title: otherNode.title || otherNode.content || otherNode.id,
+          type: otherNode.type,
+          projectId: otherNode.projectId || null,
+          projectName: project?.name || (otherNode.projectId ? otherNode.projectId : 'Workspace'),
+          layerId: otherNode.layerId || ROOT_LAYER_ID,
+          isVisible: nodeMatchesView(otherNode, this.state),
+        };
+      })
+      .filter(Boolean);
   }
 
   getStrokes() { return this.state.strokes || []; }
@@ -257,6 +285,89 @@ export class Store {
     this.save();
   }
 
+  addInboxMessage(text) {
+    const clean = cleanText(text);
+    if (!clean) return null;
+    const now = new Date().toISOString();
+    const message = {
+      id: uuid(),
+      text: clean,
+      createdAt: now,
+    };
+    if (!this.state.inboxMessages) this.state.inboxMessages = [];
+    this.state.inboxMessages.push(message);
+    this.save();
+    return message;
+  }
+
+  deleteInboxMessage(id) {
+    const before = this.getInboxMessages().length;
+    this.state.inboxMessages = this.getInboxMessages().filter(message => message.id !== id);
+    if (this.state.inboxMessages.length === before) return false;
+    this.save();
+    return true;
+  }
+
+  copyInboxContext(options = {}) {
+    const messages = options.onlyUncopied
+      ? this.getInboxMessages().filter(message => !message.copiedAt)
+      : this.getInboxMessages();
+    const payload = {
+      schema: 'cortex.inbox.v1',
+      purpose: 'Szybki inbox Cortex: surowe mysli do przetworzenia przez AI albo uzytkownika.',
+      messages: messages.map(message => ({
+        id: message.id,
+        text: message.text,
+        createdAt: message.createdAt,
+      })),
+    };
+
+    if (options.markCopied && messages.length) {
+      const copiedAt = new Date().toISOString();
+      const ids = new Set(messages.map(message => message.id));
+      this.state.inboxMessages = this.getInboxMessages().map(message => (
+        ids.has(message.id) ? { ...message, copiedAt } : message
+      ));
+      this.save();
+    }
+
+    return [
+      'CORTEX_INBOX_CONTEXT',
+      'Traktuj te wpisy jako szybkie, surowe notatki z zakladki. Nie sa jeszcze planem.',
+      JSON.stringify(payload, null, 2),
+    ].join('\n\n');
+  }
+
+  selectNodesInRect(rect) {
+    const left = Math.min(Number(rect?.left) || 0, Number(rect?.right) || 0);
+    const right = Math.max(Number(rect?.left) || 0, Number(rect?.right) || 0);
+    const top = Math.min(Number(rect?.top) || 0, Number(rect?.bottom) || 0);
+    const bottom = Math.max(Number(rect?.top) || 0, Number(rect?.bottom) || 0);
+    return this.getVisibleNodes()
+      .filter(node => rectsIntersect(getNodeBounds(node), { left, top, right, bottom }))
+      .map(node => node.id);
+  }
+
+  moveNodesBy(nodeIds, dx, dy) {
+    const ids = new Set(Array.isArray(nodeIds) ? nodeIds : []);
+    if (!ids.size) return [];
+    const deltaX = Number(dx) || 0;
+    const deltaY = Number(dy) || 0;
+    const now = new Date().toISOString();
+    const moved = [];
+
+    this.state.nodes.forEach(node => {
+      if (!ids.has(node.id)) return;
+      node.x = (Number(node.x) || 0) + deltaX;
+      node.y = (Number(node.y) || 0) + deltaY;
+      node.updatedAt = now;
+      moved.push(node.id);
+    });
+
+    if (moved.length) this.save();
+    return moved;
+  }
+
   parkNode(id) {
     if (!this.state.parking) this.state.parking = [];
     const node = this.state.nodes.find(item => item.id === id);
@@ -392,7 +503,9 @@ export class Store {
 
   setNodeStage(nodeId, stage, planKind = '') {
     const nextStage = stage === 'plan' ? 'plan' : 'robocze';
-    const nextKind = nextStage === 'plan' && PLAN_KINDS.includes(planKind) ? planKind : '';
+    const planKindIds = new Set((this.state.semanticConfig?.planKinds || []).map(kind => kind.id));
+    PLAN_KINDS.forEach(kind => planKindIds.add(kind));
+    const nextKind = nextStage === 'plan' && planKindIds.has(planKind) ? planKind : '';
     return this.updateNode(nodeId, { stage: nextStage, planKind: nextKind });
   }
 
@@ -403,6 +516,25 @@ export class Store {
   setNodeRawState(nodeId, rawState) {
     const allowed = ['raw', 'extracted', 'hidden', 'archived'];
     return this.updateNode(nodeId, { rawState: allowed.includes(rawState) ? rawState : 'raw' });
+  }
+
+  updateSemanticConfig(config = {}) {
+    const current = this.state.semanticConfig || {};
+    this.state.semanticConfig = {
+      ...current,
+      ...config,
+      rawStates: {
+        ...(current.rawStates || {}),
+        ...(config.rawStates || {}),
+      },
+      stages: {
+        ...(current.stages || {}),
+        ...(config.stages || {}),
+      },
+      planKinds: Array.isArray(config.planKinds) ? config.planKinds : current.planKinds,
+    };
+    this.save();
+    return this.state.semanticConfig;
   }
 
   createLayerFromNode(nodeId) {
@@ -447,6 +579,45 @@ export class Store {
 
   getActiveLayerPath() {
     return buildLayerPath(this.getActiveLayerId(), this.state);
+  }
+
+  getLayerPreview(originNodeIdOrLayerId) {
+    const layer = this.getLayerById(originNodeIdOrLayerId) ||
+      this.getLayers().find(item => item.originNodeId === originNodeIdOrLayerId);
+    if (!layer) return null;
+
+    const items = this.state.nodes
+      .filter(node => (node.layerId || ROOT_LAYER_ID) === layer.id)
+      .sort((a, b) => (a.y ?? 0) - (b.y ?? 0) || (a.x ?? 0) - (b.x ?? 0))
+      .map(node => ({
+        id: node.id,
+        title: node.title || node.content || node.id,
+        type: node.type,
+        rawState: node.rawState || 'raw',
+        x: Number(node.x) || 0,
+        y: Number(node.y) || 0,
+      }));
+
+    const itemIds = new Set(items.map(item => item.id));
+    const connections = this.state.links
+      .map(link => {
+        const source = getEndpointId(link.source);
+        const target = getEndpointId(link.target);
+        return itemIds.has(source) && itemIds.has(target) ? { source, target } : null;
+      })
+      .filter(Boolean);
+
+    return {
+      layerId: layer.id,
+      title: resolveLayerTitle(layer, this.state),
+      originNodeId: layer.originNodeId || null,
+      counts: {
+        items: items.length,
+        connections: connections.length,
+      },
+      items,
+      connections,
+    };
   }
 
   renameLayer(id, title) {
@@ -608,6 +779,39 @@ function normalizeProjectValue(projectId) {
 function clampPriority(value) {
   const number = Number.parseInt(value, 10);
   return Number.isFinite(number) ? Math.max(1, Math.min(10, number)) : 1;
+}
+
+function cleanText(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map(line => line.replace(/[ \t]+$/g, ''))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function getNodeBounds(node) {
+  const scale = Number.isFinite(Number(node.cardScale)) ? Number(node.cardScale) : 1;
+  const isScreen = Boolean(node.image || node.imageDescription || node.imageWidth || node.imageHeight);
+  const width = isScreen ? (Number(node.imageWidth) || 400) * scale : 240 * scale;
+  let height = isScreen ? (Number(node.imageHeight) || 300) * scale : 80 * scale;
+  if (node.rawState === 'hidden') height = Math.min(height, 38);
+
+  const left = Number(node.x) || 0;
+  const top = Number(node.y) || 0;
+  return {
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+  };
+}
+
+function rectsIntersect(a, b) {
+  return a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top;
 }
 
 function uuid() {

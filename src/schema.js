@@ -24,6 +24,30 @@ export function defaultCategories() {
   ];
 }
 
+export function defaultSemanticConfig() {
+  return {
+    rawStates: {
+      raw: { label: 'Surowe' },
+      extracted: { label: 'Wyciągnięte' },
+      hidden: { label: 'Schowane' },
+      archived: { label: 'Archiwum' },
+    },
+    planKinds: [
+      { id: 'fundament', label: 'Fundament' },
+      { id: 'cel', label: 'Cel' },
+      { id: 'mechanizm', label: 'Mechanizm' },
+      { id: 'feature', label: 'Feature' },
+      { id: 'decyzja', label: 'Decyzja' },
+      { id: 'pytanie', label: 'Pytanie' },
+      { id: 'next_step', label: 'Next step' },
+    ],
+    stages: {
+      robocze: { label: 'Robocze' },
+      plan: { label: 'Plan' },
+    },
+  };
+}
+
 export function emptyState() {
   return migrateState({});
 }
@@ -31,8 +55,9 @@ export function emptyState() {
 export function migrateState(input = {}) {
   const now = new Date().toISOString();
   const categories = normalizeCategories(input.categories);
+  const semanticConfig = normalizeSemanticConfig(input.semanticConfig);
   const projects = normalizeProjects(input.projects, now);
-  const nodes = normalizeNodes(input.nodes, categories, now);
+  const nodes = normalizeNodes(input.nodes, categories, now, semanticConfig);
   const nodeIds = new Set(nodes.map(node => node.id));
   const layers = normalizeLayers(input.layers, nodes, now);
   const layerIds = new Set(layers.map(layer => layer.id));
@@ -54,8 +79,10 @@ export function migrateState(input = {}) {
     nodes,
     links,
     parking: Array.isArray(input.parking) ? input.parking : [],
+    inboxMessages: normalizeInboxMessages(input.inboxMessages, now),
     strokes,
     categories,
+    semanticConfig,
     projects,
     layers,
     activeProjectId,
@@ -236,10 +263,11 @@ function normalizeProjects(projects, now) {
     .filter(Boolean);
 }
 
-function normalizeNodes(nodes, categories, now) {
+function normalizeNodes(nodes, categories, now, semanticConfig) {
   if (!Array.isArray(nodes)) return [];
   const categoryIds = new Set(categories.map(category => category.id));
   const defaultCategory = categories.find(category => category.isDefault)?.id || categories[0]?.id || 'rozrzutka';
+  const planKindIds = new Set((semanticConfig?.planKinds || []).map(kind => kind.id));
   const seen = new Set();
 
   return nodes
@@ -258,7 +286,7 @@ function normalizeNodes(nodes, categories, now) {
         content: cleanText(node?.content),
         type: categoryIds.has(type) ? type : defaultCategory,
         stage: STAGES.has(node?.stage) ? node.stage : 'robocze',
-        planKind: PLAN_KINDS.includes(node?.planKind) ? node.planKind : '',
+        planKind: planKindIds.has(node?.planKind) ? node.planKind : '',
         priority,
         rawState: RAW_STATES.has(node?.rawState) ? node.rawState : 'raw',
         projectId: cleanId(node?.projectId) || null,
@@ -271,6 +299,68 @@ function normalizeNodes(nodes, categories, now) {
       };
     })
     .filter(Boolean);
+}
+
+function normalizeInboxMessages(messages, now) {
+  if (!Array.isArray(messages)) return [];
+  const seen = new Set();
+
+  return messages
+    .map((message, index) => {
+      const text = cleanText(message?.text);
+      if (!text) return null;
+      const id = cleanId(message?.id) || `inbox_${index + 1}`;
+      if (seen.has(id)) return null;
+      seen.add(id);
+      return {
+        id,
+        text,
+        createdAt: message?.createdAt || now,
+        ...(message?.copiedAt ? { copiedAt: message.copiedAt } : {}),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+}
+
+function normalizeSemanticConfig(config = {}) {
+  const defaults = defaultSemanticConfig();
+  const rawStates = {};
+
+  for (const id of Object.keys(defaults.rawStates)) {
+    rawStates[id] = {
+      label: cleanText(config?.rawStates?.[id]?.label) || defaults.rawStates[id].label,
+    };
+  }
+
+  const inputKinds = Array.isArray(config?.planKinds) && config.planKinds.length
+    ? config.planKinds
+    : defaults.planKinds;
+  const seen = new Set();
+  const planKinds = inputKinds
+    .map((kind, index) => {
+      const id = cleanId(kind?.id) || (PLAN_KINDS[index] || '');
+      if (!id || seen.has(id)) return null;
+      seen.add(id);
+      return {
+        id,
+        label: cleanText(kind?.label) || id,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    rawStates,
+    planKinds: planKinds.length ? planKinds : defaults.planKinds,
+    stages: {
+      robocze: {
+        label: cleanText(config?.stages?.robocze?.label) || defaults.stages.robocze.label,
+      },
+      plan: {
+        label: cleanText(config?.stages?.plan?.label) || defaults.stages.plan.label,
+      },
+    },
+  };
 }
 
 function normalizeLayers(layers, nodes, now) {

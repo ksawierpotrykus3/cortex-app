@@ -8,6 +8,7 @@ import { vision } from './vision.js';
 import { categoryManager } from './categories.js';
 import { flashChat } from './flashchat.js';
 import { projects } from './projects.js';
+import { inboxPanel } from './inbox.js';
 
 function init() {
   console.log('Cortex v2: Initializing infinite canvas...');
@@ -299,6 +300,7 @@ function init() {
     settingsBtn.addEventListener('click', () => {
       const input = document.getElementById('api-key-input');
       if (input) input.value = vision.getApiKey();
+      renderSemanticSettings();
       settingsModal.classList.toggle('hidden');
     });
     document.getElementById('close-settings')?.addEventListener('click', () => {
@@ -310,6 +312,15 @@ function init() {
         vision.setApiKey(input.value);
         settingsModal.classList.add('hidden');
       }
+    });
+    document.getElementById('save-semantic-config')?.addEventListener('click', () => {
+      saveSemanticSettings();
+      canvas.render();
+      panel.show(panel.currentNodeId);
+    });
+    document.getElementById('open-categories-from-settings')?.addEventListener('click', () => {
+      categoryManager.renderList();
+      document.getElementById('category-modal')?.classList.remove('hidden');
     });
     settingsModal.addEventListener('click', (e) => {
       if (e.target === settingsModal) settingsModal.classList.add('hidden');
@@ -331,6 +342,59 @@ function exportOptionsFor(scope, selectedIds) {
   if (scope === 'all') return { scope: 'all' };
   if (scope === 'workspace') return { scope: 'workspace' };
   return { scope: 'current' };
+}
+
+function renderSemanticSettings() {
+  const config = store.getSemanticConfig();
+  const rawContainer = document.getElementById('semantic-raw-state-fields');
+  if (rawContainer) {
+    rawContainer.innerHTML = '';
+    ['raw', 'extracted', 'hidden', 'archived'].forEach(id => {
+      const wrapper = document.createElement('div');
+      const label = document.createElement('label');
+      label.textContent = id;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.dataset.rawState = id;
+      input.value = config.rawStates?.[id]?.label || id;
+      wrapper.appendChild(label);
+      wrapper.appendChild(input);
+      rawContainer.appendChild(wrapper);
+    });
+  }
+
+  const planKinds = document.getElementById('semantic-plan-kinds');
+  if (planKinds) {
+    planKinds.value = (config.planKinds || [])
+      .map(kind => `${kind.id}: ${kind.label || kind.id}`)
+      .join('\n');
+  }
+}
+
+function saveSemanticSettings() {
+  const rawStates = {};
+  document.querySelectorAll('[data-raw-state]').forEach(input => {
+    rawStates[input.dataset.rawState] = { label: input.value.trim() || input.dataset.rawState };
+  });
+
+  const planKindsInput = document.getElementById('semantic-plan-kinds');
+  const planKinds = String(planKindsInput?.value || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const [idPart, ...labelParts] = line.split(':');
+      const id = idPart.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+      const label = labelParts.join(':').trim() || idPart.trim();
+      return id ? { id, label } : null;
+    })
+    .filter(Boolean);
+
+  store.updateSemanticConfig({
+    rawStates,
+    planKinds,
+  });
+  renderSemanticSettings();
 }
 
 document.addEventListener('DOMContentLoaded', init);
