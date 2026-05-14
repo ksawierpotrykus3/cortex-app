@@ -1,0 +1,291 @@
+{
+  "schema": "cortex.visible.v2",
+  "scope": {
+    "type": "selection",
+    "selectedIds": [
+      "b7eefee8-405e-48a4-842c-c22c0dd5d21f",
+      "0e6f3a19-4431-4e2b-8876-e720969b7db7",
+      "15ceb587-b762-49d3-a9f6-cf888cd6f6a0",
+      "19dc0b44-c79b-4cda-9cdb-d0022ae43d21",
+      "373b4ec0-b318-4374-a827-e7f575b45821",
+      "8ff10ce7-df67-4c34-940b-dc92bc6a696f",
+      "c577cebf-b675-49e4-8ad0-68344e643e08"
+    ]
+  },
+  "ai_context": {
+    "purpose": "Widzialny zapis tablicy Cortex dla modelu AI.",
+    "reading_rules": [
+      "Czytaj tylko elementy opisane w JSON.",
+      "Obrazy nie sa osadzane; screen reprezentuje opis AI/Flash i notatka użytkownika.",
+      "ROBOCZE to surowiec, PLAN to przetworzona struktura.",
+      "Pozycje, kolejność, warstwy, projekty, priorytet i połączenia mają znaczenie."
+    ],
+    "stages": {
+      "robocze": "chaotyczny surowiec, screeny, fragmenty rozmów, pomysły",
+      "plan": "przetworzony fundament, cel, mechanizm, feature, decyzja, pytanie albo next step"
+    }
+  },
+  "board": {
+    "counts": {
+      "items": 7,
+      "screens": 1,
+      "projects": 7,
+      "layers": 4,
+      "planItems": 0,
+      "connections": 6,
+      "drawings": 0
+    },
+    "bounds": {
+      "left": 741,
+      "top": 295,
+      "right": 1769,
+      "bottom": 883
+    },
+    "readingOrder": [
+      "n1",
+      "n2",
+      "n3",
+      "n4",
+      "n5",
+      "n6",
+      "n7"
+    ]
+  },
+  "types": {
+    "rozrzutka": "Rozrzutka"
+  },
+  "items": [
+    {
+      "id": "n1",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1199,
+          295
+        ],
+        "zone": "top-center",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T19:45:02.448Z",
+        "updatedAt": "2026-05-14T19:47:47.541Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Zakładka",
+      "text": "Na  myśli najgorszego sortu(najłabsze ktore spierdalaja szybciej niż murzyn z rowerem) potrzebuje cos innego niz notatki. potrzebuje jakis guzik  w lewym gornym rogu. ktory odpala zakladke ktora jest praktycznie jak chat na messengerze. bo zauwazylem zze nie mam problemu sie rozpisywac jak komus cos pisze jak wiadomosc. i własnie w taki sposób chce móc pisać. i tam moge pisac wiadomosci. i kazda z wiadomosci ktore z enteruje ląduje do parkingu. + wszystkie notatki traca mozliwosc parkowania ich tam bo naswet tego nie uzywam i parking jest pusty. i potem tylko latwo kopiuje to i wrzucam w Ai. i pisze sobie z nim/"
+    },
+    {
+      "id": "n2",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          832,
+          350
+        ],
+        "zone": "top-left",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T18:40:10.529Z",
+        "updatedAt": "2026-05-14T19:47:54.524Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Multi select - oznaczanie",
+      "text": "W skrocie oznaczanie tych nie pojedynczo ale takim jak na pulpicie ze mozna kilka na raz na shifcie."
+    },
+    {
+      "id": "n3",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1466,
+          354
+        ],
+        "zone": "top-right",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T18:54:50.234Z",
+        "updatedAt": "2026-05-14T18:56:31.284Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Settings",
+      "text": "Menu ustawien w których dodaje/usuwam/edytuje. wszystkie nazwy jak tak kategorie(je też do tego trzeba bedzie wrzucić, jedynie projekty maja byc tam gdzie są że dodawanie/usuwanie/zmienianie) czyli musze miec mozliwosc edytowania calej semantyki."
+    },
+    {
+      "id": "n4",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1529,
+          495
+        ],
+        "zone": "middle-right",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T19:08:22.053Z",
+        "updatedAt": "2026-05-14T19:47:51.924Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Łączenie",
+      "text": "Możliwość połączen między projektami."
+    },
+    {
+      "id": "n5",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1091,
+          564
+        ],
+        "zone": "middle-center",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T18:19:45.212Z",
+        "updatedAt": "2026-05-14T18:56:34.084Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Multi select drag",
+      "text": "Jak robie multi select to branie 1 powinno robić drag wszystkich a nie tylko 1"
+    },
+    {
+      "id": "n6",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1468,
+          649
+        ],
+        "zone": "bottom-right",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T18:33:24.787Z",
+        "updatedAt": "2026-05-14T19:47:50.574Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Zoom",
+      "text": "Zoom ma byc widoczny z warstwy poprzedniej.\nTo nie ma być tak że jak zoomuje. wklejam 2 notatki dajmy do zoomu. wracam do poprzedniej i ich nie widać.  musze miec jakis sposób spojrzenia na to co jest w zoomie bez wchodzenia w niego. czy to odrazu czy to po najechaniu itp"
+    },
+    {
+      "id": "n7",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          741,
+          802
+        ],
+        "zone": "bottom-center",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T18:32:03.111Z",
+        "updatedAt": "2026-05-14T18:56:39.851Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "kind": "screen",
+      "imageSize": [
+        980,
+        81
+      ],
+      "screenText": "• Status \"Schowane\": Ukryj treść i obrazek wewnątrz notatki (display: none dla body). Zostaw tylko sam pasek tytułowy, żeby notatka zajmowała minimum miejsca.\n• Status \"Archiwum\": Przyszarz całą notatkę (opacity: 0.5, szarawe tło). Ma być widoczna, ale ignorowana wizualnie (nieaktywna).",
+      "screenDescription": "Screenshot przedstawia listę dwóch statusów dla notatek wraz z opisem ich działania oraz sugerowanymi parametrami CSS (display: none, opacity: 0.5)."
+    }
+  ],
+  "projects": [
+    {
+      "id": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "name": "Quality of life",
+      "createdAt": "2026-05-14T18:19:43.493Z",
+      "updatedAt": "2026-05-14T18:19:43.493Z"
+    }
+  ],
+  "layers": [
+    {
+      "id": "root",
+      "title": "Tablica główna",
+      "titleMode": "custom",
+      "parentLayerId": null,
+      "originNodeId": null,
+      "projectId": null,
+      "path": [
+        {
+          "id": "root",
+          "title": "Tablica główna",
+          "originNodeId": null,
+          "titleMode": "custom"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "n5",
+      "n7"
+    ],
+    [
+      "n6",
+      "n5"
+    ],
+    [
+      "n2",
+      "n5"
+    ],
+    [
+      "n3",
+      "n5"
+    ],
+    [
+      "n4",
+      "n5"
+    ],
+    [
+      "n1",
+      "n5"
+    ]
+  ]
+}
