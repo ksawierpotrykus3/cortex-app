@@ -2,11 +2,9 @@ import { store } from './store.js';
 import { SEED_DATA } from './seed.js';
 import { canvas } from './canvas.js';
 import { panel } from './panel.js';
-import { quickAdd } from './quickadd.js';
 import { filter } from './filter.js';
 import { parking } from './parking.js';
 import { vision } from './vision.js';
-import { SCREENSHOT_CONFIG } from './constants.js';
 import { categoryManager } from './categories.js';
 import { flashChat } from './flashchat.js';
 import { projects } from './projects.js';
@@ -63,7 +61,40 @@ function init() {
 
   // 7. Export
   document.getElementById('export-btn').addEventListener('click', (e) => {
-    store.exportData({ full: e.shiftKey });
+    if (e.shiftKey) {
+      store.exportData({ full: true });
+      return;
+    }
+
+    const selectedIds = canvas.getSelectedIds();
+    const defaultScope = selectedIds.length ? 'selection' : 'current';
+    const scope = prompt('Zakres eksportu: current, selection, project, layer, all, backup', defaultScope);
+    if (!scope) return;
+    if (scope === 'backup') {
+      store.exportData({ full: true });
+      return;
+    }
+    const options = exportOptionsFor(scope, selectedIds);
+    store.exportData(options);
+  });
+
+  document.getElementById('copy-context-btn')?.addEventListener('click', async () => {
+    const selectedIds = canvas.getSelectedIds();
+    const options = selectedIds.length
+      ? { scope: 'selection', selectedIds }
+      : { scope: 'current' };
+    const text = store.buildSemanticContext(options);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      prompt('Skopiuj kontekst dla AI:', text);
+    }
+  });
+
+  document.getElementById('clear-drawings-btn')?.addEventListener('click', () => {
+    if (!confirm('Usunąć rysunki z aktualnego zakresu?')) return;
+    store.clearStrokes();
+    canvas.render();
   });
 
   // 8. Reset
@@ -99,6 +130,26 @@ function init() {
       batchPanel.classList.add('hidden');
       canvas.render();
     }
+  });
+
+  document.getElementById('batch-assign-project')?.addEventListener('click', () => {
+    const ids = canvas.getSelectedIds();
+    if (!ids.length) return;
+    const projectsList = store.getProjects().map(project => `${project.id}: ${project.name}`).join('\n');
+    const projectId = prompt(`Wklej ID projektu albo zostaw puste dla brudnej tablicy:\n${projectsList}`, store.getActiveProjectId());
+    if (projectId === null) return;
+    const includeConnected = confirm('Dołączyć też wszystkie połączone notki?');
+    store.assignNodesToProject(ids, projectId || null, { includeConnected });
+    canvas.clearSelection();
+    batchPanel.classList.add('hidden');
+    canvas.render();
+    window.dispatchEvent(new CustomEvent('scope-changed'));
+  });
+
+  document.getElementById('batch-export')?.addEventListener('click', () => {
+    const ids = canvas.getSelectedIds();
+    if (!ids.length) return;
+    store.exportData({ scope: 'selection', selectedIds: ids });
   });
 
   document.getElementById('batch-delete-links').addEventListener('click', () => {
@@ -264,6 +315,22 @@ function init() {
       if (e.target === settingsModal) settingsModal.classList.add('hidden');
     });
   }
+}
+
+function exportOptionsFor(scope, selectedIds) {
+  if (scope === 'selection') return { scope: 'selection', selectedIds };
+  if (scope === 'project') {
+    let projectId = store.getActiveProjectId();
+    if (projectId === 'all' || projectId === 'dirty') {
+      const projectsList = store.getProjects().map(project => `${project.id}: ${project.name}`).join('\n');
+      projectId = prompt(`Wklej ID projektu do eksportu:\n${projectsList}`, '') || '';
+    }
+    return { scope: 'project', projectId };
+  }
+  if (scope === 'layer') return { scope: 'layer', layerId: store.getActiveLayerId() };
+  if (scope === 'all') return { scope: 'all' };
+  if (scope === 'workspace') return { scope: 'workspace' };
+  return { scope: 'current' };
 }
 
 document.addEventListener('DOMContentLoaded', init);

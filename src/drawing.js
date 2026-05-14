@@ -164,7 +164,7 @@ class Drawing {
     this.drawingLayer.innerHTML = '';
     if (live) this.drawingLayer.appendChild(live);
 
-    const strokes = store.getStrokes();
+    const strokes = store.getVisibleStrokes();
     strokes.forEach(stroke => {
       if (!stroke.points || stroke.points.length < 2) return;
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');

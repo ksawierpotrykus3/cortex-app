@@ -1,6 +1,7 @@
-import { COLORS, NOTE_CONFIG, CANVAS_CONFIG, SCREENSHOT_CONFIG } from './constants.js';
+import { COLORS, NOTE_CONFIG, CANVAS_CONFIG } from './constants.js';
 import { store } from './store.js';
 import { drawing } from './drawing.js';
+import { getEndpointId } from './schema.js';
 
 /**
  * Infinite Canvas — SVG-based pan/zoom/drag engine.
@@ -413,8 +414,10 @@ class Canvas {
 
     // Render links (use expanded heights for center calc)
     links.forEach(link => {
-      const src = nodes.find(n => n.id === link.source);
-      const tgt = nodes.find(n => n.id === link.target);
+      const sourceId = getEndpointId(link.source);
+      const targetId = getEndpointId(link.target);
+      const src = nodes.find(n => n.id === sourceId);
+      const tgt = nodes.find(n => n.id === targetId);
       if (!src || !tgt) return;
 
       const srcH = expandedHeights.get(src.id) || NOTE_CONFIG.minHeight;
@@ -491,6 +494,32 @@ class Canvas {
     typeLabel.style.userSelect = 'none';
     typeLabel.textContent = node.type.toUpperCase();
     g.appendChild(typeLabel);
+
+    const priorityLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    priorityLabel.setAttribute('x', w - NOTE_CONFIG.padding);
+    priorityLabel.setAttribute('y', '18');
+    priorityLabel.setAttribute('fill', COLORS.textMuted);
+    priorityLabel.setAttribute('font-size', '9');
+    priorityLabel.setAttribute('font-weight', '700');
+    priorityLabel.setAttribute('text-anchor', 'end');
+    priorityLabel.style.pointerEvents = 'none';
+    priorityLabel.style.userSelect = 'none';
+    priorityLabel.textContent = `P${node.priority || 1}`;
+    g.appendChild(priorityLabel);
+
+    if (store.getLayers().some(layer => layer.originNodeId === node.id)) {
+      const layerMark = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      layerMark.setAttribute('x', w - NOTE_CONFIG.padding);
+      layerMark.setAttribute('y', h - 10);
+      layerMark.setAttribute('fill', COLORS.accent);
+      layerMark.setAttribute('font-size', '12');
+      layerMark.setAttribute('font-weight', '700');
+      layerMark.setAttribute('text-anchor', 'end');
+      layerMark.style.pointerEvents = 'none';
+      layerMark.style.userSelect = 'none';
+      layerMark.textContent = 'L';
+      g.appendChild(layerMark);
+    }
 
     if (node.stage === 'plan') {
       const stageLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -579,14 +608,16 @@ class Canvas {
 
     // Render links
     links.forEach(link => {
-      const src = nodes.find(n => n.id === link.source);
-      const tgt = nodes.find(n => n.id === link.target);
+      const sourceId = getEndpointId(link.source);
+      const targetId = getEndpointId(link.target);
+      const src = nodes.find(n => n.id === sourceId);
+      const tgt = nodes.find(n => n.id === targetId);
       if (!src || !tgt) return;
 
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.classList.add('canvas-link');
-      line.dataset.source = link.source;
-      line.dataset.target = link.target;
+      line.dataset.source = sourceId;
+      line.dataset.target = targetId;
       line.setAttribute('x1', src.x + NOTE_CONFIG.width / 2);
       line.setAttribute('y1', src.y + NOTE_CONFIG.minHeight / 2);
       line.setAttribute('x2', tgt.x + NOTE_CONFIG.width / 2);
@@ -618,7 +649,7 @@ class Canvas {
       });
       hitLine.addEventListener('click', (e) => {
         e.stopPropagation();
-        store.deleteLink(link.source, link.target);
+        store.deleteLink(sourceId, targetId);
         this.render();
       });
 
@@ -700,6 +731,32 @@ class Canvas {
     typeLabel.style.userSelect = 'none';
     typeLabel.textContent = node.type.toUpperCase();
     g.appendChild(typeLabel);
+
+    const priorityLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    priorityLabel.setAttribute('x', w - NOTE_CONFIG.padding);
+    priorityLabel.setAttribute('y', '18');
+    priorityLabel.setAttribute('fill', COLORS.textMuted);
+    priorityLabel.setAttribute('font-size', '9');
+    priorityLabel.setAttribute('font-weight', '700');
+    priorityLabel.setAttribute('text-anchor', 'end');
+    priorityLabel.style.pointerEvents = 'none';
+    priorityLabel.style.userSelect = 'none';
+    priorityLabel.textContent = node.stage === 'plan' ? `PLAN P${node.priority || 1}` : `P${node.priority || 1}`;
+    g.appendChild(priorityLabel);
+
+    if (store.getLayers().some(layer => layer.originNodeId === node.id)) {
+      const layerMark = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      layerMark.setAttribute('x', w - NOTE_CONFIG.padding);
+      layerMark.setAttribute('y', h - 10);
+      layerMark.setAttribute('fill', COLORS.accent);
+      layerMark.setAttribute('font-size', '12');
+      layerMark.setAttribute('font-weight', '700');
+      layerMark.setAttribute('text-anchor', 'end');
+      layerMark.style.pointerEvents = 'none';
+      layerMark.style.userSelect = 'none';
+      layerMark.textContent = 'L';
+      g.appendChild(layerMark);
+    }
 
     // Title + Content layout
     const hasTitle = node.title && node.title.trim().length > 0;
@@ -1015,8 +1072,10 @@ class Canvas {
     const links = store.getLinks();
     const connectedIds = new Set([nodeId]);
     links.forEach(l => {
-      if (l.source === nodeId) connectedIds.add(l.target);
-      if (l.target === nodeId) connectedIds.add(l.source);
+      const source = getEndpointId(l.source);
+      const target = getEndpointId(l.target);
+      if (source === nodeId) connectedIds.add(target);
+      if (target === nodeId) connectedIds.add(source);
     });
 
     this.noteLayer.querySelectorAll('.note-card-group').forEach(g => {

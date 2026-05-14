@@ -40,7 +40,7 @@ class FlashChat {
 
   _buildContext() {
     const semanticContext = store.buildSemanticContext();
-    return `Widoczna tablica Cortex jako kompaktowy JSON dla AI. Nie ma tu obrazów base64 ani danych technicznych, tylko tekst, opisy screenów, układ i połączenia:\n${semanticContext}`;
+    return `Widoczna tablica Cortex jako kompaktowy JSON dla AI. Nie ma tu osadzonych obrazów ani danych technicznych, tylko tekst, opisy screenów, układ i połączenia:\n${semanticContext}`;
   }
 
   async send() {

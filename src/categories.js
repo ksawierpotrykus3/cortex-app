@@ -125,9 +125,34 @@ class CategoryManager {
       countBadge.textContent = count;
       countBadge.title = `${count} notatek`;
 
+      const defaultLabel = document.createElement('label');
+      defaultLabel.className = 'category-default-label';
+      defaultLabel.title = 'Domyślna kategoria dla nowych notek';
+      const defaultInput = document.createElement('input');
+      defaultInput.type = 'radio';
+      defaultInput.name = 'default-category';
+      defaultInput.checked = cat.isDefault === true;
+      defaultInput.addEventListener('change', () => {
+        store.updateCategory(cat.id, { isDefault: true });
+        this.renderList();
+      });
+      defaultLabel.appendChild(defaultInput);
+      defaultLabel.appendChild(document.createTextNode(' domyślna'));
+
+      const autoTitleInput = document.createElement('input');
+      autoTitleInput.type = 'text';
+      autoTitleInput.value = cat.autoTitle || '';
+      autoTitleInput.placeholder = 'auto-tytuł';
+      autoTitleInput.className = 'category-autotitle-input';
+      autoTitleInput.addEventListener('change', () => {
+        store.updateCategory(cat.id, { autoTitle: autoTitleInput.value.trim() });
+      });
+
       row.appendChild(colorInput);
       row.appendChild(nameInput);
       row.appendChild(countBadge);
+      row.appendChild(defaultLabel);
+      row.appendChild(autoTitleInput);
       row.appendChild(upBtn);
       row.appendChild(downBtn);
       row.appendChild(delBtn);
@@ -159,33 +184,7 @@ class CategoryManager {
   }
 
   rebuildTypePicker() {
-    const container = document.getElementById('quick-add-types');
-    if (!container) return;
-
-    const categories = store.getCategories();
-    const currentActive = container.querySelector('.type-btn.active')?.dataset.type || 'rozrzutka';
-
-    container.innerHTML = '';
-
-    categories.forEach(cat => {
-      const btn = document.createElement('button');
-      btn.className = 'type-btn';
-      btn.dataset.type = cat.id;
-      btn.title = cat.name;
-      btn.textContent = cat.name.charAt(0).toUpperCase();
-      btn.style.setProperty('--cat-color', cat.color);
-
-      if (cat.id === currentActive) {
-        btn.classList.add('active');
-      }
-
-      btn.addEventListener('click', () => {
-        container.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-
-      container.appendChild(btn);
-    });
+    // Quick-add was removed; categories are now applied from note creation/editing controls.
   }
 }
 

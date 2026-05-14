@@ -29,12 +29,18 @@
             <option value="dirty">Brudna tablica</option>
           </select>
           <button id="create-project-btn" title="Stwórz projekt" style="font-size: 16px;">+</button>
+          <button id="rename-project-btn" title="Zmień nazwę projektu" style="font-size: 13px;">P</button>
+          <button id="delete-project-btn" title="Usuń projekt" style="font-size: 13px;color:#ef4444;">P-</button>
+          <button id="layer-back-btn" title="Wróć do warstwy wyżej" style="font-size: 16px;">←</button>
+          <button id="layer-title-btn" title="Aktywna warstwa" style="font-size: 12px;min-width:120px;text-align:left;">Tablica główna</button>
           <button id="parking-toggle" title="Parking (nie-teraz)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           </button>
           <button id="export-btn" title="Eksport AI JSON bez obrazów. Shift+klik = pełny backup">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>
+          <button id="copy-context-btn" title="Kopiuj kontekst dla AI" style="font-size: 13px;">AI</button>
+          <button id="clear-drawings-btn" title="Usuń rysunki z aktualnego zakresu" style="font-size: 13px;color:#ef4444;">D-</button>
           <button id="settings-btn" title="Ustawienia (API key)" style="font-size: 16px;">⚙️</button>
           <button id="category-btn" title="Kategorie" style="font-size: 16px;">🏷️</button>
           <button id="flash-toggle" title="Flash Chat" style="font-size: 16px;">⚡</button>
@@ -84,6 +90,19 @@
             <button id="panel-stage-btn" class="secondary-btn">Przenieś do planu</button>
           </section>
 
+          <section class="semantic-section">
+            <h3>Semantyka</h3>
+            <select id="panel-priority-select" class="panel-select"></select>
+            <select id="panel-raw-state-select" class="panel-select"></select>
+            <select id="panel-plan-kind-select" class="panel-select"></select>
+          </section>
+
+          <section class="layer-section">
+            <h3>Warstwa / zoom</h3>
+            <button id="panel-open-layer-btn" class="secondary-btn">Utwórz / otwórz warstwę</button>
+            <button id="panel-rename-layer-btn" class="secondary-btn">Zmień tytuł warstwy</button>
+          </section>
+
           <section class="connections-section">
             <h3>Połączenia</h3>
             <ul id="panel-connections" class="connections-list"></ul>
@@ -97,23 +116,11 @@
         </div>
       </aside>
 
-      <!-- Quick Add bar -->
-      <div class="bottom-bar">
-        <div class="quick-add-container">
-          <div class="type-picker" id="quick-add-types">
-            <button class="type-btn active" data-type="rozrzutka" title="Rozrzutka">R</button>
-            <button class="type-btn" data-type="przeblysk" title="Przebłysk [!]">!</button>
-            <button class="type-btn" data-type="aksjomat" title="Aksjomat">A</button>
-            <button class="type-btn" data-type="pewnik" title="Pewnik">P</button>
-            <button class="type-btn" data-type="problem" title="Problem">?</button>
-          </div>
-          <input type="text" id="quick-add-input" placeholder="Złap myśl i naciśnij Enter..." />
-        </div>
-      </div>
-
       <!-- Batch Actions -->
       <div id="batch-actions" class="hidden">
         <span id="batch-count">0 zaznaczonych</span>
+        <button id="batch-assign-project" class="batch-btn">Do projektu</button>
+        <button id="batch-export" class="batch-btn">Eksport zazn.</button>
         <button id="batch-delete-links" class="batch-btn">Usuń linie</button>
         <button id="batch-delete-nodes" class="batch-btn danger">Usuń notatki</button>
         <button id="batch-cancel" class="batch-btn">Anuluj</button>
@@ -152,19 +159,12 @@
             <div class="help-section">
               <h3 class="help-heading">⌨️ Klawiatura</h3>
               <div class="help-row"><span class="help-key">Tab</span><span>Tryb łączenia (chain)</span></div>
-              <div class="help-row"><span class="help-key">Ctrl+K</span><span>Focus na quick add</span></div>
               <div class="help-row"><span class="help-key">Ctrl+F</span><span>Focus na search</span></div>
               <div class="help-row"><span class="help-key">D</span><span>Tryb rysowania (toggle)</span></div>
               <div class="help-row"><span class="help-key">E</span><span>Rozwiń / zwiń wszystko</span></div>
               <div class="help-row"><span class="help-key">Ctrl+Z</span><span>Cofnij rysunek</span></div>
               <div class="help-row"><span class="help-key">Shift+Klik</span><span>Multi-select</span></div>
               <div class="help-row"><span class="help-key">Escape</span><span>Zamknij / anuluj</span></div>
-            </div>
-            <div class="help-section">
-              <h3 class="help-heading">⚡ Quick Add</h3>
-              <div class="help-row"><span class="help-key">[!] tekst</span><span>Auto-typ: Przebłysk</span></div>
-              <div class="help-row"><span class="help-key">[aksjomat] tekst</span><span>Auto-typ: Aksjomat</span></div>
-              <div class="help-row"><span class="help-key">[problem] tekst</span><span>Auto-typ: Problem</span></div>
             </div>
           </div>
         </div>
@@ -186,7 +186,7 @@
       </div>
       <!-- Category Manager Modal -->
       <div id="category-modal" class="modal hidden">
-        <div class="modal-content" style="width: 460px;">
+        <div class="modal-content" style="width: 640px;">
           <div class="modal-header">
             <h2>🏷️ Kategorie</h2>
             <button id="close-categories">&times;</button>

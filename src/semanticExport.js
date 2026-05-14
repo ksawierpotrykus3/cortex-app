@@ -1,3 +1,14 @@
+import {
+  ROOT_LAYER_ID,
+  buildLayerPath,
+  getEndpointId,
+  migrateState,
+  nodeMatchesExportScope,
+  resolveExportScope,
+  resolveLayerTitle,
+  strokeMatchesScope,
+} from './schema.js';
+
 const DEFAULT_NOTE_SIZE = { width: 240, height: 80 };
 const DEFAULT_SCREENSHOT_SIZE = { width: 400, height: 300 };
 const DEFAULT_TYPES = {
@@ -8,8 +19,11 @@ const DEFAULT_TYPES = {
   problem: 'Problem',
 };
 
-export function buildSemanticExport(state = {}) {
-  const rawNodes = Array.isArray(state.nodes) ? state.nodes : [];
+export function buildSemanticExport(state = {}, options = {}) {
+  const safeState = migrateState(state);
+  const scope = resolveExportScope(safeState, options);
+  const selectedIds = scope.type === 'selection' ? scope.selectedIds : [];
+  const rawNodes = safeState.nodes.filter(node => nodeMatchesExportScope(node, scope, selectedIds));
   const nodes = rawNodes
     .filter(isMeaningfulNode)
     .sort((a, b) => (a.y ?? 0) - (b.y ?? 0) || (a.x ?? 0) - (b.x ?? 0));
@@ -26,17 +40,32 @@ export function buildSemanticExport(state = {}) {
     col: cols.get(node.id) || 1,
   }));
 
-  const connections = buildConnections(state.links, idMap);
-  const drawings = buildDrawings(state.strokes);
-  const types = buildTypes(state.categories, nodes);
+  const connections = buildConnections(safeState.links, idMap);
+  const drawings = buildDrawings(safeState.strokes.filter(stroke => strokeMatchesScope(stroke, scope)));
+  const types = buildTypes(safeState.categories, nodes);
 
   const result = {
-    schema: 'cortex.visible.v1',
+    schema: 'cortex.visible.v2',
+    scope: buildScopeInfo(safeState, scope),
+    ai_context: {
+      purpose: 'Widzialny zapis tablicy Cortex dla modelu AI.',
+      reading_rules: [
+        'Czytaj tylko elementy opisane w JSON.',
+        'Obrazy nie sa osadzane; screen reprezentuje opis AI/Flash i notatka użytkownika.',
+        'ROBOCZE to surowiec, PLAN to przetworzona struktura.',
+        'Pozycje, kolejność, warstwy, projekty, priorytet i połączenia mają znaczenie.',
+      ],
+      stages: {
+        robocze: 'chaotyczny surowiec, screeny, fragmenty rozmów, pomysły',
+        plan: 'przetworzony fundament, cel, mechanizm, feature, decyzja, pytanie albo next step',
+      },
+    },
     board: {
       counts: {
         items: items.length,
         screens: items.filter(item => item.kind === 'screen').length,
-        projects: Array.isArray(state.projects) ? state.projects.length : 0,
+        projects: safeState.projects.length,
+        layers: safeState.layers.length,
         planItems: items.filter(item => item.stage === 'plan').length,
         connections: connections.length,
         drawings: drawings.length,
@@ -48,22 +77,55 @@ export function buildSemanticExport(state = {}) {
     items,
   };
 
-  if (Array.isArray(state.projects) && state.projects.length) {
-    result.projects = state.projects.map(project => ({
-      id: project.id,
-      name: cleanText(project.name),
-      createdAt: project.createdAt,
-    }));
-  }
-
+  const projects = buildProjects(safeState, nodes);
+  const layers = buildLayers(safeState, nodes, scope);
+  if (projects.length) result.projects = projects;
+  if (layers.length) result.layers = layers;
   if (connections.length) result.connections = connections;
   if (drawings.length) result.drawings = drawings;
 
   return result;
 }
 
-export function buildSemanticContext(state = {}) {
-  return JSON.stringify(buildSemanticExport(state));
+export function buildSemanticContext(state = {}, options = {}) {
+  const payload = buildSemanticExport(state, options);
+  return [
+    'CORTEX_VISIBLE_CONTEXT',
+    'Czytaj ten JSON jako to, co użytkownik widzi na tablicy. Nie zakładaj ukrytych danych ani obrazów.',
+    JSON.stringify(payload, null, 2),
+  ].join('\n\n');
+}
+
+function buildScopeInfo(state, scope) {
+  const info = { type: scope.type };
+
+  if (scope.type === 'view') {
+    info.type = 'current';
+    info.projectId = scope.state?.activeProjectId || 'all';
+    info.layerId = scope.state?.activeLayerId || 'root';
+  }
+
+  if (scope.type === 'project') {
+    const project = state.projects.find(item => item.id === scope.projectId);
+    info.project = project ? { id: project.id, name: cleanText(project.name) } : { id: scope.projectId };
+  }
+
+  if (scope.type === 'layer') {
+    const layer = state.layers.find(item => item.id === scope.layerId);
+    info.layer = layer ? {
+      id: layer.id,
+      title: resolveLayerTitle(layer, state),
+      originNodeId: layer.originNodeId || null,
+      titleMode: layer.titleMode,
+      path: buildLayerPath(layer.id, state),
+    } : { id: scope.layerId };
+  }
+
+  if (scope.type === 'selection') {
+    info.selectedIds = scope.selectedIds || [];
+  }
+
+  return info;
 }
 
 function buildItem(node, layout) {
@@ -77,29 +139,31 @@ function buildItem(node, layout) {
   const item = {
     id: layout.id,
     type,
+    category: type,
+    priority: clampPriority(node.priority),
+    rawState: node.rawState || 'raw',
+    stage: node.stage || 'robocze',
     where: {
       pos: [round(node.x), round(node.y)],
       zone: getZone(node, layout.bounds),
       row: layout.row,
       col: layout.col,
+      layerId: node.layerId || ROOT_LAYER_ID,
+    },
+    chronology: {
+      createdAt: node.createdAt || '',
+      updatedAt: node.updatedAt || node.createdAt || '',
     },
   };
 
-  if (node.createdAt) {
-    item.createdAt = node.createdAt;
-  }
-
   if (node.projectId) item.projectId = cleanText(node.projectId);
-  if (node.stage === 'plan') item.stage = 'plan';
-
-  if (isScreen) {
-    item.kind = 'screen';
-    item.size = [size.width, size.height];
-  }
-
+  if (node.sourceIds?.length) item.sourceIds = node.sourceIds;
+  if (node.stage === 'plan' && node.planKind) item.planKind = node.planKind;
   if (title) item.title = title;
 
   if (isScreen) {
+    item.kind = 'screen';
+    item.imageSize = [size.width, size.height];
     if (content) item.note = content;
     if (screen.text) item.screenText = screen.text;
     item.screenDescription = screen.description || '[brak opisu AI]';
@@ -113,6 +177,37 @@ function buildItem(node, layout) {
   }
 
   return item;
+}
+
+function buildProjects(state, visibleNodes) {
+  const usedProjectIds = new Set(visibleNodes.map(node => node.projectId).filter(Boolean));
+  return state.projects
+    .filter(project => usedProjectIds.has(project.id))
+    .map(project => ({
+      id: project.id,
+      name: cleanText(project.name),
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+    }));
+}
+
+function buildLayers(state, visibleNodes, scope) {
+  const usedLayerIds = new Set(visibleNodes.map(node => node.layerId || ROOT_LAYER_ID));
+  if (scope.type === 'layer') usedLayerIds.add(scope.layerId);
+  if (scope.type === 'view') usedLayerIds.add(scope.state?.activeLayerId || ROOT_LAYER_ID);
+  if (scope.type === 'all') state.layers.forEach(layer => usedLayerIds.add(layer.id));
+
+  return state.layers
+    .filter(layer => usedLayerIds.has(layer.id))
+    .map(layer => ({
+      id: layer.id,
+      title: resolveLayerTitle(layer, state),
+      titleMode: layer.titleMode,
+      parentLayerId: layer.parentLayerId || null,
+      originNodeId: layer.originNodeId || null,
+      projectId: layer.projectId || null,
+      path: buildLayerPath(layer.id, state),
+    }));
 }
 
 function buildTypes(categories = [], nodes = []) {
@@ -136,8 +231,8 @@ function buildConnections(links = [], idMap) {
   const connections = [];
 
   for (const link of links) {
-    const source = endpointId(link?.source);
-    const target = endpointId(link?.target);
+    const source = getEndpointId(link?.source);
+    const target = getEndpointId(link?.target);
     const from = idMap.get(source);
     const to = idMap.get(target);
     if (!from || !to || from === to) continue;
@@ -164,9 +259,13 @@ function buildDrawings(strokes = []) {
       const box = getPointBounds(points);
       const mark = {
         id: `d${index + 1}`,
+        scope: stroke.scope || 'workspace',
         box: [box.left, box.top, box.right, box.bottom],
         path: simplified.map(point => [point.x, point.y]),
       };
+
+      if (stroke.projectId) mark.projectId = stroke.projectId;
+      if (stroke.layerId) mark.layerId = stroke.layerId;
 
       const width = round(stroke.width);
       const color = cleanText(stroke.color).toLowerCase();
@@ -349,10 +448,6 @@ function getPointBounds(points) {
   }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 }
 
-function endpointId(endpoint) {
-  return typeof endpoint === 'object' && endpoint !== null ? endpoint.id : endpoint;
-}
-
 function cleanText(value) {
   if (typeof value !== 'string') return '';
 
@@ -369,4 +464,9 @@ function cleanText(value) {
 function round(value) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.round(number) : 0;
+}
+
+function clampPriority(value) {
+  const number = Number.parseInt(value, 10);
+  return Number.isFinite(number) ? Math.max(1, Math.min(10, number)) : 1;
 }

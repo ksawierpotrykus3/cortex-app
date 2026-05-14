@@ -2,13 +2,8 @@ import { store } from './store.js';
 import { canvas } from './canvas.js';
 import { COLORS } from './constants.js';
 import { vision } from './vision.js';
+import { PLAN_KINDS, getEndpointId } from './schema.js';
 
-/**
- * Side panel — hybrid A+B:
- *  single click on note  → opens panel (view + connections)
- *  double click on note  → inline edit (handled in main.js)
- *  "Edytuj" button       → switches panel to edit mode
- */
 class Panel {
   constructor() {
     this.el = document.getElementById('side-panel');
@@ -20,6 +15,11 @@ class Panel {
     this.closeBtn = document.getElementById('panel-close');
     this.projectSelect = document.getElementById('panel-project-select');
     this.stageBtn = document.getElementById('panel-stage-btn');
+    this.prioritySelect = document.getElementById('panel-priority-select');
+    this.rawStateSelect = document.getElementById('panel-raw-state-select');
+    this.planKindSelect = document.getElementById('panel-plan-kind-select');
+    this.openLayerBtn = document.getElementById('panel-open-layer-btn');
+    this.renameLayerBtn = document.getElementById('panel-rename-layer-btn');
 
     this.isEditing = false;
     this.currentNodeId = null;
@@ -27,45 +27,38 @@ class Panel {
   }
 
   init() {
-    this.closeBtn.addEventListener('click', () => this.hide());
+    this.closeBtn?.addEventListener('click', () => this.hide());
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !this.isEditing) {
-        this.hide();
-      }
+      if (e.key === 'Escape' && !this.isEditing) this.hide();
     });
 
-    document.getElementById('edit-node-btn').addEventListener('click', () => this.toggleEdit());
-    document.getElementById('delete-node-btn').addEventListener('click', () => this.handleDelete());
-    document.getElementById('park-node-btn').addEventListener('click', () => this.handlePark());
-    document.getElementById('add-link-btn').addEventListener('click', () => {
+    document.getElementById('edit-node-btn')?.addEventListener('click', () => this.toggleEdit());
+    document.getElementById('delete-node-btn')?.addEventListener('click', () => this.handleDelete());
+    document.getElementById('park-node-btn')?.addEventListener('click', () => this.handlePark());
+    document.getElementById('add-link-btn')?.addEventListener('click', () => {
       canvas.startLinking(false);
       canvas.linkSourceId = this.currentNodeId;
       this.hide();
     });
+
     this.projectSelect?.addEventListener('change', () => this.handleProjectChange());
     this.stageBtn?.addEventListener('click', () => this.toggleStage());
+    this.prioritySelect?.addEventListener('change', () => this.handlePriorityChange());
+    this.rawStateSelect?.addEventListener('change', () => this.handleRawStateChange());
+    this.planKindSelect?.addEventListener('change', () => this.handlePlanKindChange());
+    this.openLayerBtn?.addEventListener('click', () => this.openNodeLayer());
+    this.renameLayerBtn?.addEventListener('click', () => this.renameNodeLayer());
 
-    this.bodyEl.addEventListener('click', (e) => {
-      if (e.target?.id === 'reanalyze-image-btn') {
-        this.handleReanalyzeImage(e.target);
-      }
-      if (e.target?.id === 'edit-vision-desc-btn') {
-        this.showVisionDescriptionEditor();
-      }
-      if (e.target?.id === 'delete-vision-desc-btn') {
-        this.deleteVisionDescription();
-      }
-      if (e.target?.id === 'save-vision-desc-btn') {
-        this.saveVisionDescription();
-      }
-      if (e.target?.id === 'cancel-vision-desc-btn') {
-        this.show(this.currentNodeId);
-      }
+    this.bodyEl?.addEventListener('click', (e) => {
+      if (e.target?.id === 'reanalyze-image-btn') this.handleReanalyzeImage(e.target);
+      if (e.target?.id === 'edit-vision-desc-btn') this.showVisionDescriptionEditor();
+      if (e.target?.id === 'delete-vision-desc-btn') this.deleteVisionDescription();
+      if (e.target?.id === 'save-vision-desc-btn') this.saveVisionDescription();
+      if (e.target?.id === 'cancel-vision-desc-btn') this.show(this.currentNodeId);
     });
 
-    // Inline title edit on dblclick
-    this.titleEl.addEventListener('dblclick', () => {
+    this.titleEl?.addEventListener('dblclick', () => {
       if (!this.isEditing) this.toggleEdit();
     });
   }
@@ -77,37 +70,39 @@ class Panel {
     this.currentNodeId = nodeId;
     this.isEditing = false;
 
-    // Fill data
-    this.titleEl.textContent = node.title;
+    this.titleEl.textContent = node.title || '(bez tytułu)';
     this.typeEl.textContent = node.type.toUpperCase();
     this.typeEl.style.backgroundColor = store.getCategoryColor(node.type);
-    const dateStr = node.createdAt ? new Date(node.createdAt).toLocaleDateString('pl-PL') : '—';
-    const projectName = node.projectId ? store.getProjectById(node.projectId)?.name || 'Projekt' : 'Brudna tablica';
-    const stageName = node.stage === 'plan' ? 'Plan' : 'Robocze';
-    this.metaEl.textContent = `Dodano: ${dateStr} · ${projectName} · ${stageName}`;
 
-    // Image preview for screenshot nodes
+    const dateStr = node.createdAt ? new Date(node.createdAt).toLocaleDateString('pl-PL') : '-';
+    const projectName = node.projectId ? store.getProjectById(node.projectId)?.name || 'Projekt' : 'Brudna tablica';
+    const layerName = store.getLayerTitle(node.layerId || 'root');
+    const stageName = node.stage === 'plan' ? 'Plan' : 'Robocze';
+    this.metaEl.textContent = `Dodano: ${dateStr} · ${projectName} · ${layerName} · ${stageName} · P${node.priority || 1}`;
+
     let imageHtml = '';
     if (node.image) {
-      imageHtml = `<div style="margin-bottom:12px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">
-        <img src="${node.image}" style="width:100%;display:block;" alt="Screenshot" />
-      </div>`;
-      imageHtml += `<button id="reanalyze-image-btn" style="width:100%;margin-bottom:12px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-primary);font-weight:600;cursor:pointer;">Analizuj ponownie</button>`;
+      imageHtml = `<div class="panel-image-preview">
+        <img src="${node.image}" alt="Screenshot" />
+      </div>
+      <button id="reanalyze-image-btn" class="secondary-btn panel-wide-btn">Analizuj ponownie</button>`;
+
       if (node.imageDescription) {
-        imageHtml += `<div class="vision-desc" style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;padding:8px;background:var(--bg-primary);border-radius:6px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.5;">${node.imageDescription}</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="edit-vision-desc-btn" style="flex:1;padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-primary);font-weight:600;cursor:pointer;">Edytuj opis AI</button>
-          <button id="delete-vision-desc-btn" style="flex:1;padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:#ef4444;font-weight:600;cursor:pointer;">Usuń opis AI</button>
+        imageHtml += `<div class="vision-desc">${escapeHtml(node.imageDescription)}</div>
+        <div class="panel-row-actions">
+          <button id="edit-vision-desc-btn" class="secondary-btn">Edytuj opis AI</button>
+          <button id="delete-vision-desc-btn" class="secondary-btn danger-text">Usuń opis AI</button>
         </div>`;
       }
     }
 
     const emptyText = node.image ? 'Brak własnej notatki' : 'Brak opisu';
-    this.bodyEl.innerHTML = `${imageHtml}<p id="panel-body-text">${node.content || `<span style="opacity:0.4">${emptyText}</span>`}</p>`;
+    this.bodyEl.innerHTML = `${imageHtml}<p id="panel-body-text">${node.content ? escapeHtml(node.content) : `<span style="opacity:0.4">${emptyText}</span>`}</p>`;
 
     document.getElementById('edit-node-btn').textContent = 'Edytuj';
-
     this.renderProjectControls(node);
+    this.renderSemanticControls(node);
+    this.renderLayerControls(node);
     this.renderConnections(nodeId);
     this.el.classList.remove('hidden');
   }
@@ -128,29 +123,30 @@ class Panel {
       document.getElementById('edit-node-btn').textContent = 'Zapisz';
 
       const typeOptions = store.getCategories()
-        .map(t => `<option value="${t.id}" ${t.id === node.type ? 'selected' : ''}>${t.name.toUpperCase()}</option>`)
+        .map(category => `<option value="${category.id}" ${category.id === node.type ? 'selected' : ''}>${escapeHtml(category.name.toUpperCase())}</option>`)
         .join('');
 
-      this.typeEl.innerHTML = `<select id="edit-type" style="background:var(--surface);border:1px solid var(--border);color:white;font-weight:700;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:10px;">${typeOptions}</select>`;
-      this.titleEl.innerHTML = `<input type="text" id="edit-title" value="${node.title}" style="width:100%;background:var(--bg-primary);border:1px solid var(--border);padding:6px 10px;border-radius:6px;color:inherit;font-size:18px;font-weight:600;">`;
-      this.bodyEl.innerHTML = `<textarea id="edit-body" style="width:100%;height:200px;background:var(--bg-primary);border:1px solid var(--border);padding:10px;border-radius:6px;color:inherit;font-family:inherit;font-size:14px;resize:vertical;">${node.content}</textarea>`;
-
-      document.getElementById('edit-title').focus();
-    } else {
-      const newTitle = document.getElementById('edit-title').value.trim();
-      const newContent = document.getElementById('edit-body').value.trim();
-      const newType = document.getElementById('edit-type').value;
-
-      store.updateNode(this.currentNodeId, {
-        title: newTitle || '',
-        content: newContent,
-        type: newType
-      });
-
-      this.isEditing = false;
-      this.show(this.currentNodeId);
-      canvas.render();
+      this.typeEl.innerHTML = `<select id="edit-type" class="inline-select">${typeOptions}</select>`;
+      this.titleEl.innerHTML = `<input type="text" id="edit-title" value="${escapeAttr(node.title)}" class="inline-title-input">`;
+      this.bodyEl.innerHTML = `<textarea id="edit-body" class="inline-body-input">${escapeHtml(node.content)}</textarea>`;
+      document.getElementById('edit-title')?.focus();
+      return;
     }
+
+    const newTitle = document.getElementById('edit-title').value.trim();
+    const newContent = document.getElementById('edit-body').value.trim();
+    const newType = document.getElementById('edit-type').value;
+
+    store.updateNode(this.currentNodeId, {
+      title: newTitle || '',
+      content: newContent,
+      type: newType,
+    });
+
+    this.isEditing = false;
+    this.show(this.currentNodeId);
+    canvas.render();
+    window.dispatchEvent(new CustomEvent('scope-changed'));
   }
 
   renderConnections(nodeId) {
@@ -159,18 +155,18 @@ class Panel {
     const nodes = store.getVisibleNodes();
 
     const connectedIds = links
-      .filter(l => l.source === nodeId || l.target === nodeId)
-      .map(l => l.source === nodeId ? l.target : l.source);
+      .filter(link => getEndpointId(link.source) === nodeId || getEndpointId(link.target) === nodeId)
+      .map(link => getEndpointId(link.source) === nodeId ? getEndpointId(link.target) : getEndpointId(link.source));
 
     connectedIds.forEach(id => {
-      const connNode = nodes.find(n => n.id === id);
+      const connNode = nodes.find(node => node.id === id);
       if (!connNode) return;
 
       const li = document.createElement('li');
       li.className = 'connection-item';
 
       const span = document.createElement('span');
-      span.textContent = connNode.title;
+      span.textContent = connNode.title || '(bez tytułu)';
       span.style.color = store.getCategoryColor(connNode.type) || COLORS.textSecondary;
       span.addEventListener('click', () => {
         this.show(connNode.id);
@@ -222,27 +218,129 @@ class Panel {
     }
   }
 
+  renderSemanticControls(node) {
+    if (this.prioritySelect) {
+      this.prioritySelect.innerHTML = Array.from({ length: 10 }, (_, index) => {
+        const value = index + 1;
+        return `<option value="${value}">Priorytet ${value}</option>`;
+      }).join('');
+      this.prioritySelect.value = String(node.priority || 1);
+    }
+
+    if (this.rawStateSelect) {
+      this.rawStateSelect.innerHTML = `
+        <option value="raw">Surowiec</option>
+        <option value="extracted">Wyciągnięte</option>
+        <option value="hidden">Schowane</option>
+        <option value="archived">Archiwum</option>
+      `;
+      this.rawStateSelect.value = node.rawState || 'raw';
+    }
+
+    if (this.planKindSelect) {
+      this.planKindSelect.innerHTML = `
+        <option value="">Typ planu...</option>
+        ${PLAN_KINDS.map(kind => `<option value="${kind}">${kind.replace('_', ' ')}</option>`).join('')}
+      `;
+      this.planKindSelect.value = node.planKind || '';
+      this.planKindSelect.disabled = node.stage !== 'plan';
+    }
+  }
+
+  renderLayerControls(node) {
+    if (!this.openLayerBtn) return;
+
+    const layer = store.getLayers().find(item => item.originNodeId === node.id);
+    this.openLayerBtn.textContent = layer ? `Otwórz warstwę: ${store.getLayerTitle(layer.id)}` : 'Utwórz / otwórz warstwę z tej notki';
+    if (this.renameLayerBtn) {
+      this.renameLayerBtn.disabled = !layer;
+      this.renameLayerBtn.textContent = layer?.titleMode === 'bound' ? 'Nadaj własny tytuł warstwy' : 'Zmień tytuł warstwy';
+    }
+  }
+
   handleProjectChange() {
     if (!this.currentNodeId || !this.projectSelect) return;
 
     store.assignNodeToProject(this.currentNodeId, this.projectSelect.value || null);
     this.show(this.currentNodeId);
     canvas.render();
+    window.dispatchEvent(new CustomEvent('scope-changed'));
   }
 
   toggleStage() {
     const node = store.getNodeById(this.currentNodeId);
     if (!node) return;
 
-    store.setNodeStage(node.id, node.stage === 'plan' ? 'robocze' : 'plan');
+    const nextStage = node.stage === 'plan' ? 'robocze' : 'plan';
+    const planKind = nextStage === 'plan' ? (this.planKindSelect?.value || 'fundament') : '';
+    store.setNodeStage(node.id, nextStage, planKind);
     this.show(node.id);
     canvas.render();
   }
 
+  handlePriorityChange() {
+    if (!this.currentNodeId || !this.prioritySelect) return;
+    store.setNodePriority(this.currentNodeId, this.prioritySelect.value);
+    this.show(this.currentNodeId);
+    canvas.render();
+  }
+
+  handleRawStateChange() {
+    if (!this.currentNodeId || !this.rawStateSelect) return;
+    store.setNodeRawState(this.currentNodeId, this.rawStateSelect.value);
+    this.show(this.currentNodeId);
+    canvas.render();
+  }
+
+  handlePlanKindChange() {
+    const node = store.getNodeById(this.currentNodeId);
+    if (!node || node.stage !== 'plan') return;
+    store.setNodeStage(node.id, 'plan', this.planKindSelect?.value || '');
+    this.show(node.id);
+    canvas.render();
+  }
+
+  openNodeLayer() {
+    const node = store.getNodeById(this.currentNodeId);
+    if (!node) return;
+    const layer = store.createLayerFromNode(node.id);
+    if (!layer) return;
+    store.setActiveLayerId(layer.id);
+    this.hide();
+    canvas.clearSelection();
+    canvas.render();
+    window.dispatchEvent(new CustomEvent('scope-changed'));
+  }
+
+  renameNodeLayer() {
+    const node = store.getNodeById(this.currentNodeId);
+    if (!node) return;
+    const layer = store.getLayers().find(item => item.originNodeId === node.id);
+    if (!layer) return;
+    const name = prompt('Nowy tytuł warstwy', store.getLayerTitle(layer.id));
+    if (!name) return;
+    store.renameLayer(layer.id, name);
+    this.show(node.id);
+    canvas.render();
+    window.dispatchEvent(new CustomEvent('scope-changed'));
+  }
+
   handleDelete() {
-    store.deleteNode(this.currentNodeId);
+    const node = store.getNodeById(this.currentNodeId);
+    if (!node) return;
+
+    const hasLayer = store.getLayers().some(layer => layer.originNodeId === node.id);
+    let action = 'detach';
+    if (hasLayer) {
+      const choice = prompt('Ta notka ma warstwę. Wpisz detach, delete albo cancel.', 'detach');
+      if (choice === 'cancel') return;
+      action = choice === 'delete' ? 'delete-layers' : 'detach';
+    }
+
+    store.deleteNode(node.id, { originLayerAction: action });
     this.hide();
     canvas.render();
+    window.dispatchEvent(new CustomEvent('scope-changed'));
   }
 
   handlePark() {
@@ -267,7 +365,7 @@ class Panel {
     try {
       const description = await vision.analyzeImage(node.image);
       if (description && !description.startsWith('[')) {
-        store.updateNode(node.id, { imageDescription: description });
+        store.updateNode(node.id, { imageDescription: description, rawState: 'extracted' });
         this.show(node.id);
         canvas.render();
       } else {
@@ -287,13 +385,13 @@ class Panel {
     const node = store.getNodeById(this.currentNodeId);
     if (!node?.image) return;
 
-    this.bodyEl.innerHTML = `<div style="margin-bottom:12px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">
-      <img src="${node.image}" style="width:100%;display:block;" alt="Screenshot" />
+    this.bodyEl.innerHTML = `<div class="panel-image-preview">
+      <img src="${node.image}" alt="Screenshot" />
     </div>
-    <textarea id="vision-desc-editor" style="width:100%;height:260px;background:var(--bg-primary);border:1px solid var(--border);padding:10px;border-radius:6px;color:inherit;font-family:inherit;font-size:13px;resize:vertical;line-height:1.5;">${node.imageDescription || ''}</textarea>
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button id="save-vision-desc-btn" style="flex:1;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-primary);font-weight:600;cursor:pointer;">Zapisz opis AI</button>
-      <button id="cancel-vision-desc-btn" style="flex:1;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-weight:600;cursor:pointer;">Anuluj</button>
+    <textarea id="vision-desc-editor" class="vision-desc-editor">${escapeHtml(node.imageDescription || '')}</textarea>
+    <div class="panel-row-actions">
+      <button id="save-vision-desc-btn" class="secondary-btn">Zapisz opis AI</button>
+      <button id="cancel-vision-desc-btn" class="secondary-btn">Anuluj</button>
     </div>`;
     document.getElementById('vision-desc-editor')?.focus();
   }
@@ -303,7 +401,8 @@ class Panel {
     if (!textarea || !this.currentNodeId) return;
 
     store.updateNode(this.currentNodeId, {
-      imageDescription: textarea.value.trim()
+      imageDescription: textarea.value.trim(),
+      rawState: textarea.value.trim() ? 'extracted' : 'raw',
     });
     this.show(this.currentNodeId);
     canvas.render();
@@ -312,18 +411,22 @@ class Panel {
   deleteVisionDescription() {
     if (!this.currentNodeId) return;
 
-    store.updateNode(this.currentNodeId, { imageDescription: '' });
+    store.updateNode(this.currentNodeId, { imageDescription: '', rawState: 'raw' });
     this.show(this.currentNodeId);
     canvas.render();
   }
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/'/g, '&#39;');
 }
 
 export const panel = new Panel();
