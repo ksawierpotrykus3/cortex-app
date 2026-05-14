@@ -9,6 +9,7 @@ import { vision } from './vision.js';
 import { SCREENSHOT_CONFIG } from './constants.js';
 import { categoryManager } from './categories.js';
 import { flashChat } from './flashchat.js';
+import { projects } from './projects.js';
 
 function init() {
   console.log('Cortex v2: Initializing infinite canvas...');

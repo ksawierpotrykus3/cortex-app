@@ -17,13 +17,15 @@ class Store {
           links: parsed.links || [],
           parking: parsed.parking || [],
           strokes: parsed.strokes || [],
-          categories: parsed.categories || this._defaultCategories()
+          categories: parsed.categories || this._defaultCategories(),
+          projects: parsed.projects || [],
+          activeProjectId: parsed.activeProjectId || 'all',
         };
       } catch {
-        return { nodes: [], links: [], parking: [], strokes: [], categories: this._defaultCategories() };
+        return { nodes: [], links: [], parking: [], strokes: [], categories: this._defaultCategories(), projects: [], activeProjectId: 'all' };
       }
     }
-    return { nodes: [], links: [], parking: [], strokes: [], categories: this._defaultCategories() };
+    return { nodes: [], links: [], parking: [], strokes: [], categories: this._defaultCategories(), projects: [], activeProjectId: 'all' };
   }
 
   _defaultCategories() {
@@ -51,9 +53,26 @@ class Store {
   }
 
   getNodes() { return this.state.nodes; }
+  getVisibleNodes() {
+    const active = this.state.activeProjectId || 'all';
+    if (active === 'all') return this.state.nodes;
+    if (active === 'dirty') return this.state.nodes.filter(n => !n.projectId);
+    return this.state.nodes.filter(n => n.projectId === active);
+  }
   getLinks() { return this.state.links; }
+  getVisibleLinks() {
+    const visibleIds = new Set(this.getVisibleNodes().map(n => n.id));
+    return this.state.links.filter(l => {
+      const source = typeof l.source === 'object' ? l.source.id : l.source;
+      const target = typeof l.target === 'object' ? l.target.id : l.target;
+      return visibleIds.has(source) && visibleIds.has(target);
+    });
+  }
   getParking() { return this.state.parking; }
   getNodeById(id) { return this.state.nodes.find(n => n.id === id); }
+  getProjects() { return this.state.projects || []; }
+  getActiveProjectId() { return this.state.activeProjectId || 'all'; }
+  getProjectById(id) { return (this.state.projects || []).find(p => p.id === id); }
 
   addNode(node) {
     const newNode = {
@@ -61,6 +80,10 @@ class Store {
       title: node.title || '',
       content: node.content || '',
       type: node.type || 'rozrzutka',
+      stage: node.stage || 'robocze',
+      projectId: node.projectId !== undefined
+        ? node.projectId
+        : this._projectIdForNewNode(),
       x: node.x ?? 200 + Math.random() * 400,
       y: node.y ?? 200 + Math.random() * 400,
       createdAt: new Date().toISOString(),
@@ -134,7 +157,7 @@ class Store {
 
   clearAll() {
     localStorage.removeItem(STORAGE_KEY);
-    this.state = { nodes: [], links: [], parking: [], strokes: [], categories: this._defaultCategories() };
+    this.state = { nodes: [], links: [], parking: [], strokes: [], categories: this._defaultCategories(), projects: [], activeProjectId: 'all' };
     this._notify();
   }
 
@@ -191,10 +214,47 @@ class Store {
         links: data.links,
         parking: data.parking || [],
         strokes: data.strokes || [],
-        categories: data.categories || this.state.categories || this._defaultCategories()
+        categories: data.categories || this.state.categories || this._defaultCategories(),
+        projects: data.projects || this.state.projects || [],
+        activeProjectId: data.activeProjectId || this.state.activeProjectId || 'all',
       };
       this.save();
     }
+  }
+
+  createProject(name) {
+    const cleanName = (name || '').trim();
+    if (!cleanName) return null;
+
+    const project = {
+      id: crypto.randomUUID(),
+      name: cleanName,
+      createdAt: new Date().toISOString(),
+    };
+    this.state.projects.push(project);
+    this.state.activeProjectId = project.id;
+    this.save();
+    return project;
+  }
+
+  setActiveProjectId(id) {
+    this.state.activeProjectId = id || 'all';
+    this.save();
+  }
+
+  assignNodeToProject(nodeId, projectId) {
+    const normalized = projectId === 'dirty' || projectId === 'all' ? null : projectId;
+    this.updateNode(nodeId, { projectId: normalized || null });
+  }
+
+  setNodeStage(nodeId, stage) {
+    const nextStage = stage === 'plan' ? 'plan' : 'robocze';
+    this.updateNode(nodeId, { stage: nextStage });
+  }
+
+  _projectIdForNewNode() {
+    const active = this.state.activeProjectId || 'all';
+    return active !== 'all' && active !== 'dirty' ? active : null;
   }
 
   buildSemanticExport() {

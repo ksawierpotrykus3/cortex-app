@@ -333,7 +333,7 @@ class Canvas {
   }
 
   _expandAll() {
-    const nodes = store.getNodes();
+    const nodes = store.getVisibleNodes();
     if (nodes.length === 0) return;
 
     // Save original positions
@@ -405,8 +405,8 @@ class Canvas {
   }
 
   _renderExpanded(expandedHeights) {
-    const nodes = store.getNodes();
-    const links = store.getLinks();
+    const nodes = store.getVisibleNodes();
+    const links = store.getVisibleLinks();
 
     this.linkLayer.innerHTML = '';
     this.noteLayer.innerHTML = '';
@@ -492,6 +492,21 @@ class Canvas {
     typeLabel.textContent = node.type.toUpperCase();
     g.appendChild(typeLabel);
 
+    if (node.stage === 'plan') {
+      const stageLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      stageLabel.classList.add('note-stage-label');
+      stageLabel.setAttribute('x', w - NOTE_CONFIG.padding);
+      stageLabel.setAttribute('y', '18');
+      stageLabel.setAttribute('fill', COLORS.accent);
+      stageLabel.setAttribute('font-size', '9');
+      stageLabel.setAttribute('font-weight', '700');
+      stageLabel.setAttribute('text-anchor', 'end');
+      stageLabel.style.pointerEvents = 'none';
+      stageLabel.style.userSelect = 'none';
+      stageLabel.textContent = 'PLAN';
+      g.appendChild(stageLabel);
+    }
+
     // Title
     const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     title.setAttribute('x', NOTE_CONFIG.padding + NOTE_CONFIG.accentBarWidth);
@@ -555,8 +570,8 @@ class Canvas {
   // --- Rendering ---
 
   render() {
-    const nodes = store.getNodes();
-    const links = store.getLinks();
+    const nodes = store.getVisibleNodes();
+    const links = store.getVisibleLinks();
 
     // Clear
     this.linkLayer.innerHTML = '';
@@ -777,6 +792,11 @@ class Canvas {
     rect.setAttribute('stroke', 'none');
     g.appendChild(rect);
 
+    if (node.stage === 'plan') {
+      rect.setAttribute('stroke', COLORS.accent);
+      rect.setAttribute('stroke-width', '4');
+    }
+
     // Image at 1:1
     const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
     image.setAttribute('x', '0');
@@ -799,7 +819,7 @@ class Canvas {
 
   /** After card resize, push overlapping cards apart */
   _resolveOverlaps() {
-    const nodes = store.getNodes();
+    const nodes = store.getVisibleNodes();
     const gap = NOTE_CONFIG.expandGap;
     const baseW = NOTE_CONFIG.width;
     const baseH = NOTE_CONFIG.minHeight;

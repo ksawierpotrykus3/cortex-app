@@ -24,6 +24,11 @@
         </div>
 
         <div class="top-actions">
+          <select id="project-scope" class="project-scope" title="Zakres tablicy">
+            <option value="all">Wszystko</option>
+            <option value="dirty">Brudna tablica</option>
+          </select>
+          <button id="create-project-btn" title="Stwórz projekt" style="font-size: 16px;">+</button>
           <button id="parking-toggle" title="Parking (nie-teraz)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           </button>
@@ -72,6 +77,12 @@
           <div id="panel-body-container">
             <p id="panel-body">Treść...</p>
           </div>
+
+          <section class="project-section">
+            <h3>Projekt</h3>
+            <select id="panel-project-select" class="panel-select"></select>
+            <button id="panel-stage-btn" class="secondary-btn">Przenieś do planu</button>
+          </section>
 
           <section class="connections-section">
             <h3>Połączenia</h3>

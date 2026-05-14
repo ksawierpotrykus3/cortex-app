@@ -26,7 +26,7 @@ class Filter {
       return;
     }
 
-    const nodes = store.getNodes();
+    const nodes = store.getVisibleNodes();
     const matchIds = new Set();
 
     nodes.forEach(node => {

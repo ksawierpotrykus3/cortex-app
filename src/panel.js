@@ -18,6 +18,8 @@ class Panel {
     this.bodyEl = document.getElementById('panel-body');
     this.connectionsEl = document.getElementById('panel-connections');
     this.closeBtn = document.getElementById('panel-close');
+    this.projectSelect = document.getElementById('panel-project-select');
+    this.stageBtn = document.getElementById('panel-stage-btn');
 
     this.isEditing = false;
     this.currentNodeId = null;
@@ -41,6 +43,8 @@ class Panel {
       canvas.linkSourceId = this.currentNodeId;
       this.hide();
     });
+    this.projectSelect?.addEventListener('change', () => this.handleProjectChange());
+    this.stageBtn?.addEventListener('click', () => this.toggleStage());
 
     this.bodyEl.addEventListener('click', (e) => {
       if (e.target?.id === 'reanalyze-image-btn') {
@@ -78,7 +82,9 @@ class Panel {
     this.typeEl.textContent = node.type.toUpperCase();
     this.typeEl.style.backgroundColor = store.getCategoryColor(node.type);
     const dateStr = node.createdAt ? new Date(node.createdAt).toLocaleDateString('pl-PL') : '—';
-    this.metaEl.textContent = `Dodano: ${dateStr}`;
+    const projectName = node.projectId ? store.getProjectById(node.projectId)?.name || 'Projekt' : 'Brudna tablica';
+    const stageName = node.stage === 'plan' ? 'Plan' : 'Robocze';
+    this.metaEl.textContent = `Dodano: ${dateStr} · ${projectName} · ${stageName}`;
 
     // Image preview for screenshot nodes
     let imageHtml = '';
@@ -101,6 +107,7 @@ class Panel {
 
     document.getElementById('edit-node-btn').textContent = 'Edytuj';
 
+    this.renderProjectControls(node);
     this.renderConnections(nodeId);
     this.el.classList.remove('hidden');
   }
@@ -148,8 +155,8 @@ class Panel {
 
   renderConnections(nodeId) {
     this.connectionsEl.innerHTML = '';
-    const links = store.getLinks();
-    const nodes = store.getNodes();
+    const links = store.getVisibleLinks();
+    const nodes = store.getVisibleNodes();
 
     const connectedIds = links
       .filter(l => l.source === nodeId || l.target === nodeId)
@@ -194,6 +201,42 @@ class Panel {
       li.style.opacity = '0.4';
       this.connectionsEl.appendChild(li);
     }
+  }
+
+  renderProjectControls(node) {
+    if (!this.projectSelect || !this.stageBtn) return;
+
+    const projects = store.getProjects();
+    this.projectSelect.innerHTML = `
+      <option value="">Brudna tablica</option>
+      ${projects.map(project => `<option value="${project.id}">${escapeHtml(project.name)}</option>`).join('')}
+    `;
+    this.projectSelect.value = node.projectId || '';
+
+    if (node.stage === 'plan') {
+      this.stageBtn.textContent = 'Cofnij do roboczych';
+      this.stageBtn.classList.add('is-plan');
+    } else {
+      this.stageBtn.textContent = 'Przenieś do planu';
+      this.stageBtn.classList.remove('is-plan');
+    }
+  }
+
+  handleProjectChange() {
+    if (!this.currentNodeId || !this.projectSelect) return;
+
+    store.assignNodeToProject(this.currentNodeId, this.projectSelect.value || null);
+    this.show(this.currentNodeId);
+    canvas.render();
+  }
+
+  toggleStage() {
+    const node = store.getNodeById(this.currentNodeId);
+    if (!node) return;
+
+    store.setNodeStage(node.id, node.stage === 'plan' ? 'robocze' : 'plan');
+    this.show(node.id);
+    canvas.render();
   }
 
   handleDelete() {
@@ -273,6 +316,14 @@ class Panel {
     this.show(this.currentNodeId);
     canvas.render();
   }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 export const panel = new Panel();

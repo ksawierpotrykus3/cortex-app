@@ -36,6 +36,8 @@ export function buildSemanticExport(state = {}) {
       counts: {
         items: items.length,
         screens: items.filter(item => item.kind === 'screen').length,
+        projects: Array.isArray(state.projects) ? state.projects.length : 0,
+        planItems: items.filter(item => item.stage === 'plan').length,
         connections: connections.length,
         drawings: drawings.length,
       },
@@ -45,6 +47,14 @@ export function buildSemanticExport(state = {}) {
     types,
     items,
   };
+
+  if (Array.isArray(state.projects) && state.projects.length) {
+    result.projects = state.projects.map(project => ({
+      id: project.id,
+      name: cleanText(project.name),
+      createdAt: project.createdAt,
+    }));
+  }
 
   if (connections.length) result.connections = connections;
   if (drawings.length) result.drawings = drawings;
@@ -74,6 +84,13 @@ function buildItem(node, layout) {
       col: layout.col,
     },
   };
+
+  if (node.createdAt) {
+    item.createdAt = node.createdAt;
+  }
+
+  if (node.projectId) item.projectId = cleanText(node.projectId);
+  if (node.stage === 'plan') item.stage = 'plan';
 
   if (isScreen) {
     item.kind = 'screen';
