@@ -27,6 +27,9 @@ test('migrates old state with semantic defaults and removes broken links', () =>
   assert.deepEqual(migrated.links[0], { source: 'n1', target: 'n2' });
   assert.equal(migrated.strokes[0].scope, 'workspace');
   assert.equal(migrated.activeLayerId, 'root');
+  assert.deepEqual(migrated.inboxMessages, []);
+  assert.equal(migrated.semanticConfig.rawStates.hidden.label, 'Schowane');
+  assert.equal(migrated.semanticConfig.planKinds[0].id, 'fundament');
 });
 
 test('exports visible v2 without embedded images and with bound layer title', () => {
@@ -124,4 +127,77 @@ test('exports current all-project view as the same root-layer nodes the user see
   const exported = buildSemanticExport(state, { scope: 'current' });
 
   assert.deepEqual(exported.items.map(item => item.title), ['Dirty root', 'Project root']);
+});
+
+test('visible export hides hidden note body while full state keeps it', () => {
+  const state = migrateState({
+    nodes: [
+      {
+        id: 'hidden-screen',
+        title: 'Hidden screen',
+        content: 'private body',
+        image: 'data:image/png;base64,SECRET_IMAGE',
+        imageDescription: 'TEKST:\nprivate screen text\n\nOPIS:\nprivate screen description',
+        rawState: 'hidden',
+        x: 0,
+        y: 0,
+      },
+    ],
+  });
+
+  const exported = buildSemanticExport(state, { scope: 'all' });
+
+  assert.equal(state.nodes[0].content, 'private body');
+  assert.equal(exported.items[0].title, 'Hidden screen');
+  assert.equal(exported.items[0].visualState, 'hidden');
+  assert.equal(exported.items[0].text, undefined);
+  assert.equal(exported.items[0].note, undefined);
+  assert.equal(exported.items[0].screenText, undefined);
+  assert.equal(exported.items[0].screenDescription, undefined);
+  assert.equal(JSON.stringify(exported).includes('SECRET_IMAGE'), false);
+});
+
+test('visible export marks archived notes as low visual weight', () => {
+  const state = migrateState({
+    nodes: [
+      { id: 'archived', title: 'Archive', content: 'still visible', rawState: 'archived', x: 0, y: 0 },
+    ],
+  });
+
+  const exported = buildSemanticExport(state, { scope: 'all' });
+
+  assert.equal(exported.items[0].visualState, 'archived');
+  assert.equal(exported.items[0].visualWeight, 'low');
+  assert.equal(exported.items[0].text, 'still visible');
+});
+
+test('project export keeps cross-project links as external connections', () => {
+  const state = migrateState({
+    projects: [
+      { id: 'p1', name: 'One' },
+      { id: 'p2', name: 'Two' },
+    ],
+    nodes: [
+      { id: 'inside', title: 'Inside', projectId: 'p1', x: 0, y: 0 },
+      { id: 'outside', title: 'Outside', projectId: 'p2', x: 100, y: 0 },
+    ],
+    links: [{ source: 'inside', target: 'outside' }],
+  });
+
+  const exported = buildSemanticExport(state, { scope: 'project', projectId: 'p1' });
+
+  assert.equal(exported.items.length, 1);
+  assert.equal(exported.connections, undefined);
+  assert.deepEqual(exported.externalConnections, [
+    {
+      from: 'n1',
+      to: {
+        id: 'outside',
+        title: 'Outside',
+        projectId: 'p2',
+        projectName: 'Two',
+        layerId: 'root',
+      },
+    },
+  ]);
 });

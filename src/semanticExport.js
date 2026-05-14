@@ -41,6 +41,7 @@ export function buildSemanticExport(state = {}, options = {}) {
   }));
 
   const connections = buildConnections(safeState.links, idMap);
+  const externalConnections = buildExternalConnections(safeState.links, idMap, safeState);
   const drawings = buildDrawings(safeState.strokes.filter(stroke => strokeMatchesScope(stroke, scope)));
   const types = buildTypes(safeState.categories, nodes);
 
@@ -68,6 +69,7 @@ export function buildSemanticExport(state = {}, options = {}) {
         layers: safeState.layers.length,
         planItems: items.filter(item => item.stage === 'plan').length,
         connections: connections.length,
+        externalConnections: externalConnections.length,
         drawings: drawings.length,
       },
       bounds,
@@ -82,7 +84,9 @@ export function buildSemanticExport(state = {}, options = {}) {
   if (projects.length) result.projects = projects;
   if (layers.length) result.layers = layers;
   if (connections.length) result.connections = connections;
+  if (externalConnections.length) result.externalConnections = externalConnections;
   if (drawings.length) result.drawings = drawings;
+  if (options.includeInbox) result.inbox = buildInbox(safeState.inboxMessages);
 
   return result;
 }
@@ -135,13 +139,15 @@ function buildItem(node, layout) {
   const screen = parseVisionDescription(node.imageDescription);
   const isScreen = isScreenshotNode(node);
   const size = getDisplaySize(node);
+  const rawState = node.rawState || 'raw';
+  const isHidden = rawState === 'hidden';
 
   const item = {
     id: layout.id,
     type,
     category: type,
     priority: clampPriority(node.priority),
-    rawState: node.rawState || 'raw',
+    rawState,
     stage: node.stage || 'robocze',
     where: {
       pos: [round(node.x), round(node.y)],
@@ -160,14 +166,18 @@ function buildItem(node, layout) {
   if (node.sourceIds?.length) item.sourceIds = node.sourceIds;
   if (node.stage === 'plan' && node.planKind) item.planKind = node.planKind;
   if (title) item.title = title;
+  if (rawState === 'hidden' || rawState === 'archived') item.visualState = rawState;
+  if (rawState === 'archived') item.visualWeight = 'low';
 
   if (isScreen) {
     item.kind = 'screen';
-    item.imageSize = [size.width, size.height];
-    if (content) item.note = content;
-    if (screen.text) item.screenText = screen.text;
-    item.screenDescription = screen.description || '[brak opisu AI]';
-  } else if (content) {
+    if (!isHidden) {
+      item.imageSize = [size.width, size.height];
+      if (content) item.note = content;
+      if (screen.text) item.screenText = screen.text;
+      item.screenDescription = screen.description || '[brak opisu AI]';
+    }
+  } else if (content && !isHidden) {
     item.text = content;
   }
 
@@ -245,6 +255,61 @@ function buildConnections(links = [], idMap) {
   }
 
   return connections;
+}
+
+function buildExternalConnections(links = [], idMap, state) {
+  if (!Array.isArray(links)) return [];
+
+  const nodeById = new Map((state.nodes || []).map(node => [node.id, node]));
+  const projectById = new Map((state.projects || []).map(project => [project.id, project]));
+  const seen = new Set();
+  const connections = [];
+
+  for (const link of links) {
+    const source = getEndpointId(link?.source);
+    const target = getEndpointId(link?.target);
+    const sourceMapped = idMap.get(source);
+    const targetMapped = idMap.get(target);
+    if ((sourceMapped && targetMapped) || (!sourceMapped && !targetMapped)) continue;
+
+    const externalId = sourceMapped ? target : source;
+    const externalNode = nodeById.get(externalId);
+    if (!externalNode) continue;
+
+    const from = sourceMapped || buildExternalNodeRef(externalNode, projectById);
+    const to = targetMapped || buildExternalNodeRef(externalNode, projectById);
+    const key = `${typeof from === 'string' ? from : from.id}->${typeof to === 'string' ? to : to.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    connections.push({ from, to });
+  }
+
+  return connections;
+}
+
+function buildExternalNodeRef(node, projectById) {
+  const ref = {
+    id: node.id,
+    title: cleanText(node.title) || cleanText(node.content) || node.id,
+  };
+  if (node.projectId) {
+    const project = projectById.get(node.projectId);
+    ref.projectId = node.projectId;
+    ref.projectName = cleanText(project?.name) || node.projectId;
+  }
+  ref.layerId = node.layerId || ROOT_LAYER_ID;
+  return ref;
+}
+
+function buildInbox(messages = []) {
+  return Array.isArray(messages)
+    ? messages.map(message => ({
+      id: message.id,
+      text: cleanText(message.text),
+      createdAt: message.createdAt || '',
+      ...(message.copiedAt ? { copiedAt: message.copiedAt } : {}),
+    })).filter(message => message.text)
+    : [];
 }
 
 function buildDrawings(strokes = []) {
