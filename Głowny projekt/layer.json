@@ -1,0 +1,144 @@
+{
+  "schema": "cortex.visible.v2",
+  "scope": {
+    "type": "layer",
+    "layer": {
+      "id": "b79855e5-f99d-4aff-a8c0-06fa99466c70",
+      "title": "Czystki",
+      "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
+      "titleMode": "bound",
+      "path": [
+        {
+          "id": "root",
+          "title": "Tablica główna",
+          "originNodeId": null,
+          "titleMode": "custom"
+        },
+        {
+          "id": "b79855e5-f99d-4aff-a8c0-06fa99466c70",
+          "title": "Czystki",
+          "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
+          "titleMode": "bound"
+        }
+      ]
+    }
+  },
+  "ai_context": {
+    "purpose": "Widzialny zapis tablicy Cortex dla modelu AI.",
+    "reading_rules": [
+      "Czytaj tylko elementy opisane w JSON.",
+      "Obrazy nie sa osadzane; screen reprezentuje opis AI/Flash i notatka użytkownika.",
+      "ROBOCZE to surowiec, PLAN to przetworzona struktura.",
+      "Pozycje, kolejność, warstwy, projekty, priorytet i połączenia mają znaczenie."
+    ],
+    "stages": {
+      "robocze": "chaotyczny surowiec, screeny, fragmenty rozmów, pomysły",
+      "plan": "przetworzony fundament, cel, mechanizm, feature, decyzja, pytanie albo next step"
+    }
+  },
+  "board": {
+    "counts": {
+      "items": 2,
+      "screens": 0,
+      "projects": 7,
+      "layers": 5,
+      "planItems": 0,
+      "connections": 1,
+      "externalConnections": 0,
+      "drawings": 0
+    },
+    "bounds": {
+      "left": 1250,
+      "top": -1377,
+      "right": 1706,
+      "bottom": -1031
+    },
+    "readingOrder": [
+      "n1",
+      "n2"
+    ]
+  },
+  "types": {
+    "rozrzutka": "Rozrzutka"
+  },
+  "items": [
+    {
+      "id": "n1",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1466,
+          -1377
+        ],
+        "zone": "top-right",
+        "row": 1,
+        "col": 1,
+        "layerId": "b79855e5-f99d-4aff-a8c0-06fa99466c70"
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T08:03:36.489Z",
+        "updatedAt": "2026-05-15T08:03:38.673Z"
+      },
+      "title": "ddddd",
+      "text": "dddddd"
+    },
+    {
+      "id": "n2",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1250,
+          -1111
+        ],
+        "zone": "bottom-left",
+        "row": 2,
+        "col": 1,
+        "layerId": "b79855e5-f99d-4aff-a8c0-06fa99466c70"
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T08:03:39.227Z",
+        "updatedAt": "2026-05-15T08:03:42.026Z"
+      },
+      "title": "dddddddddddddd",
+      "text": "dddddddddddddd"
+    }
+  ],
+  "layers": [
+    {
+      "id": "b79855e5-f99d-4aff-a8c0-06fa99466c70",
+      "title": "Czystki",
+      "titleMode": "bound",
+      "parentLayerId": "root",
+      "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
+      "projectId": null,
+      "path": [
+        {
+          "id": "root",
+          "title": "Tablica główna",
+          "originNodeId": null,
+          "titleMode": "custom"
+        },
+        {
+          "id": "b79855e5-f99d-4aff-a8c0-06fa99466c70",
+          "title": "Czystki",
+          "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
+          "titleMode": "bound"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "n2",
+      "n1"
+    ]
+  ]
+}

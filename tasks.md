@@ -1,9 +1,0 @@
-- `[x]` 01-bugfix: Naprawa crashy i błędów krytycznych
-    - `[x]` 1. Dodaj brakujący `#batch-actions` HTML do `index.html`
-    - `[x]` 2. Napraw `graph.js` contextmenu (import store + zmiana logiki)
-    - `[x]` 3. Napraw daty w seed data i panelu
-    - `[x]` 4. Usuń reload z importData w store.js
-- `[x]` 02-redesign: Odświeżenie wyglądu
-- `[x]` 03-interakcje: Neighborhood highlight, Tab linking itp.
-- `[x]` 04-panel-edycja: Zaawansowana edycja node'ów
-- `[/]` 05-batch-ops: Logika operacji masowych

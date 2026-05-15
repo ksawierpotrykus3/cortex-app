@@ -1,0 +1,234 @@
+{
+  "schema": "cortex.visible.v2",
+  "scope": {
+    "type": "selection",
+    "selectedIds": [
+      "8b6fb634-2953-4bc2-ad4e-5c7e505716e7",
+      "2b8962f1-ba25-4dfa-89f6-325b27ecb949",
+      "373b4ec0-b318-4374-a827-e7f575b45821",
+      "dee8ef32-e4d0-499b-a9a5-22112bd60774",
+      "321e8179-7ab2-4ad8-93f5-dfb12c1893c2"
+    ]
+  },
+  "ai_context": {
+    "purpose": "Widzialny zapis tablicy Cortex dla modelu AI.",
+    "reading_rules": [
+      "Czytaj tylko elementy opisane w JSON.",
+      "Obrazy nie sa osadzane; screen reprezentuje opis AI/Flash i notatka użytkownika.",
+      "ROBOCZE to surowiec, PLAN to przetworzona struktura.",
+      "Pozycje, kolejność, warstwy, projekty, priorytet i połączenia mają znaczenie."
+    ],
+    "stages": {
+      "robocze": "chaotyczny surowiec, screeny, fragmenty rozmów, pomysły",
+      "plan": "przetworzony fundament, cel, mechanizm, feature, decyzja, pytanie albo next step"
+    }
+  },
+  "board": {
+    "counts": {
+      "items": 5,
+      "screens": 1,
+      "projects": 7,
+      "layers": 5,
+      "planItems": 0,
+      "connections": 5,
+      "externalConnections": 0,
+      "drawings": 0
+    },
+    "bounds": {
+      "left": 1925,
+      "top": -191,
+      "right": 3299,
+      "bottom": 686
+    },
+    "readingOrder": [
+      "n1",
+      "n2",
+      "n3",
+      "n4",
+      "n5"
+    ]
+  },
+  "types": {
+    "rozrzutka": "Rozrzutka"
+  },
+  "items": [
+    {
+      "id": "n1",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2159,
+          -191
+        ],
+        "zone": "top-left",
+        "row": 1,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T07:26:58.161Z",
+        "updatedAt": "2026-05-15T07:27:06.596Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "new",
+      "text": "poprawki"
+    },
+    {
+      "id": "n2",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2501,
+          37
+        ],
+        "zone": "top-center",
+        "row": 2,
+        "col": 2,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T18:54:50.234Z",
+        "updatedAt": "2026-05-15T07:25:49.557Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Settings",
+      "text": "Menu ustawien w których dodaje/usuwam/edytuje. wszystkie nazwy jak tak kategorie(je też do tego trzeba bedzie wrzucić, jedynie projekty maja byc tam gdzie są że dodawanie/usuwanie/zmienianie) czyli musze miec mozliwosc edytowania calej semantyki."
+    },
+    {
+      "id": "n3",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          3059,
+          69
+        ],
+        "zone": "middle-right",
+        "row": 2,
+        "col": 3,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T07:25:53.288Z",
+        "updatedAt": "2026-05-15T07:27:12.281Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "poprawka",
+      "text": "Jeszcze chce mieć mozliwosc dodawania/usuwania. wszystko tak jak kategorie tych semantyk."
+    },
+    {
+      "id": "n4",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1925,
+          102
+        ],
+        "zone": "middle-left",
+        "row": 2,
+        "col": 1,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T07:31:25.816Z",
+        "updatedAt": "2026-05-15T07:32:02.421Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "After zoom",
+      "text": "Strzałka po zoomie automatycznie powraca mnie na glowna tablica zamiast na projekt w ktorym istnieje oryginal tego co bylo zoomowane"
+    },
+    {
+      "id": "n5",
+      "type": "rozrzutka",
+      "category": "rozrzutka",
+      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2384,
+          200
+        ],
+        "zone": "bottom-center",
+        "row": 3,
+        "col": 2,
+        "layerId": "root"
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T07:25:40.064Z",
+        "updatedAt": "2026-05-15T07:25:51.800Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "kind": "screen",
+      "imageSize": [
+        493,
+        486
+      ],
+      "screenText": "SEMANTYKA\nKategorie, kolory, kolejność i auto-tytuły\nraw\nSurowe\nextracted\nWyciągnięte\nhidden\nSchowane\narchived\nArchiwum\nTypy planu\nfundament: Fundament\ncel: Cel\nmechanizm: Mechanizm\nfeature: Feature\ndecyzja: Decyzja\npytanie: Pytanie\nnext_step: Next step\nZapisz semantykę",
+      "screenDescription": "Interfejs ustawień tablicy Cortex dotyczący konfiguracji kategorii, typów planu oraz ich nazw wyświetlanych w systemie."
+    }
+  ],
+  "projects": [
+    {
+      "id": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "name": "Quality of life",
+      "createdAt": "2026-05-14T18:19:43.493Z",
+      "updatedAt": "2026-05-14T18:19:43.493Z"
+    }
+  ],
+  "layers": [
+    {
+      "id": "root",
+      "title": "Tablica główna",
+      "titleMode": "custom",
+      "parentLayerId": null,
+      "originNodeId": null,
+      "projectId": null,
+      "path": [
+        {
+          "id": "root",
+          "title": "Tablica główna",
+          "originNodeId": null,
+          "titleMode": "custom"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "n2",
+      "n5"
+    ],
+    [
+      "n3",
+      "n5"
+    ],
+    [
+      "n1",
+      "n2"
+    ],
+    [
+      "n3",
+      "n2"
+    ],
+    [
+      "n4",
+      "n1"
+    ]
+  ]
+}
