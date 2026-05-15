@@ -44,10 +44,12 @@ export function buildSemanticExport(state = {}, options = {}) {
   const externalConnections = buildExternalConnections(safeState.links, idMap, safeState);
   const drawings = buildDrawings(safeState.strokes.filter(stroke => strokeMatchesScope(stroke, scope)));
   const types = buildTypes(safeState.categories, nodes);
+  const projects = buildProjects(safeState, nodes);
+  const layers = buildLayers(safeState, nodes, scope);
 
   const result = {
     schema: 'cortex.visible.v2',
-    scope: buildScopeInfo(safeState, scope),
+    scope: buildScopeInfo(safeState, scope, idMap),
     ai_context: {
       purpose: 'Widzialny zapis tablicy Cortex dla modelu AI.',
       reading_rules: [
@@ -65,8 +67,8 @@ export function buildSemanticExport(state = {}, options = {}) {
       counts: {
         items: items.length,
         screens: items.filter(item => item.kind === 'screen').length,
-        projects: safeState.projects.length,
-        layers: safeState.layers.length,
+        projects: projects.length,
+        layers: layers.length,
         planItems: items.filter(item => item.stage === 'plan').length,
         connections: connections.length,
         externalConnections: externalConnections.length,
@@ -79,8 +81,6 @@ export function buildSemanticExport(state = {}, options = {}) {
     items,
   };
 
-  const projects = buildProjects(safeState, nodes);
-  const layers = buildLayers(safeState, nodes, scope);
   if (projects.length) result.projects = projects;
   if (layers.length) result.layers = layers;
   if (connections.length) result.connections = connections;
@@ -100,7 +100,7 @@ export function buildSemanticContext(state = {}, options = {}) {
   ].join('\n\n');
 }
 
-function buildScopeInfo(state, scope) {
+function buildScopeInfo(state, scope, idMap = new Map()) {
   const info = { type: scope.type };
 
   if (scope.type === 'view') {
@@ -116,17 +116,21 @@ function buildScopeInfo(state, scope) {
 
   if (scope.type === 'layer') {
     const layer = state.layers.find(item => item.id === scope.layerId);
-    info.layer = layer ? {
-      id: layer.id,
-      title: resolveLayerTitle(layer, state),
-      originNodeId: layer.originNodeId || null,
-      titleMode: layer.titleMode,
-      path: buildLayerPath(layer.id, state),
-    } : { id: scope.layerId };
+    if (layer) {
+      info.layer = {
+        id: layer.id,
+        title: resolveLayerTitle(layer, state),
+        titleMode: layer.titleMode,
+        path: compactLayerPath(layer.id, state),
+      };
+      if (layer.originNodeId) info.layer.originNodeId = layer.originNodeId;
+    } else {
+      info.layer = { id: scope.layerId };
+    }
   }
 
   if (scope.type === 'selection') {
-    info.selectedIds = scope.selectedIds || [];
+    info.selectedIds = [...idMap.values()];
   }
 
   return info;
@@ -154,7 +158,6 @@ function buildItem(node, layout) {
       zone: getZone(node, layout.bounds),
       row: layout.row,
       col: layout.col,
-      layerId: node.layerId || ROOT_LAYER_ID,
     },
     chronology: {
       createdAt: node.createdAt || '',
@@ -162,6 +165,8 @@ function buildItem(node, layout) {
     },
   };
 
+  const layerId = node.layerId || ROOT_LAYER_ID;
+  if (layerId !== ROOT_LAYER_ID) item.where.layerId = layerId;
   if (node.projectId) item.projectId = cleanText(node.projectId);
   if (node.sourceIds?.length) item.sourceIds = node.sourceIds;
   if (node.stage === 'plan' && node.planKind) item.planKind = node.planKind;
@@ -206,18 +211,34 @@ function buildLayers(state, visibleNodes, scope) {
   if (scope.type === 'layer') usedLayerIds.add(scope.layerId);
   if (scope.type === 'view') usedLayerIds.add(scope.state?.activeLayerId || ROOT_LAYER_ID);
   if (scope.type === 'all') state.layers.forEach(layer => usedLayerIds.add(layer.id));
+  usedLayerIds.delete(ROOT_LAYER_ID);
 
   return state.layers
     .filter(layer => usedLayerIds.has(layer.id))
-    .map(layer => ({
+    .map(layer => {
+      const item = {
+        id: layer.id,
+        title: resolveLayerTitle(layer, state),
+        titleMode: layer.titleMode,
+        path: compactLayerPath(layer.id, state),
+      };
+      if (layer.parentLayerId) item.parentLayerId = layer.parentLayerId;
+      if (layer.originNodeId) item.originNodeId = layer.originNodeId;
+      if (layer.projectId) item.projectId = layer.projectId;
+      return item;
+    });
+}
+
+function compactLayerPath(layerId, state) {
+  return buildLayerPath(layerId, state).map(layer => {
+    const item = {
       id: layer.id,
-      title: resolveLayerTitle(layer, state),
+      title: layer.title,
       titleMode: layer.titleMode,
-      parentLayerId: layer.parentLayerId || null,
-      originNodeId: layer.originNodeId || null,
-      projectId: layer.projectId || null,
-      path: buildLayerPath(layer.id, state),
-    }));
+    };
+    if (layer.originNodeId) item.originNodeId = layer.originNodeId;
+    return item;
+  });
 }
 
 function buildTypes(categories = [], nodes = []) {

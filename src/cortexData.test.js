@@ -111,6 +111,50 @@ test('exports selection with only selected visible relations', () => {
   assert.deepEqual(exported.connections, [['n1', 'n2']]);
 });
 
+test('exports selection scope with local visible ids instead of internal node ids', () => {
+  const state = migrateState({
+    nodes: [
+      { id: 'internal-a', title: 'A', x: 0, y: 0 },
+      { id: 'internal-b', title: 'B', x: 100, y: 0 },
+    ],
+  });
+
+  const exported = buildSemanticExport(state, {
+    scope: 'selection',
+    selectedIds: ['internal-a', 'internal-b'],
+  });
+
+  assert.deepEqual(exported.scope.selectedIds, ['n1', 'n2']);
+  assert.equal(JSON.stringify(exported.scope).includes('internal-a'), false);
+  assert.equal(JSON.stringify(exported.scope).includes('internal-b'), false);
+});
+
+test('semantic export omits root-only layer noise and reports scoped counts', () => {
+  const state = migrateState({
+    projects: [
+      { id: 'p1', name: 'Visible project' },
+      { id: 'p2', name: 'Hidden project' },
+    ],
+    layers: [
+      { id: 'root', title: 'Tablica glowna', titleMode: 'custom' },
+      { id: 'layer-unused', title: 'Unused zoom', titleMode: 'custom' },
+    ],
+    nodes: [
+      { id: 'a', title: 'A', projectId: 'p1', layerId: 'root', x: 0, y: 0 },
+      { id: 'b', title: 'B', projectId: 'p1', layerId: 'root', x: 100, y: 0 },
+    ],
+    links: [{ source: 'a', target: 'b' }],
+  });
+
+  const exported = buildSemanticExport(state, { scope: 'project', projectId: 'p1' });
+
+  assert.equal(exported.board.counts.projects, 1);
+  assert.equal(exported.board.counts.layers, 0);
+  assert.equal(exported.layers, undefined);
+  assert.equal(exported.items.some(item => item.where.layerId === 'root'), false);
+  assert.equal(JSON.stringify(exported).includes(':null'), false);
+});
+
 test('exports current all-project view as the same root-layer nodes the user sees', () => {
   const state = migrateState({
     activeProjectId: 'all',

@@ -1,6 +1,6 @@
 # Cortex / Codex project state
 
-Stan dokumentu: 2026-05-15, gałąź `main`, po wdrożeniu `cortex.visible.v2`, projektów, warstw/zoomów oraz Quality of Life.
+Stan dokumentu: 2026-05-15, gałąź `main`, po wdrożeniu `cortex.visible.v2`, projektów, warstw/zoomów, Quality of Life oraz czyszczenia eksportów AI z `null`/root-layer noise.
 
 Ten plik jest kanonicznym kontekstem dla Codexa i innych agentów pracujących nad repo. Ma opisywać faktyczny stan aplikacji, a nie plan sprzed przebudowy. Jeżeli kod i ten plik się rozjadą, najpierw sprawdź kod, potem popraw ten dokument.
 
@@ -49,8 +49,7 @@ Domyślny dev server Vite: `http://localhost:5173`.
 ```text
 cortex-app/
   index.html                 UI, top bar, modale, side panel, inbox, flash panel
-  codex.md                   ten dokument, kanoniczny opis stanu projektu
-  CORTEX.md                  legacy entrypoint; powinien wskazywać na codex.md
+  CORTEX.md                  ten dokument, kanoniczny opis stanu projektu
   package.json               skrypty dev/test/build
   src/
     main.js                  inicjalizacja aplikacji, seed, eksporty, paste screenshotów, settings
@@ -71,8 +70,10 @@ cortex-app/
     seed.js                  dane startowe przy pierwszym uruchomieniu
     cortexData.test.js       testy migracji i eksportu semantycznego
     store.test.js            testy store API, scope, inbox, preview, linki
-  Głowny projekt/
-    cortex-ai-2026-05-14.json
+  Zadanie/
+    backup.json
+    cortex-ai-2026-05-15.json
+    all.json / current.json / project.json / layer.json / select.json
     image.png
     prompt.md
 ```
@@ -385,14 +386,21 @@ Top-level:
 }
 ```
 
+`projects`, `layers`, `connections`, `externalConnections`, `drawings` i `inbox` są sekcjami opcjonalnymi. Builder dopisuje je tylko wtedy, gdy w danym eksporcie faktycznie istnieje widoczna treść dla tej sekcji.
+
 W eksporcie:
 
 - ID notek są mapowane na lokalne `n1`, `n2`, ... w reading order.
+- `scope.selectedIds` w eksporcie selection też używa lokalnych ID `n1`, `n2`, ...; nie eksportuje surowych ID z bazy.
 - `items` są sortowane po `y`, potem `x`.
 - `board.bounds` opisuje widzialny bounding box.
+- `board.counts.projects` i `board.counts.layers` liczą sekcje faktycznie dołączone do eksportu, a nie globalną liczbę projektów/warstw w bazie.
 - `board.readingOrder` zachowuje kolejność czytania.
 - `where.pos` zawiera pozycję.
 - `where.zone`, `row`, `col` pomagają AI rozumieć układ.
+- `where.layerId` jest pomijane dla root layer, bo root jest domyślnym widokiem i nie jest zoomem.
+- Root layer nie jest dopisywany do sekcji `layers` jako pusta warstwa. `layers` opisuje tylko realne child layers/zoomy widoczne lub istotne dla zakresu.
+- Pola `null` nie są zapisywane w `cortex.visible.v2`; brak pola znaczy "nie dotyczy".
 - `connections` zawiera tylko relacje między elementami widocznymi w danym scope.
 - `externalConnections` opisuje relacje, gdzie tylko jeden endpoint jest w scope.
 - `drawings` są uproszczone i przycięte do maksymalnie 24 punktów na ścieżkę.
@@ -414,8 +422,7 @@ Przykład itemu notki:
     pos: [450, 145],
     zone: 'top-center',
     row: 1,
-    col: 2,
-    layerId: 'root'
+    col: 2
   },
   chronology: {
     createdAt: 'ISO',
@@ -664,6 +671,9 @@ Obecnie testy obejmują między innymi:
 - eksport `cortex.visible.v2` bez osadzonych obrazów,
 - dynamiczny tytuł bound layer w eksporcie,
 - eksport selection z tylko widocznymi relacjami,
+- eksport selection z lokalnymi ID `n1`, `n2`, bez surowych ID bazy w `scope.selectedIds`,
+- brak `null` i root-only layer noise w semantycznym eksporcie,
+- scoped counts projektów/warstw liczone z eksportowanych sekcji, a nie globalnej bazy,
 - eksport current all-project view zgodny z widokiem root,
 - hidden export bez treści i bez opisu screena,
 - archived export z `visualWeight: low`,
@@ -744,7 +754,7 @@ Przy dodawaniu pól do danych:
 
 6. Parking UI nadal istnieje, ale panel notki nie ma już przycisku `Parkuj`. `store.parkNode()` zostaje dla zgodności ze starymi danymi.
 
-7. `CORTEX.md` był starym dokumentem projektu i był nieaktualny. Ten plik (`codex.md`) powinien być źródłem prawdy.
+7. `CORTEX.md` jest obecnie kanonicznym dokumentem projektu. Starszy `codex.md` nie istnieje po ostatnim pullu.
 
 8. Brak pełnego undo dla operacji na notkach/projektach/warstwach. Undo jest tylko dla rysunków.
 
@@ -789,3 +799,5 @@ Dla zmian UI:
 ## 13. Ostatni ważny kontekst użytkownika
 
 Użytkownik chce, żeby eksporty nie ważyły absurdalnie dużo tokenów. Zasada nadrzędna: JSON dla AI ma odzwierciedlać 1:1 to, co człowiek widzi na tablicy. Screeny mają opisy Flash/OCR, więc nie wolno wkładać obrazów/base64 do eksportu semantycznego. Celem jest czysty, widzialny, semantyczny zapis tablicy, a nie backup techniczny aplikacji.
+
+Aktualny audyt z folderu `Zadanie` poprawił trzy konkretne rzeczy w `semanticExport.js`: selection nie pokazuje już surowych ID bazy w `scope.selectedIds`, małe eksporty nie liczą globalnych projektów/warstw jako lokalnego kontekstu, a `cortex.visible.v2` nie dopisuje `null` ani root-layer metadata, gdy element nie ma realnego zoomu.
