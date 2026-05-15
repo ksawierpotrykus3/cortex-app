@@ -18,12 +18,12 @@
   },
   "board": {
     "counts": {
-      "items": 137,
-      "screens": 13,
-      "projects": 7,
+      "items": 146,
+      "screens": 19,
+      "projects": 8,
       "layers": 5,
       "planItems": 1,
-      "connections": 111,
+      "connections": 119,
       "externalConnections": 0,
       "drawings": 21
     },
@@ -170,7 +170,16 @@
       "n134",
       "n135",
       "n136",
-      "n137"
+      "n137",
+      "n138",
+      "n139",
+      "n140",
+      "n141",
+      "n142",
+      "n143",
+      "n144",
+      "n145",
+      "n146"
     ]
   },
   "types": {
@@ -185,8 +194,6 @@
     {
       "id": "n1",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -196,8 +203,7 @@
         ],
         "zone": "top-center",
         "row": 1,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:30:49.340Z",
@@ -209,8 +215,6 @@
     {
       "id": "n2",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -220,8 +224,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:30:32.394Z",
@@ -238,8 +241,6 @@
     {
       "id": "n3",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -249,8 +250,7 @@
         ],
         "zone": "top-right",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:00:29.542Z",
@@ -262,8 +262,6 @@
     {
       "id": "n4",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -273,8 +271,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:25:32.643Z",
@@ -291,8 +288,6 @@
     {
       "id": "n5",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -302,8 +297,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:42:51.651Z",
@@ -320,8 +314,6 @@
     {
       "id": "n6",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -331,8 +323,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:47:20.679Z",
@@ -349,8 +340,6 @@
     {
       "id": "n7",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -360,8 +349,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:47:28.521Z",
@@ -373,8 +361,6 @@
     {
       "id": "n8",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -384,8 +370,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:27:20.303Z",
@@ -402,8 +387,6 @@
     {
       "id": "n9",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -413,8 +396,7 @@
         ],
         "zone": "top-right",
         "row": 2,
-        "col": 3,
-        "layerId": "root"
+        "col": 3
       },
       "chronology": {
         "createdAt": "2026-05-12T21:02:24.606Z",
@@ -430,8 +412,6 @@
     {
       "id": "n10",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -441,8 +421,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T11:04:38.773Z",
@@ -455,8 +434,6 @@
     {
       "id": "n11",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -466,8 +443,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T21:04:10.628Z",
@@ -480,8 +456,6 @@
     {
       "id": "n12",
       "type": "informacja_dla_ai",
-      "category": "informacja_dla_ai",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -491,8 +465,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T11:22:09.878Z",
@@ -505,8 +478,6 @@
     {
       "id": "n13",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -516,8 +487,7 @@
         ],
         "zone": "top-right",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:10:06.503Z",
@@ -534,8 +504,6 @@
     {
       "id": "n14",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -545,8 +513,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:54:10.013Z",
@@ -563,8 +530,6 @@
     {
       "id": "n15",
       "type": "informacja_dla_ai",
-      "category": "informacja_dla_ai",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -574,8 +539,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T11:43:12.462Z",
@@ -588,8 +552,6 @@
     {
       "id": "n16",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -599,8 +561,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T09:52:26.043Z",
@@ -613,8 +574,6 @@
     {
       "id": "n17",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "archived",
       "stage": "robocze",
       "where": {
@@ -624,8 +583,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T09:50:58.627Z",
@@ -640,8 +598,6 @@
     {
       "id": "n18",
       "type": "informacja_dla_ai",
-      "category": "informacja_dla_ai",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -651,8 +607,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T11:28:50.448Z",
@@ -665,8 +620,6 @@
     {
       "id": "n19",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "archived",
       "stage": "robocze",
       "where": {
@@ -676,8 +629,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:02:01.446Z",
@@ -692,8 +644,6 @@
     {
       "id": "n20",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -703,8 +653,7 @@
         ],
         "zone": "top-center",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:29:07.854Z",
@@ -721,8 +670,6 @@
     {
       "id": "n21",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -732,8 +679,7 @@
         ],
         "zone": "top-left",
         "row": 2,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:36:37.016Z",
@@ -746,8 +692,6 @@
     {
       "id": "n22",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -757,8 +701,7 @@
         ],
         "zone": "top-right",
         "row": 2,
-        "col": 3,
-        "layerId": "root"
+        "col": 3
       },
       "chronology": {
         "createdAt": "2026-05-12T21:03:10.067Z",
@@ -769,33 +712,7 @@
     },
     {
       "id": "n23",
-      "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
-      "rawState": "raw",
-      "stage": "robocze",
-      "where": {
-        "pos": [
-          -176,
-          -2730
-        ],
-        "zone": "top-center",
-        "row": 3,
-        "col": 2,
-        "layerId": "root"
-      },
-      "chronology": {
-        "createdAt": "2026-05-14T11:37:46.291Z",
-        "updatedAt": "2026-05-14T18:17:59.869Z"
-      },
-      "title": "dddd",
-      "text": "myśle że jednak na razie usune z planow funkcje porządkowania brudnopisu. niech jest i dopoki sammeu nie usune to bedzie"
-    },
-    {
-      "id": "n24",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -805,8 +722,7 @@
         ],
         "zone": "top-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T11:01:41.331Z",
@@ -817,10 +733,8 @@
       "text": "Robie oficjalne połączenie projektu ktory zaczal sie od notatki o nazwie 'fundament' a projektu o ktory sie zaczal od notatki 'zmiany i poprawki'"
     },
     {
-      "id": "n25",
+      "id": "n24",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -830,8 +744,7 @@
         ],
         "zone": "top-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T21:57:04.090Z",
@@ -842,10 +755,8 @@
       "text": "Funkcja tworzenia projektów za pomocą przycisku - stwórz projekt. oraz przycisk dodaj do projektu gdzie dodaje do projektu i lista projektów."
     },
     {
-      "id": "n26",
+      "id": "n25",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -855,8 +766,7 @@
         ],
         "zone": "top-left",
         "row": 3,
-        "col": 1,
-        "layerId": "root"
+        "col": 1
       },
       "chronology": {
         "createdAt": "2026-05-14T10:07:31.600Z",
@@ -867,10 +777,8 @@
       "text": "fundament początkowy został spełniony. teraz ogolny opis tego to będzie cały system projektowania"
     },
     {
-      "id": "n27",
+      "id": "n26",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -880,8 +788,7 @@
         ],
         "zone": "top-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T09:58:52.758Z",
@@ -892,10 +799,8 @@
       "text": "doszedłem do wniosku że każdy projekt musi sie składać z składowania w nich myśli  ale czy one nie pasują przypadkiem do czystego projektu? nw moze tablica projektowa bedzie brudnopisem tylko po prostu odseparowany od reszty głownej brudoty a czysty plan moze kiedy indziej wymysle"
     },
     {
-      "id": "n28",
+      "id": "n27",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -905,8 +810,7 @@
         ],
         "zone": "top-center",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T18:15:42.739Z",
@@ -917,10 +821,8 @@
       "text": "ja jestem na takim poziomie co bez zadnej nauki i zapisywania ktore nie jest kartka nie jestem w sanie dac sobie bodźca do rozwoju a jak jest to rzadki mega. zalezy jeszcze od farta. bo XD z jakiegos powodu % szans tego czyu cos wymysle zalezy od czegos ale nie wiem co to jest. po prostu im mniejsza mam strukture, hierarchie w glowie w danym miesiacu nop tym mniejsza szanse mam cos zrobic. a im wieksza strukture tym rosnie to wykładniczo.  i moge juz myslec o tym. dlatego wlasnie linearnie planowanie na cortexie to to samo co w glowie odczuwam jako budoanie nowych pieter juz na istniejącym wierzocu który moge sobie wyobrazic mniej wiecej. zaś jak nie mam NIC doslownie nic to jest ultra chujnia i z tym mam walczyc dzieki cortexowi.\nwiec mamy 3 stany (na ten moment moze jest wiecej)\n1. to ten fundament juz. jakis wierzowiec. to moj dream\n2. calkowity brak wszystkiego\n3. calkowity brak ale z pomyslami ale nie wiem jak je zaaranżować perfekcyjnie bo ich nie pamietam w głowie. i nie moge czekac miesiac az akurat odpale w głowie te 4 pomysly losowo ktore akurat beda idalnie pasowac jako fundament z ktorego moge stworzyc wiekszy fundament. bo fundamenty maja różne wielkosci. bo tak fundamenty maja różne wielkości zależne od czegoś co nie wiem"
     },
     {
-      "id": "n29",
+      "id": "n28",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -930,8 +832,7 @@
         ],
         "zone": "top-left",
         "row": 3,
-        "col": 1,
-        "layerId": "root"
+        "col": 1
       },
       "chronology": {
         "createdAt": "2026-05-14T10:13:19.260Z",
@@ -942,10 +843,8 @@
       "text": "Chronologia. coś co pozwala ustawiać chronoloigie rzeczy typu zrzuty ekranu, notatki w projektach. tak żeby w jsonie było idealnie to pokazane i zrozumiałe dla AI."
     },
     {
-      "id": "n30",
+      "id": "n29",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -955,8 +854,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:41:19.316Z",
@@ -967,10 +865,8 @@
       "text": "cały ten projekt na stan 14.05 12:41 to nie jest to co oczekiwał bym od projektu tylko bardziej kurde kolejny brudnopis. widzisz teraz jak bardzo wazne jest madre zrobienie tego? np jest duzo otwartych pytan. nie mam ogolnego obrazu w glowie tylko zasypalem tym co chce i malymi pomyslami. potem polaczylem niektorerzeczy z czyms innym bla bla bla. burdel i w sumie nie wiem co z tym zrobie.\nbo jakby duzo tych pytan jest i nieskonczonych rzeczy. ale ja o nich zapomne odrazu i nawet nie wiem juz co nie dokonczylem do konca."
     },
     {
-      "id": "n31",
+      "id": "n30",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -980,8 +876,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:03:56.922Z",
@@ -992,10 +887,8 @@
       "text": "Dostałem przeblysk mały że może ważna by byla funkcja kiedys lączenia jakos projektow? ale w jaki sposob i po co? tylko myśl"
     },
     {
-      "id": "n32",
+      "id": "n31",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1005,8 +898,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:14:35.562Z",
@@ -1017,10 +909,8 @@
       "text": "jak pisałem notatke 'funkcja' to pomyślałem o funkcji ktora ma albo wspołgrac jakos z obecna funkcja projektow czyli tworzenie innej tablicy z nazwa. od czegos co faktycznie by bylo tym co chcialem od poczatku. czyli  fizyczne warstwy. np klikam na jakas notatka i jest opcja cos z warstwa moze klikam i odrazu przelacza mnie na pusta tablice tylko z ta wlasnie notatka. i dostaje mozliwosc powrotu do poprzedniej. strony. i tak w nieskonczosc. kazdanotatka nawet ta juz robiona w tej funkcji. i tylko strzala w lewym gornym. wystepuja az dojde do glownej tablicy ktora rozpoczela ten branch. ale kurde chcialbym moze fizycznieto widziec. ze jak wracam do poprzedniej notatki strzałką to widać że one tam są tylko pomniejszone. i tak samo te pomniejszone maja swoje pomniejszone ale dalej widoczne."
     },
     {
-      "id": "n33",
+      "id": "n32",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1030,8 +920,7 @@
         ],
         "zone": "middle-center",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T09:39:26.158Z",
@@ -1042,10 +931,8 @@
       "text": "i tu wlasnie wchodzi moja wizja ze ten fundament jest zawsze najciezszy i te 30 framgmentow np sklada sie na 1 w innym wymiarze. w ktoryum juz moge skladac je linearnie tak jak lubie. bo moznasie zastanowic dobrze i wykorzystac routing\nO I NP moj mozg chce odrazu to zaplanowac ten fundament wraz z Ai. bo glownie praca z Ai a raczej jego bledy ktore w taki spsoob chcialbym wyeliminowac mn sklonily do planowania. w swiecide gdzie wszyscy uzywaja Ai, ja chce go uzywac najlepiej.  byc najlepszym vibe coderem."
     },
     {
-      "id": "n34",
+      "id": "n33",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1055,8 +942,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:43:58.260Z",
@@ -1067,10 +953,8 @@
       "text": "więc mamy tutaj surowy zrzut jak wyglada moje projektowanie a przynajmniej JAK MOZĘ wygladac moje projektowanie. i teoretycznie tutaj mozna zalozyc kilka innych projektow i zoomów. hmmm może dobrym pomyslem by bylo oznaczanie odrazu jakimis oznaczeniami innimi. typu taka karteczka mala i napisac cos na niej typu pytanie otwarte. itp moglbym to robic manualnie odrazu na żywo."
     },
     {
-      "id": "n35",
+      "id": "n34",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1080,8 +964,7 @@
         ],
         "zone": "middle-center",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T09:35:57.910Z",
@@ -1092,10 +975,8 @@
       "text": "wielowymiarowosc to problem MEGA SYSTEMOWY. cos czego szczerze nienawidze i nie umie msobie poradzić z tym samemu az tak\nczyli wyobraz sobie 10 klockow, i one pasuja tylko wtedy kiedy wszystkie idealnie polaczysz., nie mozesz polaczyc 1,2,3 czy cos i potem isc do nastepnego. i wlasnie jeszcze zawsze problem fundamentow. chcialbym moc wlasnie wkoncu sprobowac sammeu to zrobic za pomoca narzedzia ktore MNIE NIE BLOKUJE.  samemu nie mam pomyslu jak to polaczyc. bo ja moge tlyko 1-2-3 pomysly dac na raz w glowie. ale wymnagane jest 30. XD i to jest to,m to jest ten moj perfekcjonizm ja mam tak ze wszystkim i po to powstal cortex! bo mozg nie jest w stanie nadazyc za tym jakie myselnie od siebie  wymagam.  bo kurwa koszt nie perfekcjoznimu jest za wysoki. nie moge w kolko poprawiac czegos bo to kossztuje tokeny.  to jest w ogole  dodatkowo inny problem bo to dotyka w sama wspolprace z AI. ktory nie rozumie tego jak ja msle i chce widziec rzeczy."
     },
     {
-      "id": "n36",
+      "id": "n35",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1105,8 +986,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:10:14.742Z",
@@ -1117,10 +997,8 @@
       "text": "jakby mógł wyglądać system projektowania smart który  od środka może zmieniac kod? wiele sytuacji wymaga roznego podejscia\nnp jakbym chciał do projektu wrzucic nw. zlecenie na useme. gdzie wrzucam tam poczatkowo zawsze 3 zrzuty ekranu\n1. zlecenie\n2. umowa\n3. odpowiedz klienta\ni własnie tak se pomysalem ze jakby to rosło to by to wymagało oznaczania jakos chronologii inaczej niz po prostu 1. 2. 3. w opisach bo by mi snie chcialo. i jeszcze jakby Ai to rozumiało. i wlasnie tutaj mamy taka funkcje. ale chodzi tez o to ze moze w przyszlosci jak bede chcial z tego korzystać to moze być wiele niestandardowywch rzeczy ale ciezko mi przewidzieć, jeśli to czytasz Ai to olej to jesli nie widzisz dobrego rozwiazania.  chronologia powinna tez byc widoczna przezemnie. tylko jak to zrobic zeby to sie np zerowalo?"
     },
     {
-      "id": "n37",
+      "id": "n36",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1130,8 +1008,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 1,
-        "layerId": "root"
+        "col": 1
       },
       "chronology": {
         "createdAt": "2026-05-14T10:25:58.869Z",
@@ -1142,10 +1019,8 @@
       "text": "to jak powinien działac json teraz\nfunkcja selectu tego co chce wyexportować\noraz funkcja po prostu exportu calego projektu.\na i  jeszcze wybor do tego\nbo zdjecia maja surowy tekst i opisy.\ni chcialbym żeby byl wybor. export z opisami czy bez. przy main, przy multi select export i przy projekt export"
     },
     {
-      "id": "n38",
+      "id": "n37",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1155,8 +1030,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:56:14.349Z",
@@ -1167,10 +1041,8 @@
       "text": "bo jakby tu nie ma ani widoczej struktury, ani chronologii ani nic dzieki czemu moglbym se to wszystko wyobrazic zawsze i myslec nad tym.\nbo wlasnie moze go to by był jakis ogolny schemat? gdzie kazdy projekt by np mial zawsze wspolne rzeczy typu jakas chęć na szczycie. mysli po bokach. w srodku glowne galezie. i one na galezie itp\nale to nie musi byc bo 1 projekt to chyba za malo żeby okreslic czy jakis formast by byl dobry do kazdego projektu. ale jakbym ja osobiscie dostal jakas instrukcje dzieki ktorej samemu bym mogl ale nie musial klasc rzeczy tak i tak wiedziec jakie są to lepiej bym zapamietal.  dodatkow wlasnie  z oznaczeniami. z widocznymi zoomami no no no to by bylo lepiej. dodatkowo projekty powinny oprocz zoomow robic tez inne projekty. np odpale projekt z 1 rzeczy w jakims projekcie i odpala sie projekt, on przyjmuje zawsze nazwe notatki z ktorej zrobilem porojekt ale jak zmienie nazwe notatki to tez powinien sie zmieniać. i wszystko pod spodem tez powinno byc zapisane. ze zrobilem np tutaj projekt z tego ale dalej w exportach wszystko jest zapisane. ze jest polaczone. bo wlasnie mowie tu o sytuacji ze robie proejkt z czyms polaczonym z innym projektem alboczyms na brudno. i jak np wroce do poprzedniego projektu tez strzalka w lewym gorym. to znow powinna byc widoczna struktura tylko ze mneisjza ale tak zeby bylo widac ogol moze. moze o 1/3 mniejsze zawsze? i tak w nieskonczonsc. ze 2 galezie beda 1/3 mneijze od tego co juz jest 1/3 mniejsze od glownej galezi."
     },
     {
-      "id": "n39",
+      "id": "n38",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1180,8 +1052,7 @@
         ],
         "zone": "middle-center",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T09:21:03.844Z",
@@ -1192,10 +1063,8 @@
       "text": "i np jak przewidziec wszystko majac tylko skrawek planu albo ogólne podpunkty których szczegolowe wykonanie moze sie roznic i zmieniac wszystko zależnie od wersji."
     },
     {
-      "id": "n40",
+      "id": "n39",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1205,8 +1074,7 @@
         ],
         "zone": "middle-center",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T09:18:03.436Z",
@@ -1217,10 +1085,8 @@
       "text": "W mojej głowie jest róznica uczucia między roznymi planowania.\nten do którego mierze jest plan w ktorym jest fundament. i dobuduwuje warstwe na niego. czyli np cortex na dzis + funckja nowej kategorii.\nzaź jest tez 2 swiat. taki że tylko opisuje co chce. i to wymaga całkowitego przebudowania wielu rzeczy. i jak tu przewidziec z takiego poziomu nie tylko 1 funkcja. ale wiele na raz bo one wszystkie ingeruja w to. bez potem zmieniania tego 30 razy zeby nie zgrzytały ze sobą. to jest wlasnie moje myslenie czesto. nie tylko z cortexem ale ogolnie i nie wiem czy inni ludzie tez tak maja ale widze to czesto u siebie to chyba ten perfekcjoznim ale bede do  niego dażyć"
     },
     {
-      "id": "n41",
+      "id": "n40",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1230,8 +1096,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:30:48.900Z",
@@ -1242,10 +1107,8 @@
       "text": "zoomowanie to nie jest projekt. tylko zupelnie inna funkcja"
     },
     {
-      "id": "n42",
+      "id": "n41",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1255,8 +1118,7 @@
         ],
         "zone": "middle-center",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T09:21:45.831Z",
@@ -1267,10 +1129,8 @@
       "text": "przykład. jak to połączyc teraz? bo tutaj mamy opcje co brzmi jak polaczenie tablkcy w 2 sfery. ktore sa na 1 tablikcy ? itp. co z funkcja roznych tablicy. co z pomyslem moich slotow. to wszystko tworzy taki problem. nie chodzi o to ze Ai musi sie odnosic do tego co pisalem gdzies bo co jesli nie napisal bym zadnych pomyhslow? chodzi o to że to jest zbyt płytkie.  odpowiada tylko za 2D problem, gdzie ja musze planowac wielowymiarowo i to jest moj najwiekszy problem w aktualnych planach AI ORAZ Moich bo aktualny cortex nie usuwa ograniczen mojego mozgu ktora by pozwolila to wszystko polaczyc."
     },
     {
-      "id": "n43",
+      "id": "n42",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1280,8 +1140,7 @@
         ],
         "zone": "middle-left",
         "row": 3,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T10:24:57.430Z",
@@ -1292,10 +1151,8 @@
       "text": "Zapis json. nie powinien być już tylko lokalny. ale jakos dzialać inaczej. napewno musi działać na to co zrobimy że wszystko co jest zoomem z funkcji 2  musi być oznaczone tak w pliku że Ai bedzie to rozumialo idealnie jak czlowiek ktory na to patrzy."
     },
     {
-      "id": "n44",
+      "id": "n43",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1305,8 +1162,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T09:21:44.219Z",
@@ -1322,10 +1178,8 @@
       "screenDescription": "Screenshot przedstawia tekst opisujący koncepcję organizacji pracy na tablicy (boardzie), podzielonej na dwie strefy: \"ROBOCZE\" oraz \"PLAN\", wraz z kluczową funkcją o nazwie \"Przenieś do planu\"."
     },
     {
-      "id": "n45",
+      "id": "n44",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1335,8 +1189,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T18:48:33.719Z",
@@ -1346,10 +1199,8 @@
       "text": "Zauważyłem że zawsze zapominam prawie o czym byla notatka jesli podalem ogolny przyklad zamiast dokładnego.\nAle jednoczesnie czuje ze to na 100% zapamietam ten wniosek wiec nw czm pisze tą notatke. to raczej bedzie useless notatka"
     },
     {
-      "id": "n46",
+      "id": "n45",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1359,8 +1210,7 @@
         ],
         "zone": "middle-right",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T18:50:10.544Z",
@@ -1370,10 +1220,8 @@
       "text": "celem tej notatki było pokazanie jak bardzo niszowe są moje pomysły  i to że ten problem ciągle nastepuja gdy badam nieznane wody i nie wiem jak sobie z tym radzić"
     },
     {
-      "id": "n47",
+      "id": "n46",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1383,8 +1231,7 @@
         ],
         "zone": "middle-right",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T14:38:06.891Z",
@@ -1394,10 +1241,8 @@
       "text": "zauważyłem problem - widze coś czego zapomnialem. 2 notatki ktore totalnei nie pamietam kontekstu. wiec wymyślilem dodanie jakies kategorii która np oznacza notatki ktore z czasem zapominam. i je lącze z nią"
     },
     {
-      "id": "n48",
+      "id": "n47",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1407,8 +1252,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T15:54:47.519Z",
@@ -1418,10 +1262,8 @@
       "text": "Diagnoza: Paradoks \"Obserwatora w Pętli\"\nWidzę, że najwięcej energii tracisz na obserwowanie tego, jak myślisz, zamiast po prostu myśleć. Notatki \"idk\" i \"idk 2\" to dowód na to, że Twój mózg próbuje jednocześnie:\n\nGenerować pomysł.\nOceniać, czy pomysł jest śmieciem.\nZapisywać go, zanim ucieknie.\nProjektować system, który to naprawi. To powoduje ogromny \"overheating\". Twoim największym wrogiem nie jest \"brak systemu\", ale brak zaufania, że system (AI) wyłapie wartość, zanim Ty ją ocenisz.\n\n. Rozwiązanie problemu \"Śmiecenia\"\nBoisz się śmieci, bo postrzegasz tablicę jako statyczne archiwum.\n\nWgląd: Jeśli tablica jest dynamiczna, \"śmieci\" nie istnieją. Są tylko \"dane o niskim priorytecie\", które system automatycznie ukrywa (fade out), gdy tracą na znaczeniu, i wyciąga (resurface), gdy nagle pasują do nowego problemu.\nTwoje \"idk\" to nie śmieci — to szum informacyjny, z którego AI powinno wyciągać sygnał. Nie musisz ich usuwać; system powinien je \"trawić\".\nTwoje \"śmiecenie\" to nie ilość i nie jakość — to niepewność epistemiczna\nBoisz się pisać, bo:\n\nNie wiesz, czy to prawda (bo może za godzinę zmienisz zdanie)\nNie wiesz, czy to ważne (bo sam nie widzisz połączeń)\nNie wiesz, czy ktoś/coś to oceni poprawnie (bo bazowe AI \"nie ogarnia\")"
     },
     {
-      "id": "n49",
+      "id": "n48",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1431,8 +1273,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T19:14:32.524Z",
@@ -1442,10 +1283,8 @@
       "text": "Wyjebałem sporo notatek po spojrzeniu na nie z góry po kilku godzinach"
     },
     {
-      "id": "n50",
+      "id": "n49",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1455,8 +1294,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T09:23:21.981Z",
@@ -1466,10 +1304,8 @@
       "text": "ten przypadek to coś co istnieje w hipotetycznej rzeczywistosci co sprawia że jest mala szansa na powtorzenie a przynajmniej tak mi mowi mozg.a przez to ze załozenie jest hipotetyczne i by tylko naprawilo 1 problem ktory moze nie istniec sprawia ze mozg to ignoruje jednoczesnie nie chcac ignorować.\nnp  chciałem wyslac AI screena 3 zrzutek ktore nie wiem czy maja jakakolwiek wartosc i nie wiem czy to zrozumie ale mialem cien nadziei. i wlasnie chcialem wyslac bo to est rzadka sytuacja kiedy czlowiek czuje ze bazowe Ai by nie ogarnelo. ale akurat mialem odpalone Ai z jakims kontekstem co jest rzadkie, plus sam kontekst był rzadki + symulacja pokazala mi że nie był bym w stanie tego potworzyć bo nie wiem jak, nie wiem nic. co zwiekszylo szanse co w ogole sprawilo ze pomyslalem o zrobieniu tego.  i pomyslalem wlasnie instynktowie o  tym  jak  to zwiekszyc?\nale jednoczesnie nawet nie wiem na czym by to polegalo i brak przewidzenia tego sprawil ze ledwo tego wszystkiego nie napisalem."
     },
     {
-      "id": "n51",
+      "id": "n50",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1479,8 +1315,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:55:57.944Z",
@@ -1490,10 +1325,8 @@
       "text": "Coś co samemu daje pomysły bazując na obserwacjach"
     },
     {
-      "id": "n52",
+      "id": "n51",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1514,10 +1347,8 @@
       "text": "dddddd"
     },
     {
-      "id": "n53",
+      "id": "n52",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1527,8 +1358,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:25:44.326Z",
@@ -1538,10 +1368,8 @@
       "text": "Tag - inkloza, czy coś ai tak to nazwal. miejsce na rzeczy które jeszcze nie wiem co z nimi zrobić"
     },
     {
-      "id": "n54",
+      "id": "n53",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1551,8 +1379,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T20:56:26.701Z",
@@ -1562,10 +1389,8 @@
       "text": "Moj myślenie i analizy ciągle sie dzielą na 2 czesci\n1. to oczywiscie to co jest prawdziwe. oraz\n2. czyli myslenie hipotetycznie, bardzo duzo stawiam hipotez, wiecej przypuszczam niż wiem. czesciej stawiam przerozne hipotezy i na podstawie nich tworze cale systemy gdzie np jakas moja decyzja może istnieć ale jesli to tylko hipotez ale nie prawda to jednak nie istnieje"
     },
     {
-      "id": "n55",
+      "id": "n54",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1575,8 +1400,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:56:15.061Z",
@@ -1586,10 +1410,8 @@
       "text": "sloty specjalne na projekty. ktore moge stawiac i jak wruzce tam cos z kategorią projekt. to tworzy z tego nowa zakladke bez tegfo wszystkiego z ktorej moge wchodzic i wychodzić"
     },
     {
-      "id": "n56",
+      "id": "n55",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1599,8 +1421,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:33:32.165Z",
@@ -1610,10 +1431,8 @@
       "text": "System musi wiedzieć, i być odporny  oraz wykorzystywać słabosc architektra ktory nie pamieta wszystkiego."
     },
     {
-      "id": "n57",
+      "id": "n56",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1623,8 +1442,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:01:39.850Z",
@@ -1634,10 +1452,8 @@
       "text": "pomysł zwijania zdjęć.  schowac bo sa za duże"
     },
     {
-      "id": "n58",
+      "id": "n57",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1647,8 +1463,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T18:39:25.752Z",
@@ -1658,10 +1473,8 @@
       "text": "Myśle nad może zrobieniem numeracji tablic. ze np to jest tablica 1. odpalam tablice 2. pusta. ale zawsze moge wrocic do 1. i jednoczesnie jesli mialbym juz AI w tablicach to mogło by do nich wracać"
     },
     {
-      "id": "n59",
+      "id": "n58",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1671,8 +1484,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:20:25.855Z",
@@ -1682,10 +1494,8 @@
       "text": "Duplikaty - porownywanie notatek i szukanie mozliwosci tego samego żeby nie zasmiecać - potrzebny flash"
     },
     {
-      "id": "n60",
+      "id": "n59",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1695,8 +1505,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T18:46:53.764Z",
@@ -1706,10 +1515,8 @@
       "text": "zaczałem czytać te notatki. jeśli czytam je po czasie na nowo jak juz to przejde to jednak jakoś sie zalecza ten problem tego że nie pamiętam."
     },
     {
-      "id": "n61",
+      "id": "n60",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1719,8 +1526,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T12:18:57.130Z",
@@ -1730,10 +1536,8 @@
       "text": "kategoria INFO, odrazu zmienia tytuł na INFO i ofc kolor"
     },
     {
-      "id": "n62",
+      "id": "n61",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1743,8 +1547,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:58:17.909Z",
@@ -1754,10 +1557,8 @@
       "text": "Powinna być róznica jakas między tym co pisze że tylko myśle projekcie a co wiem zze wiem. bo czasami  zamiast pisac mysli do projektu losowe zeby nie zasmiecać to ich po prostu nie pisze. czyli wszystko opiewa w kategorie, ale co zroboc jak bedzie ich za dużo? moze szersza tabelka bardziej przyjazna dla oka., posegregowana i np kolory dane."
     },
     {
-      "id": "n63",
+      "id": "n62",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1767,8 +1568,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:24:58.826Z",
@@ -1778,10 +1578,8 @@
       "text": "Obsługa zrzutów ekranu"
     },
     {
-      "id": "n64",
+      "id": "n63",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1802,10 +1600,8 @@
       "text": "dddddddddddddd"
     },
     {
-      "id": "n65",
+      "id": "n64",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1815,8 +1611,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T14:13:24.507Z",
@@ -1826,10 +1621,8 @@
       "text": "18 kont antigravity podlaczyc flashe tutaj. zajebac end pointy i jakos przechodzic potencjalna weryfikacje - teoretycznie, nw jak w praktyce"
     },
     {
-      "id": "n66",
+      "id": "n65",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1839,8 +1632,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:22:01.944Z",
@@ -1850,10 +1642,8 @@
       "text": "prosta kategoria - to do."
     },
     {
-      "id": "n67",
+      "id": "n66",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1863,8 +1653,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:17:12.692Z",
@@ -1874,10 +1663,8 @@
       "text": "Pomysł na poziom pomysłu?\njak chcialem zapisac pomysł do projektu który jeszcze nie powstal to mialem zawachanie czy je tutaj dać do reszty"
     },
     {
-      "id": "n68",
+      "id": "n67",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1887,8 +1674,7 @@
         ],
         "zone": "middle-right",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T20:59:21.097Z",
@@ -1898,10 +1684,8 @@
       "text": "Znów zacząlem czytać niektóre i notatki i jeśli napisałem je dosyc zrozumiale to nie mam problemu spojrzec na nie lepszym spojrzeniem i zadecydować o niej dzien czy pozniej. dodać. zmienic usunac cokolwiek"
     },
     {
-      "id": "n69",
+      "id": "n68",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1911,8 +1695,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:29:09.669Z",
@@ -1922,10 +1705,8 @@
       "text": "Co jeśli np notatka o edge case to to samo co napisalem gdzieś indziej ale innymi slowami i w ogole w inny sposob ale dotyczy tego samego ? - jest to prawie pewniak"
     },
     {
-      "id": "n70",
+      "id": "n69",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1935,8 +1716,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T12:26:22.394Z",
@@ -1946,10 +1726,8 @@
       "text": "kategoria pomysł, ta sama zasada co reszta"
     },
     {
-      "id": "n71",
+      "id": "n70",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1959,8 +1737,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T12:14:48.710Z",
@@ -1970,10 +1747,8 @@
       "text": "ciągle doswiadczam sytuacji gdzie tak naprawde nie pamietam co sie dzialo wczesniej. więc system powinien mieć jakis system radzenia sobie z tym"
     },
     {
-      "id": "n72",
+      "id": "n71",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -1983,8 +1758,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T12:21:17.154Z",
@@ -1994,10 +1768,8 @@
       "text": "Miejsce na pomysly o mniejszych projektach o ktorych zapomnialem ktore jednak nie sa nazwane pomysł? np notatki o projektach"
     },
     {
-      "id": "n73",
+      "id": "n72",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2007,8 +1779,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T12:27:13.366Z",
@@ -2018,10 +1789,8 @@
       "text": "trzeba prowadzić obserwacje, kiedy np wrzucilem cos w inne miejsce niż mogłem. mimo ze wczesniej zrobilem to dobrze np zamoiast dac pomysl jak reszte to nazwalem tto jakos inaczej. i potem to badać.\nmyśle ze to dobry sposob ktory moze poradzic na jakis problem"
     },
     {
-      "id": "n74",
+      "id": "n73",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2031,8 +1800,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T14:20:49.842Z",
@@ -2042,10 +1810,8 @@
       "text": "co z pomysłami które juz spełnie. chyba bede musial manualnie je wypierdalac w tym momencie"
     },
     {
-      "id": "n75",
+      "id": "n74",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2055,8 +1821,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T12:21:59.492Z",
@@ -2066,10 +1831,8 @@
       "text": "Pomysł na np pomysły rożnego szczebla wartosci? że hierarchia coś wazniejsze od innych? albo  hierarchia - ? - że nie wiem"
     },
     {
-      "id": "n76",
+      "id": "n75",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2079,8 +1842,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T14:41:44.092Z",
@@ -2090,10 +1852,8 @@
       "text": "Może system etykiet ? pomyslalem o czyms takim w czymś co wymaga interakcji z Ai i potrzebny jest kontekst"
     },
     {
-      "id": "n77",
+      "id": "n76",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2103,8 +1863,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T18:51:22.781Z",
@@ -2114,10 +1873,8 @@
       "text": "jakaś kategoria czy te oznaczenia czy cos co moge dokleic do czegoś co jest polaczone np  tym że mowi o cortexie ale jednak mowi o czyms innym. moze jakis kolor ? idk i w sumie ma to sens odnosnie tego jak np wracam po czasie do czegoś i nie mam sposobu oznaczania czegos po czasie"
     },
     {
-      "id": "n78",
+      "id": "n77",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2127,8 +1884,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T20:59:08.721Z",
@@ -2138,10 +1894,8 @@
       "text": "w sumie to nie mam sposobu łączenia   dokladnych blueprintow planowych - sczegóły wraz z moim ogolnymym gadaniem co chce i mniej wiecej jak w projektach"
     },
     {
-      "id": "n79",
+      "id": "n78",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2151,8 +1905,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T16:29:17.848Z",
@@ -2162,10 +1915,8 @@
       "text": "1. strefy, np wyznaczam strefe i kazda notatka ktora tam przesunie odrazu dostaje tytul strefy\n2. miejsce na kontekst dzienny?\n3. daty, godziny dodania, edytowania."
     },
     {
-      "id": "n80",
+      "id": "n79",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2175,8 +1926,7 @@
         ],
         "zone": "middle-left",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T12:12:00.673Z",
@@ -2186,10 +1936,8 @@
       "text": "kategoria POMYSL/NIE WIEM. ktore z automatu działają inaczej\nzmienia tytul na POMYSŁ"
     },
     {
-      "id": "n81",
+      "id": "n80",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2199,8 +1947,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T13:47:21.917Z",
@@ -2210,10 +1957,8 @@
       "text": "menu kategorii. gdzie moge zmieniac kolory kazdej i zmienaic nazwy, dodawac. usuwac. oraz to co tam usune, oraz ustawie kolejnosc potem pojawia w ogolnych kategoriach jak tworze notatke. w takie jsamej tabelce. zeby nie bylo dlugiej lineraniej listy"
     },
     {
-      "id": "n82",
+      "id": "n81",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2223,8 +1968,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T15:36:47.150Z",
@@ -2234,10 +1978,8 @@
       "text": "ja po prostu bardzo potrzebuje pomocy zewnetrznej w celu akcelerowania tego czego nie widze."
     },
     {
-      "id": "n83",
+      "id": "n82",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2247,8 +1989,7 @@
         ],
         "zone": "middle-center",
         "row": 4,
-        "col": 2,
-        "layerId": "root"
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T09:00:10.865Z",
@@ -2258,10 +1999,30 @@
       "text": "Jest taki problem który musze wiedziec ja i AI i cos z nim zrobić potem. otóż ja pisząc  to wsdzystko jestem w innej perspektywie niż Ai mysli zej estem. ja jak pisze i mysle to widze tunelowo tylko to co robie. to jest aksjomat, to sie dzieje za każdym razem gdy tylko coś pisze. widze przed oczami tylko to co widze, a chciałbym móc w przyszłości to jakos obchodzić, być moze by Ai pokazywało mi wszystko to czego nie widze."
     },
     {
+      "id": "n83",
+      "type": "informacja_dla_ai",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2613,
+          -610
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T16:25:49.862Z",
+        "updatedAt": "2026-05-15T16:57:11.171Z"
+      },
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "title": "To ja",
+      "text": "To już ja napisałem"
+    },
+    {
       "id": "n84",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2270,9 +2031,8 @@
           -529
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T15:31:04.511Z",
@@ -2284,8 +2044,6 @@
     {
       "id": "n85",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2294,9 +2052,8 @@
           -522
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T16:29:27.612Z",
@@ -2307,9 +2064,29 @@
     },
     {
       "id": "n86",
+      "type": "rozrzutka",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1943,
+          -506
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T14:24:21.650Z",
+        "updatedAt": "2026-05-15T14:25:12.316Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "przy okazji",
+      "text": "Export powinien miec w nazwie jeszcze to czy to all czy projekt czy cos itp, i nazwa tegp projkelktu jak to projekt. bo tylk backup ma swoja nazwe a qwszystkie powinyn miec"
+    },
+    {
+      "id": "n87",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "plan",
       "where": {
@@ -2318,9 +2095,8 @@
           -492
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T08:34:48.771Z",
@@ -2332,10 +2108,8 @@
       "text": "Mam tone materiałów z fb i tych podobnych pozapisywane gdzieś   w celu wykorzystania"
     },
     {
-      "id": "n87",
+      "id": "n88",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2344,9 +2118,8 @@
           -478
         ],
         "zone": "bottom-left",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T09:18:23.504Z",
@@ -2356,10 +2129,57 @@
       "text": "zauważyłem ze w sumie wiekszość rzeczy o ktorych myśle to wszystko co jest albo mega oczywiste dla mnie już albo uderza w ulepszenie  cortexa, i w sumie piszac to pisze bo nie wiem. czuje że nic mi to nie daje w 95% że to pisze. ale własnie jest to desperaca próba walki z tym.\nwiec problemem nie jest 1 obserwacja ale to co chcialem napisac po niej"
     },
     {
-      "id": "n88",
+      "id": "n89",
+      "type": "rozrzutka",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2321,
+          -458
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T14:22:39.811Z",
+        "updatedAt": "2026-05-15T14:27:53.511Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Zakladka do pisania",
+      "text": "Zakladka do pisania wiadomości powinna byc uniwersalna dla każdego projektu. oraz miec przycisk usuniecia tam wszystkiego(zostawic tez pojedyncze usuwanie) i mozliwosc exportu na dysk jak wszystko."
+    },
+    {
+      "id": "n90",
+      "type": "rozrzutka",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          3481,
+          -438
+        ],
+        "zone": "bottom-right",
+        "row": 4,
+        "col": 3
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T17:47:21.956Z",
+        "updatedAt": "2026-05-15T17:47:26.532Z"
+      },
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "kind": "screen",
+      "imageSize": [
+        1184,
+        475
+      ],
+      "screenText": "Bylem szczac i wymyslilem cos waznego! juz wime czym sa warstwy oraz jaki to ma wplyw na te problemy\nbo zalozylem bardzo niszowy problem\npomyslalem sobie O!! juz wiem jak zapisze to co tutaj jest (bo sie tym martwilem)\npo prostu zapisze. wrzuce do programu co oczyszcza rozmowe z toba i zapisuje\ni pomyslalem o tym ALE! jak to uzyc?\nwyonbrazilem se sytuacje gdzie kurde moze po prostu uzyje tego chatu nastepny mrazem jak bede pisac o czyms zblizony\ni wtedy wymyslilem sytuacje gdzie kurde ale ja znam ten problem ze przez to ze ja pisze ogolnie to czesto zasmiecam kontekst nieprawdziwymi informacjami albo cos co Ai nie rozumie tak jak chce\nwiec wyobrazilem soibe sytuacje gdzie odizolowalem wszystko i wyobrazilme sobie tylko chat z toba i pomysallem. co by sie musialo stac zebym kurde mogl cos z tym zrobic? (nie wymyslilem nic i odrazu wiedzialem ze to za ciezkie i ja to poznaje)\ni np teraz se mysle ze dalem ci surowy zrzut. mysli 1:1 ktory udowadnia ze moje myslenie umie byc lepsze niz to co zakladamy. widzisz 0 gubienia, wszystko po drugim. zapamietalem to na tyle zeby dojsc z tym do kompa (30-40 sekund) i pamietacw trakcie pisania. i chcialbym moc badac takie surowe stany pod warunkiem ze są surowe. ale jakbym mial narzedzie to nie mial bym problemu sie postarac opisywac swoje mysli 1:1 co jest moja super moca\n\nI wtedy wymyslilem ze kurwa juz wiem czy sa warstwy\ni to wlasnie jest to izolowanie zakladajac ze wszytkie warstwy potrzebne do tego ponizej sa spelnione zebym mogl sie zastanowic nad tym i wlasnie tak robie wszystko!",
+      "screenDescription": "Screenshot przedstawia wiadomość użytkownika napisaną w sposób potoczny, w której dzieli się on przemyśleniami na temat procesu \"warstwowego\" myślenia, izolowania kontekstu w rozmowie z AI oraz chęci przekazywania surowych, uporządkowanych myśli w formie 1:1."
+    },
+    {
+      "id": "n91",
       "type": "myśli",
-      "category": "myśli",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2368,9 +2188,8 @@
           -419
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:24:34.951Z",
@@ -2381,10 +2200,8 @@
       "text": "Ja z góry zakładam jako osoba bez wiedzy i szukajaca miracle rozwiazan że te 3 platformy sa pełne tego i potrzebuje sposobu zeby to okiełznać."
     },
     {
-      "id": "n89",
+      "id": "n92",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2393,9 +2210,8 @@
           -361
         ],
         "zone": "bottom-left",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T10:16:23.532Z",
@@ -2405,10 +2221,35 @@
       "text": "też mam problem z  zapisem czegos co jest tylko pół prawda. np wiem o co ogolnie chodzil problem ale nie pamietam dokladnie czegoś itp i nie chce wtedy tego pisać żeby nie zasmiecać\nnp myslalem o  tym jakby moglo wygladac porownanie i po co. i co by mi to dalo\nale zapomnialem dokladnie czego.  wszystkiego co napisałem"
     },
     {
-      "id": "n90",
+      "id": "n93",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          832,
+          -255
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T17:21:07.085Z",
+        "updatedAt": "2026-05-15T17:21:09.332Z"
+      },
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "kind": "screen",
+      "imageSize": [
+        1099,
+        148
+      ],
+      "screenText": "2. Równanie z samymi niewiadomymi (Integracja bez specyfikacji)\n\nPróbujesz wpasować element (np. system zaciągania danych z FB), dla którego nie masz specyfikacji, do reszty projektu, który też nie ma specyfikacji (bo cały czas ewoluuje).\nTo jest próba rozwiązania układu równań, w którym nie masz podanej ani jednej cyfry. Wszystko jest płynne. Twój mózg próbuje zasymulować zderzenie dwóch chmur dymu.",
+      "screenDescription": "Screenshot przedstawia fragment notatki na temat trudności związanych z integracją elementów systemu w sytuacji braku specyfikacji, zilustrowany metaforą „zderzenia dwóch chmur dymu”."
+    },
+    {
+      "id": "n94",
+      "type": "rozrzutka",
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2417,9 +2258,8 @@
           -238
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T19:43:54.325Z",
@@ -2429,10 +2269,30 @@
       "text": "Coś czego nie moge opisać, jest strasznie trudne."
     },
     {
-      "id": "n91",
+      "id": "n95",
+      "type": "rozrzutka",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1790,
+          -232
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T18:35:58.274Z",
+        "updatedAt": "2026-05-15T19:37:00.645Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Tablice",
+      "text": "Możliwość zmian tablic. np tablica aktualnie to tablica 1\ni moge dodac se np  mózg\ni w tej tablicy jak ja odpale to jest pustka i moge tam dodswac nowe projekty. ale zawsze moze wrocic do 1 bez utraty tablocy mozg. i miec swoje stare projekty jak np ten. chce to miec po lewej stronie od zakladki projekty. czyli jak mam wybor projektu tak po lewej pasek z tablicami. i obok nich to samo czyli, +, T, T-"
+    },
+    {
+      "id": "n96",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2441,9 +2301,8 @@
           -224
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T17:21:17.003Z",
@@ -2454,10 +2313,8 @@
       "text": "Reddit - różne posty z wiedzą.\noraz najważniejsze, komentarze, ludzie ktorzy piszą z doswiadczenia, czesto pisza aktualne dobre porady. rozne linki, narzędzia cokolwiek. oraz ogólna historia. jest to alternatywa w nauce z AI gdzie Ai nie ma doświadczenia z ktorego może opowiadać.\nYT to zaś tylko dobre źródło wiedzy\na Fb ostatnio też na moim front page. ciągle jakies posty o Ai i badania ktore mogą dać mi jakas wiedze która podswiadomie szukam ale nie chce mi sie samemu czytac bo  i tak nie rozumiem"
     },
     {
-      "id": "n92",
+      "id": "n97",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2466,9 +2323,8 @@
           -214
         ],
         "zone": "bottom-left",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T09:21:01.926Z",
@@ -2478,35 +2334,57 @@
       "text": "i to własnie to. problem zapisu znow wystąpił. ja zawsze myśle pierw. a potem jak zdecyduje sie zapisać to nie wiem co bo zapomniałem. to aktualnie moj największy nemesis. nie opisałem dobrze tego problemu. bo nie chce pisać byle czego co może smiecić. boje się smiecenia bo ja samemu nie wiem czy to co pisze to prawda potem i jak ja nie moge ocenić to kto?\nDODATKOWO. to sie objawia inaczej\nbo ja czuje potencjał w czyms. i ja chce cos pokazac AI. ale wlasnie ja sie boje  tego bo jednak wiem ze cos jest tam napisane dobrze, a przynajhmniej przypuszczam ale tez przypuszczam że coś nie jest takie, i to wlasnie nazywam zaśmieceniem"
     },
     {
-      "id": "n93",
+      "id": "n98",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
         "pos": [
-          2159,
-          -191
+          2203,
+          -146
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-15T07:26:58.161Z",
-        "updatedAt": "2026-05-15T07:27:06.596Z"
+        "updatedAt": "2026-05-15T14:25:33.650Z"
       },
       "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
       "title": "new",
       "text": "poprawki"
     },
     {
-      "id": "n94",
+      "id": "n99",
+      "type": "rozrzutka",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2165,
+          -106
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T16:25:46.377Z",
+        "updatedAt": "2026-05-15T16:57:11.171Z"
+      },
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "kind": "screen",
+      "imageSize": [
+        1186,
+        614
+      ],
+      "screenText": "problem X a przynajmniej cos by przestal istniec jakbym tylko sie skupila na robinieu\nale w praktyce wychodzi na to ze zawsze jednoczesnie mysle o tych wszystkich jednostkowych rzeczach jak cos moge ulepszyc. wpadam na jakies pomysly. i przez lata tyle mialem takich pomyslow ze chec stworzenia czegos gdzie moge je podlaczyc stworzyc stworzyla cortex taka ciekawostka\nale z jakiegos powodu tego nie robie? dlaczego? no wlasnie problem X, moze ma to sens nawet nie wiem czy gadam z sensem bo nie moge ocenic. gadam ogolnie nie majac obrazu w glowie. np teraz wyobrazilem sobie sytuacje gdzie mapuje moj mozg w sposob ze wyciagam 2 rzeczy\n\n1. mysle albo z ogolnym mysleniem\n2. albo mam cos za tym mysleniem\nale dlaczego tego nie robie?\n\n• nie ma miejsca\n• nie ma miejsca na inne rzeczy ktorych nie przzewiduje ktore sa takie jak to co wyzej\npodobne\nalbo zupelnie innne\nnie mam miejsca zeby to zbadac czy tak jest w kontekscie czy to co napisalem w 2 myslniku jest prawda czy moze wszystko jest inne. moze cos innego\ni teraz znow se wyobrazilen zmapoiwanie tego ze z jakos mysle hipotetycznie jak sam widzisz\nale z jakiegos powodu cos mi sie nie spina\nznow nie ma mm8iejsca. wyobrazam sobie ze zrobienie 10000 malych prijektow nie rozwiaze problemu a tylko go rozpierdoli\nwyobrazam sobie czy t y to zrozumiesz\nwyobrazam sobie jak daleko jestem od jakiegokolwiuek fundamentu\nwyobrazam jak zbadac jak odczuwam to jak dalek ojestem od fundamentu w oparciu na dane ktorych nie mam bo nie mam zapisane\nTO JEST PROBLEM X. wkoncu kurwa udalo mi sie napisac",
+      "screenDescription": "Screenshot przedstawia zapis osobistych przemyśleń użytkownika na temat trudności w organizacji myśli i projektów, określonych jako „problem X”. Tekst jest sformułowany w formie strumienia świadomości."
+    },
+    {
+      "id": "n100",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2515,9 +2393,8 @@
           -71
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T19:25:37.638Z",
@@ -2527,10 +2404,30 @@
       "text": "wchodzę ciagle losowo na jakies losowe projekty i nie moge po prostu  wymyslec nic na żaden z nich.  chyba istnieje jakis inny problem wejscia, chyba bez czegos z czym bym mogl wejsc z w ktorys z nich, bez boźdca to nie moge. chyba że plan przeszedł juz przez faze stania sie fundamentem a nie tylko hipotezami"
     },
     {
-      "id": "n95",
+      "id": "n101",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          907,
+          -24
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T19:07:23.202Z",
+        "updatedAt": "2026-05-15T12:21:42.862Z"
+      },
+      "projectId": "a70c8531-8d52-4b7a-ad30-08eb81ca1e8f",
+      "title": "Planowanie",
+      "text": "Planowanie dzielą sie na rózne etapy które postaram sie zbadać."
+    },
+    {
+      "id": "n102",
+      "type": "rozrzutka",
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2539,9 +2436,8 @@
           -14
         ],
         "zone": "bottom-left",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T14:33:17.007Z",
@@ -2551,10 +2447,32 @@
       "text": "planuje cortexa dać np bratu. i kurde mega sie boje że to co działa na mnie może na niego nie działać. i nie pasować mu temu skupiam sie też na narzędziach do tworzenia wlasnych included  w samej apce przynajmniej te ktore moge obmyśleć"
     },
     {
-      "id": "n96",
+      "id": "n103",
+      "type": "rozrzutka",
+      "rawState": "archived",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2796,
+          -11
+        ],
+        "zone": "bottom-right",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T18:54:50.234Z",
+        "updatedAt": "2026-05-15T14:27:50.991Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Settings",
+      "visualState": "archived",
+      "visualWeight": "low",
+      "text": "Menu ustawien w których dodaje/usuwam/edytuje. wszystkie nazwy jak tak kategorie(je też do tego trzeba bedzie wrzucić, jedynie projekty maja byc tam gdzie są że dodawanie/usuwanie/zmienianie) czyli musze miec mozliwosc edytowania calej semantyki."
+    },
+    {
+      "id": "n104",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2563,9 +2481,8 @@
           22
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:23:17.688Z",
@@ -2576,60 +2493,35 @@
       "text": "potrzebuje jeszcze szybkiego sposobu sciagania i procesowania postow. i filmikow z fejsa"
     },
     {
-      "id": "n97",
+      "id": "n105",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
         "pos": [
-          2501,
-          37
+          666,
+          84
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
-        "createdAt": "2026-05-14T18:54:50.234Z",
-        "updatedAt": "2026-05-15T07:25:49.557Z"
+        "createdAt": "2026-05-15T16:19:59.273Z",
+        "updatedAt": "2026-05-15T16:57:11.171Z"
       },
-      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
-      "title": "Settings",
-      "text": "Menu ustawien w których dodaje/usuwam/edytuje. wszystkie nazwy jak tak kategorie(je też do tego trzeba bedzie wrzucić, jedynie projekty maja byc tam gdzie są że dodawanie/usuwanie/zmienianie) czyli musze miec mozliwosc edytowania calej semantyki."
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "kind": "screen",
+      "imageSize": [
+        1128,
+        185
+      ],
+      "screenText": "Diagnoza Problemu X\nProblem X to nie jest \"strach przed błędami\". Problem X to rekursywny (zapętlony) paraliż analityczny.\n\nPróbujesz zbudować Cortexa (narzędzie do myślenia), używając swojego mózgu (narzędzia do myślenia), do analizowania tego, jak Twój mózg myśli, żeby zoptymalizować Cortexa pod ten mózg. Zrobiłeś z siebie węża zjadającego własny ogon (Uroborosa). Wpadłeś w pętlę, z której ludzki umysł nie potrafi wyjść sam, bo narzędzie badające (Twój mózg) jest jednocześnie obiektem badanym.",
+      "screenDescription": "Zrzut ekranu zawierający tekst z wyjaśnieniem koncepcji \"Problemu X\", który jest zdefiniowany jako rekursywny paraliż analityczny powstały w procesie optymalizacji narzędzia do myślenia (Cortexa) za pomocą własnego mózgu."
     },
     {
-      "id": "n98",
+      "id": "n106",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
-      "rawState": "raw",
-      "stage": "robocze",
-      "where": {
-        "pos": [
-          3059,
-          69
-        ],
-        "zone": "bottom-right",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
-      },
-      "chronology": {
-        "createdAt": "2026-05-15T07:25:53.288Z",
-        "updatedAt": "2026-05-15T07:27:12.281Z"
-      },
-      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
-      "title": "poprawka",
-      "text": "Jeszcze chce mieć mozliwosc dodawania/usuwania. wszystko tak jak kategorie tych semantyk."
-    },
-    {
-      "id": "n99",
-      "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2638,9 +2530,8 @@
           100
         ],
         "zone": "bottom-left",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T18:59:17.850Z",
@@ -2650,35 +2541,8 @@
       "text": "tak jak są one połączone 3. tak dwie są różne\ncel inwestycja i blueprint mówią o kluczowych funkcjach systemu ktory AI musi patrzec ważniej. tak wszechstronnosc to bardziej spoko jakby było, bo jednak nie jestem pewien czy tak sie da. i  czy tez moje domniemania są prawdziwe. jest to dobry przyklad tego jak cos moze sie roznic mimo połączenia"
     },
     {
-      "id": "n100",
-      "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
-      "rawState": "raw",
-      "stage": "robocze",
-      "where": {
-        "pos": [
-          1925,
-          102
-        ],
-        "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
-      },
-      "chronology": {
-        "createdAt": "2026-05-15T07:31:25.816Z",
-        "updatedAt": "2026-05-15T07:32:02.421Z"
-      },
-      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
-      "title": "After zoom",
-      "text": "Strzałka po zoomie automatycznie powraca mnie na glowna tablica zamiast na projekt w ktorym istnieje oryginal tego co bylo zoomowane"
-    },
-    {
-      "id": "n101",
+      "id": "n107",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2687,9 +2551,8 @@
           124
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T10:06:40.692Z",
@@ -2699,10 +2562,32 @@
       "text": "zawsze wchodzę jak cos chce napisac, czyli ja mowie sobie że pora cos zrobić wiec np wchodze w cortexa i mowi sobie pisz cos\nto mam na poczatku zawsze wątpliwosci co i jak przez brak znania terenu , nawet teraz jak to pisze to przez to że już chwile tu pisze dziś mimo że i tak mam wątpliwości - jest to  stan który odczywam zawsze, surowa obserwacja, nie wiem jaki cel mam tutaj ale nie moge go wyobrazic ale to nie zwalnia z nie pisania tego"
     },
     {
-      "id": "n102",
+      "id": "n108",
+      "type": "rozrzutka",
+      "rawState": "archived",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          2770,
+          155
+        ],
+        "zone": "bottom-right",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T07:25:53.288Z",
+        "updatedAt": "2026-05-15T14:27:50.079Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "poprawka",
+      "visualState": "archived",
+      "visualWeight": "low",
+      "text": "Jeszcze chce mieć mozliwosc dodawania/usuwania. wszystko tak jak kategorie tych semantyk."
+    },
+    {
+      "id": "n109",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2711,9 +2596,8 @@
           170
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T17:13:46.892Z",
@@ -2724,10 +2608,8 @@
       "text": "Ten system istnieje po 3rzeczy\n1. praca\n2. rozwój\n3. komfort(np automatyzacja)\nten problem uderza w tą 2 sfere.\nUważam że w tych materiałach jest ogromny potencjał."
     },
     {
-      "id": "n103",
+      "id": "n110",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2736,9 +2618,8 @@
           185
         ],
         "zone": "bottom-left",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T10:09:17.534Z",
@@ -2748,40 +2629,56 @@
       "text": "jednym z celów ogolnie tego cortexa jest wytworzenie schematów myślenia dokladnie, czyli blueprint na podstawie surowych danych i to potrzebuje do rozwoju.   np jak chcialbym wymyśleć jakis prompt do tego jak AI ma mi cos tlumaczyc pierw musiałbym zebrać informacje jawne ktore wiem o tym. oraz np pisanie o tym jak ja coś skracam i szukanie jakiegos wspolnego mianoiwnika."
     },
     {
-      "id": "n104",
+      "id": "n111",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
-      "rawState": "raw",
+      "rawState": "archived",
       "stage": "robocze",
       "where": {
         "pos": [
-          2384,
+          2522,
           200
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
-        "createdAt": "2026-05-15T07:25:40.064Z",
-        "updatedAt": "2026-05-15T07:25:51.800Z"
+        "createdAt": "2026-05-15T07:31:25.816Z",
+        "updatedAt": "2026-05-15T14:27:48.680Z"
       },
       "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
-      "kind": "screen",
-      "imageSize": [
-        493,
-        486
-      ],
-      "screenText": "SEMANTYKA\nKategorie, kolory, kolejność i auto-tytuły\nraw\nSurowe\nextracted\nWyciągnięte\nhidden\nSchowane\narchived\nArchiwum\nTypy planu\nfundament: Fundament\ncel: Cel\nmechanizm: Mechanizm\nfeature: Feature\ndecyzja: Decyzja\npytanie: Pytanie\nnext_step: Next step\nZapisz semantykę",
-      "screenDescription": "Interfejs ustawień tablicy Cortex dotyczący konfiguracji kategorii, typów planu oraz ich nazw wyświetlanych w systemie."
+      "title": "After zoom",
+      "visualState": "archived",
+      "visualWeight": "low",
+      "text": "Strzałka po zoomie automatycznie powraca mnie na glowna tablica zamiast na projekt w ktorym istnieje oryginal tego co bylo zoomowane"
     },
     {
-      "id": "n105",
+      "id": "n112",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
+      "rawState": "archived",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          1195,
+          217
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T19:45:02.448Z",
+        "updatedAt": "2026-05-15T14:25:28.266Z"
+      },
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
+      "title": "Zakładka",
+      "visualState": "archived",
+      "visualWeight": "low",
+      "text": "Na  myśli najgorszego sortu(najłabsze ktore spierdalaja szybciej niż murzyn z rowerem) potrzebuje cos innego niz notatki. potrzebuje jakis guzik  w lewym gornym rogu. ktory odpala zakladke ktora jest praktycznie jak chat na messengerze. bo zauwazylem zze nie mam problemu sie rozpisywac jak komus cos pisze jak wiadomosc. i własnie w taki sposób chce móc pisać. i tam moge pisac wiadomosci. i kazda z wiadomosci ktore z enteruje ląduje do parkingu. + wszystkie notatki traca mozliwosc parkowania ich tam bo naswet tego nie uzywam i parking jest pusty. i potem tylko latwo kopiuje to i wrzucam w Ai. i pisze sobie z nim/"
+    },
+    {
+      "id": "n113",
+      "type": "rozrzutka",
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2790,9 +2687,8 @@
           226
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T18:45:17.803Z",
@@ -2803,10 +2699,30 @@
       "text": "jest to przyszła abstrakcyjna funkcja"
     },
     {
-      "id": "n106",
+      "id": "n114",
+      "type": "rozrzutka",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          893,
+          233
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-14T19:19:34.140Z",
+        "updatedAt": "2026-05-15T12:21:42.862Z"
+      },
+      "projectId": "a70c8531-8d52-4b7a-ad30-08eb81ca1e8f",
+      "title": "Początek",
+      "text": "Wydaje mi się że planowanie powinno zaczynać się od pragnień? chęci? celów?"
+    },
+    {
+      "id": "n115",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2815,9 +2731,8 @@
           256
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T17:25:06.912Z",
@@ -2828,37 +2743,8 @@
       "text": "Do ściągania z yt i reddita mam już program do ktorego tylko wrzucam link i robi to za mnie chociaż wolalbym je wklejać np do cortexa i flash by to zrobil za mnie? potem te materiały skladowac w czyms typu podpięta chromaDB. i miec ultra doprecyzowane prompty do tego.\nChociaż nie ukrywam że moglbym zintegrowac cos szybszego ale totalnie nie mam pomyslu bo nie jestem techniczny."
     },
     {
-      "id": "n107",
+      "id": "n116",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
-      "rawState": "archived",
-      "stage": "robocze",
-      "where": {
-        "pos": [
-          1188,
-          292
-        ],
-        "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
-      },
-      "chronology": {
-        "createdAt": "2026-05-14T19:45:02.448Z",
-        "updatedAt": "2026-05-15T07:29:37.458Z"
-      },
-      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
-      "title": "Zakładka",
-      "visualState": "archived",
-      "visualWeight": "low",
-      "text": "Na  myśli najgorszego sortu(najłabsze ktore spierdalaja szybciej niż murzyn z rowerem) potrzebuje cos innego niz notatki. potrzebuje jakis guzik  w lewym gornym rogu. ktory odpala zakladke ktora jest praktycznie jak chat na messengerze. bo zauwazylem zze nie mam problemu sie rozpisywac jak komus cos pisze jak wiadomosc. i własnie w taki sposób chce móc pisać. i tam moge pisac wiadomosci. i kazda z wiadomosci ktore z enteruje ląduje do parkingu. + wszystkie notatki traca mozliwosc parkowania ich tam bo naswet tego nie uzywam i parking jest pusty. i potem tylko latwo kopiuje to i wrzucam w Ai. i pisze sobie z nim/"
-    },
-    {
-      "id": "n108",
-      "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2867,9 +2753,8 @@
           310
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T21:06:33.772Z",
@@ -2880,10 +2765,8 @@
       "text": "Napisze to tak troche w próżni  i ogolnie bez kontekstu. ale jak ja np pracuje, mysle, cokolwiek to zawsze robie to pesymistycznie i co chwile zakladam ze jakis edge case mn rozjebie. i chcialbym w przyszlosci to zbadac i zaimplementowac taki typ myslenia do AI"
     },
     {
-      "id": "n109",
+      "id": "n117",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2892,9 +2775,8 @@
           318
         ],
         "zone": "bottom-left",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T14:09:34.505Z",
@@ -2904,10 +2786,8 @@
       "text": "Celem sprzezonym z strachem i watpliwosciami jest to żeby odrazu wiedziec z czego trzeba robic funkcje na zawsze. bo lepiej odrazu inwestowac niz np 10 razy sie pierdolic i potem dopiero zauważyć ze coś warto zrobić. gdzie jakbym zrobil za 1 razem to by już mi to sie zwracało"
     },
     {
-      "id": "n110",
+      "id": "n118",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "archived",
       "stage": "robocze",
       "where": {
@@ -2916,9 +2796,8 @@
           336
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:40:10.529Z",
@@ -2931,10 +2810,8 @@
       "text": "W skrocie oznaczanie tych nie pojedynczo ale takim jak na pulpicie ze mozna kilka na raz na shifcie."
     },
     {
-      "id": "n111",
+      "id": "n119",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -2943,9 +2820,8 @@
           346
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T15:26:57.907Z",
@@ -2956,35 +2832,8 @@
       "text": "Obserwowanie wszystkiego co pisze. jak pisze itp. bo calkowicie nie mam sposobu żeby  np umieć sobie wyobrazić w czym jestem inny od reszty ludzi. - AI powinno to robić. albo z automatu albo cyklicznie na zawołanie"
     },
     {
-      "id": "n112",
+      "id": "n120",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
-      "rawState": "raw",
-      "stage": "robocze",
-      "where": {
-        "pos": [
-          5125,
-          383
-        ],
-        "zone": "bottom-right",
-        "row": 5,
-        "col": 5,
-        "layerId": "root"
-      },
-      "chronology": {
-        "createdAt": "2026-05-14T19:07:23.202Z",
-        "updatedAt": "2026-05-14T19:20:58.007Z"
-      },
-      "projectId": "a70c8531-8d52-4b7a-ad30-08eb81ca1e8f",
-      "title": "Planowanie",
-      "text": "Planowanie dzielą sie na rózne etapy które postaram sie zbadać."
-    },
-    {
-      "id": "n113",
-      "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "archived",
       "stage": "robocze",
       "where": {
@@ -2993,9 +2842,8 @@
           384
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T19:08:22.053Z",
@@ -3008,10 +2856,8 @@
       "text": "Możliwość połączen między projektami."
     },
     {
-      "id": "n114",
+      "id": "n121",
       "type": "informacja_dla_ai",
-      "category": "informacja_dla_ai",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3020,9 +2866,8 @@
           400
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:42:54.515Z",
@@ -3033,10 +2878,8 @@
       "text": "Podpinam pomysły"
     },
     {
-      "id": "n115",
+      "id": "n122",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3045,9 +2888,8 @@
           420
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T13:53:42.191Z",
@@ -3057,10 +2899,8 @@
       "text": "Moje myślenie jest w jakimś stopniu jest strukturalne musze to zgłębić bo zawsze było to zbyt słabe wspomnienia i zbyt duzo. bo moje myślenie jest również takie, albo wszystko albo nic., musze tworzyc struktury ktore zatwierdze inaczej malo co zapamiętam. a jak za duzo i za ciezko to ciezko tak."
     },
     {
-      "id": "n116",
+      "id": "n123",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3069,9 +2909,8 @@
           421
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T16:14:46.805Z",
@@ -3081,10 +2920,8 @@
       "text": "Praca z Ai się warstwuje. przechodzi na  warstwy.\n1 warstwa to np surowy input\n2 warstwa to jak to zeskrinuje i wrzuce do ai\n3. to zebranie tego w projekt, wrzucenie skrina na ta sama tablice + output Ai.\nWarstwy nie tyczą sie tylko pracy z Ai. mogą powstać wszędzie"
     },
     {
-      "id": "n117",
+      "id": "n124",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3093,9 +2930,8 @@
           428
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T09:28:47.106Z",
@@ -3106,10 +2942,35 @@
       "text": "Ogromny problem który cortex ma zaleczyć to to że ja instynktownie chce optymalizować wszysstko pod akceleracje. chce mieć coś, albo spsoob, albo cokowliek co pozwoli Mi albo AI ocenić kiedy cos nadaje sie do akceleracji przez AI. zachowując to u mnie jest tym czego nie umiem powtorzyć czyli kontekstem dla Ai w skrócie. czyli ciągla walka między bazowym Ai ktory nie ogarnia a Ai ktory ogarnia. i co by sie musualo stać żeby on to zrobił\nznowu czuje że zasmiecam."
     },
     {
-      "id": "n118",
+      "id": "n125",
+      "type": "rozrzutka",
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          313,
+          453
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T16:15:02.340Z",
+        "updatedAt": "2026-05-15T16:57:11.171Z"
+      },
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "kind": "screen",
+      "imageSize": [
+        1093,
+        261
+      ],
+      "screenText": "Moje badanie (Twój ruch):\n\nMam przed sobą obraz człowieka, który ma zablokowany bufor wejściowy, ponieważ koszt popełnienia błędu w fazie początkowej wydaje mu się tak wysoki, że woli nie wchodzić do projektu wcale (\"nie chce mi sie wchodzic w obecne projekty bez pomysłu\").\n\nChcę zweryfikować tę diagnozę. Odpowiedz mi tylko na to jedno analityczne pytanie:\n\nGdybyś miał absolutną, 100% gwarancję matematyczną, że wszystko, co teraz chaotycznie zrzucisz na tablicę, jest tylko \"brudnopisem znikającym za dobę\", a żaden AI ani Ty sam za tydzień NIE potraktuje tego jako fundament (aksjomat)... czy wtedy potrafiłbyś wejść w projekt i zacząć pisać?",
+      "screenDescription": "Screenshot przedstawia wiadomość tekstową dotyczącą analizy psychologicznej bloku przed rozpoczęciem projektu, zawierającą pytanie pomocnicze mające na celu weryfikację tej diagnozy."
+    },
+    {
+      "id": "n126",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3118,9 +2979,8 @@
           455
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-13T18:01:26.365Z",
@@ -3131,10 +2991,8 @@
       "text": "często  chce uslyszec cos co AI ma mala szanse ze odpali takie slowo. bo mi si ewydaje ze juz slyszalem wszystko co ai o mn do powiedzenia i pewna sfera to jst cos co Ai nigdy nie napisze dopoki go nie sprowokuje a nie umiem bo nie mam wiedzy zeby to zrobić. no zdarzało sie bardzo często wlasnie jak szukajac jakiegos groundingu. odciążenia w tym że Ai powie mi cos co moge nie wiedziec zamiast spedzenia kilku miesiecy na odkrycie tego samemu."
     },
     {
-      "id": "n119",
+      "id": "n127",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3143,9 +3001,8 @@
           499
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:46:29.264Z",
@@ -3156,10 +3013,8 @@
       "text": "Sprawdzić calkowicie sfere techniczną. zebyu nie powstaly bugi. Ai ma spojrzec na poszczegolne rzeczy i jednostkowo zeby nic nie przegapic. a nastepnie systemowo je przyrównać czy nic sie nie canceluje. psuje. ma on żąglować rozwiazanami żeby zaspokoić moje rządania"
     },
     {
-      "id": "n120",
+      "id": "n128",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "archived",
       "stage": "robocze",
       "where": {
@@ -3168,9 +3023,8 @@
           520
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:33:24.787Z",
@@ -3183,10 +3037,8 @@
       "text": "Zoom ma byc widoczny z warstwy poprzedniej.\nTo nie ma być tak że jak zoomuje. wklejam 2 notatki dajmy do zoomu. wracam do poprzedniej i ich nie widać.  musze miec jakis sposób spojrzenia na to co jest w zoomie bez wchodzenia w niego. czy to odrazu czy to po najechaniu itp"
     },
     {
-      "id": "n121",
+      "id": "n129",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3195,9 +3047,8 @@
           531
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T09:31:37.751Z",
@@ -3208,10 +3059,8 @@
       "text": "Bo tu chodzi o to że ja jako człowiek mam wieczny problem w tym że ja moge myślec ale ja nie wiem czy ja cos wymysle i czy nie marnuje czasu. i wlasnie chialbym miec coś co pozwala mi jakoś to przejsc.  bo nie moge przewidziec przyszlosci JESZCZE. albo nie moge wymyslec sposobu zeby zbadać to zeby wiedziec kiedy moge myslec dalej samemu a keidy MOGLEM PO PROSTU ZAPYTAC O WGLĄD NP FLASHA"
     },
     {
-      "id": "n122",
+      "id": "n130",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3220,9 +3069,8 @@
           532
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-10T17:03:14.950Z",
@@ -3233,10 +3081,8 @@
       "text": "Jeśli chodzi o prace z AI, powinna panować wieczna zasada ograniczonego zaufania ustawiona na totalne extremum"
     },
     {
-      "id": "n123",
+      "id": "n131",
       "type": "case_study",
-      "category": "case_study",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3245,9 +3091,8 @@
           541
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 5,
-        "layerId": "root"
+        "row": 4,
+        "col": 6
       },
       "chronology": {
         "createdAt": "2026-05-14T19:03:48.418Z",
@@ -3258,10 +3103,8 @@
       "text": "Mamy tutaj żywy przypadek konfliktu i tego co aktualne planowanie jeszcze nie naprawia. co zrobić z rzeczami ktore sa tylko hipotetyczne jak te zapytania do ai studio czy lmareny, bo jesli to wrzuce AI to to on napewno bedzie wymyslal cos swojego nad czym nie mam nadzoru. ale z drugiej strony nie moge zaczac planowac nad tym bo niewiem czy mi sie opłaca"
     },
     {
-      "id": "n124",
+      "id": "n132",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "archived",
       "stage": "robocze",
       "where": {
@@ -3270,9 +3113,8 @@
           550
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:19:45.212Z",
@@ -3285,10 +3127,8 @@
       "text": "Jak robie multi select to branie 1 powinno robić drag wszystkich a nie tylko 1"
     },
     {
-      "id": "n125",
+      "id": "n133",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3297,9 +3137,8 @@
           571
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:43:11.094Z",
@@ -3310,10 +3149,8 @@
       "text": "kazanie mu go wykonać"
     },
     {
-      "id": "n126",
+      "id": "n134",
       "type": "informacja_dla_ai",
-      "category": "informacja_dla_ai",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3322,9 +3159,8 @@
           599
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T16:12:32.755Z",
@@ -3335,10 +3171,8 @@
       "text": "To to samo ale z innych stron"
     },
     {
-      "id": "n127",
+      "id": "n135",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3347,9 +3181,8 @@
           622
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 5,
-        "layerId": "root"
+        "row": 4,
+        "col": 5
       },
       "chronology": {
         "createdAt": "2026-05-14T19:00:11.546Z",
@@ -3360,35 +3193,35 @@
       "text": "Podpięte będą elementy wzoru"
     },
     {
-      "id": "n128",
+      "id": "n136",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
         "pos": [
-          5111,
-          640
+          1629,
+          668
         ],
-        "zone": "bottom-right",
-        "row": 5,
-        "col": 5,
-        "layerId": "root"
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
       },
       "chronology": {
-        "createdAt": "2026-05-14T19:19:34.140Z",
-        "updatedAt": "2026-05-14T19:22:45.730Z"
+        "createdAt": "2026-05-15T16:18:18.100Z",
+        "updatedAt": "2026-05-15T16:57:11.171Z"
       },
-      "projectId": "a70c8531-8d52-4b7a-ad30-08eb81ca1e8f",
-      "title": "Początek",
-      "text": "Wydaje mi się że planowanie powinno zaczynać się od pragnień? chęci? celów?"
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "kind": "screen",
+      "imageSize": [
+        1152,
+        425
+      ],
+      "screenText": "To, co nazwałeś perfekcjonizmem na wyższym poziomie, to w informatyce tzw. nieskończona rekurencja wywołująca przepełnienie stosu (Stack Overflow).\n\nZobacz, co się u Ciebie dzieje. To nie jest zwykły perfekcjonizm (czyli \"chcę to ładnie napisać\"). Twój proces wygląda tak:\n\n1. Warstwa 0 (Baza): Masz problem do rozwiązania (np. funkcja w Cortex).\n2. Warstwa 1 (Myśl): Wpadasz na pomysł.\n3. Warstwa 2 (Meta-myśl): Twój mózg natychmiast zaczyna oceniać tę myśl – czy pasuje do 30 wymiarów?\n4. Warstwa 3 (Meta-meta-myśl): Zaczynasz myśleć o tym, jak aktualnie myślisz o ocenie tej myśli (notatka z Inboxa: \"Musze odkryc tajemnice swojego myslenia... żeby zmapować profil kognitywny\").\n\nTwój mózg odpala \"myśl o myśli o myśli\". Każda kolejna warstwa zżera RAM. W ułamku sekundy wchodzisz tak głęboko w analizę procesu myślenia, że... tracisz referencję (pointer) do Warstwy 0.\nI co się dzieje? Cytuję Ciebie: \"zapominam o wszystkim\", \"juz mi wylecialo z glowy\" (inbox). Twój mózg ratuje się przed spaleniem poprzez twardy reset.",
+      "screenDescription": "Screenshot przedstawia tekst wyjaśniający mechanizm \"perfekcjonizmu\" jako problemu psychologicznego porównanego do informatycznego błędu \"Stack Overflow\" (przepełnienie stosu). Autor analizuje warstwy procesu myślowego, które prowadzą do utraty głównego wątku (\"Warstwy 0\") i ostatecznie do chwilowej utraty pamięci roboczej."
     },
     {
-      "id": "n129",
+      "id": "n137",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3397,9 +3230,8 @@
           725
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 3,
-        "layerId": "root"
+        "row": 4,
+        "col": 3
       },
       "chronology": {
         "createdAt": "2026-05-14T18:56:49.694Z",
@@ -3410,10 +3242,8 @@
       "text": "Myśle o tym że trzeba mieć jakis sposob który bezblednie podaje jaki kontekst jest potrzebny Ai ktoremu cos rootuje zaleznie od tego co chce uzyskac."
     },
     {
-      "id": "n130",
+      "id": "n138",
       "type": "problem",
-      "category": "problem",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3422,9 +3252,8 @@
           776
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-11T09:34:54.539Z",
@@ -3435,10 +3264,8 @@
       "text": "i jak np wrzuce AI jakis SS. albo wiadomosc to mussze miec sposob tego żeby wziąc to. i napisac co jest dobrze, a co źle i po prostu stworzyć z tego kontekst. ktory zachowuje caly kontekst. nie jest to proste."
     },
     {
-      "id": "n131",
+      "id": "n139",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "archived",
       "stage": "robocze",
       "where": {
@@ -3447,9 +3274,8 @@
           788
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-14T18:32:03.111Z",
@@ -3467,10 +3293,35 @@
       "screenDescription": "Screenshot przedstawia listę dwóch statusów dla notatek wraz z opisem ich działania oraz sugerowanymi parametrami CSS (display: none, opacity: 0.5)."
     },
     {
-      "id": "n132",
+      "id": "n140",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
+      "rawState": "raw",
+      "stage": "robocze",
+      "where": {
+        "pos": [
+          319,
+          855
+        ],
+        "zone": "bottom-center",
+        "row": 4,
+        "col": 2
+      },
+      "chronology": {
+        "createdAt": "2026-05-15T16:17:35.803Z",
+        "updatedAt": "2026-05-15T16:57:11.171Z"
+      },
+      "projectId": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "kind": "screen",
+      "imageSize": [
+        1121,
+        208
+      ],
+      "screenText": "Odkrycie 1: Morderczy wymóg użyteczności (ROI)\nTwoje zdanie: \"Jakbym wiedział, że cokolwiek mi się nigdy nie przyda, to nigdy bym nie zaczął.\"\nTo całkowicie obala klasyczne rady w stylu \"zrób sobie brudnopis i po prostu pisz\". Twój mózg jest brutalnie zoptymalizowany pod ROI (zwrot z inwestycji / użyteczność). Jeśli procesor w Twojej głowie nie widzi matematycznej szansy na to, że dana czynność przyniesie wartość w przyszłości, fizycznie odcina Ci zasilanie (motywację i chęci). Dlatego \"czyste\" burze mózgów u Ciebie nie działają. Musisz widzieć potencjał struktury, żeby w ogóle uruchomić zapłon.",
+      "screenDescription": "Screenshot przedstawia fragment tekstu dotyczący psychologicznego mechanizmu motywacji opartego na przewidywanym zwrocie z inwestycji (ROI) oraz jego wpływu na chęć podejmowania działań."
+    },
+    {
+      "id": "n141",
+      "type": "rozrzutka",
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3479,9 +3330,8 @@
           862
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 4,
-        "layerId": "root"
+        "row": 4,
+        "col": 4
       },
       "chronology": {
         "createdAt": "2026-05-14T19:00:52.396Z",
@@ -3492,10 +3342,8 @@
       "text": "Kontekst zależny od tego  co chce"
     },
     {
-      "id": "n133",
+      "id": "n142",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3504,9 +3352,8 @@
           866
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 5,
-        "layerId": "root"
+        "row": 4,
+        "col": 5
       },
       "chronology": {
         "createdAt": "2026-05-14T19:01:07.261Z",
@@ -3517,10 +3364,8 @@
       "text": "czyli na ten moment numery\n1 albo 2"
     },
     {
-      "id": "n134",
+      "id": "n143",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3529,9 +3374,8 @@
           875
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 5,
-        "layerId": "root"
+        "row": 4,
+        "col": 6
       },
       "chronology": {
         "createdAt": "2026-05-14T19:01:57.850Z",
@@ -3542,10 +3386,8 @@
       "text": "Co z tego że daje AI kontekst i funkcje skoro nie mam zaplanowego zapisu ktory bierze z tego 100%. przetwarza (manualnie bo na BYOK przyjdzie czas. ewentualnie używa zapytan do lmareny albo Ai studio prosto z cortexa)"
     },
     {
-      "id": "n135",
+      "id": "n144",
       "type": "aksjomat",
-      "category": "aksjomat",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3554,9 +3396,8 @@
           947
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:49:41.884Z",
@@ -3567,10 +3408,8 @@
       "text": "Ai studi, antigravity, codex, lmarena"
     },
     {
-      "id": "n136",
+      "id": "n145",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3579,9 +3418,8 @@
           1010
         ],
         "zone": "bottom-right",
-        "row": 5,
-        "col": 3,
-        "layerId": "root"
+        "row": 4,
+        "col": 3
       },
       "chronology": {
         "createdAt": "2026-05-14T18:57:31.789Z",
@@ -3592,10 +3430,8 @@
       "text": "Przewiduje że Ai napewno bedzie mi potrzebne do czegoś co jest procesem braku wiedzy. czyli napewno routing moze sie skladac z\n1. pomysłow\n2. walidacji(czyli ocenienia obiektywnym okiem tego co pisze i jest napisane)\nTo sa tylko 2 opcje napewno jest więcej ale ich nie pamietam\nwiem że Ai zawsze potrzebuje kontekstu. to jest czesc 1 w naszym wzorze na sukces"
     },
     {
-      "id": "n137",
+      "id": "n146",
       "type": "rozrzutka",
-      "category": "rozrzutka",
-      "priority": 1,
       "rawState": "raw",
       "stage": "robocze",
       "where": {
@@ -3604,9 +3440,8 @@
           1073
         ],
         "zone": "bottom-center",
-        "row": 5,
-        "col": 2,
-        "layerId": "root"
+        "row": 4,
+        "col": 2
       },
       "chronology": {
         "createdAt": "2026-05-12T21:50:01.568Z",
@@ -3664,125 +3499,128 @@
       "name": "Planowanie",
       "createdAt": "2026-05-14T19:07:22.221Z",
       "updatedAt": "2026-05-14T19:07:22.221Z"
+    },
+    {
+      "id": "5ea06a6d-3bbe-4aa1-a241-7ba0876119d1",
+      "name": "Wnioski Ai",
+      "createdAt": "2026-05-15T16:14:22.207Z",
+      "updatedAt": "2026-05-15T16:14:22.207Z"
     }
   ],
   "layers": [
     {
-      "id": "root",
-      "title": "Tablica główna",
-      "titleMode": "custom",
-      "parentLayerId": null,
-      "originNodeId": null,
-      "projectId": null,
-      "path": [
-        {
-          "id": "root",
-          "title": "Tablica główna",
-          "originNodeId": null,
-          "titleMode": "custom"
-        }
-      ]
-    },
-    {
       "id": "835e02ec-2334-4b7c-be86-dcbffecf7e7f",
       "title": "dddd",
-      "titleMode": "bound",
-      "parentLayerId": "root",
-      "originNodeId": "427984b7-d512-4a49-906d-dfb6cd1769db",
-      "projectId": null,
+      "titleMode": "custom",
       "path": [
         {
           "id": "root",
           "title": "Tablica główna",
-          "originNodeId": null,
           "titleMode": "custom"
         },
         {
           "id": "835e02ec-2334-4b7c-be86-dcbffecf7e7f",
           "title": "dddd",
-          "originNodeId": "427984b7-d512-4a49-906d-dfb6cd1769db",
-          "titleMode": "bound"
+          "titleMode": "custom"
         }
-      ]
+      ],
+      "parentLayerId": "root"
     },
     {
       "id": "b79855e5-f99d-4aff-a8c0-06fa99466c70",
       "title": "Czystki",
       "titleMode": "bound",
-      "parentLayerId": "root",
-      "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
-      "projectId": null,
       "path": [
         {
           "id": "root",
           "title": "Tablica główna",
-          "originNodeId": null,
           "titleMode": "custom"
         },
         {
           "id": "b79855e5-f99d-4aff-a8c0-06fa99466c70",
           "title": "Czystki",
-          "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3",
-          "titleMode": "bound"
+          "titleMode": "bound",
+          "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3"
         }
-      ]
+      ],
+      "parentLayerId": "root",
+      "originNodeId": "7fd98faf-813b-4043-bb9c-3e5ef87548f3"
     },
     {
       "id": "857dece4-07aa-4345-8970-393c2560327d",
       "title": "Multi select drag",
       "titleMode": "bound",
-      "parentLayerId": "root",
-      "originNodeId": "0e6f3a19-4431-4e2b-8876-e720969b7db7",
-      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
       "path": [
         {
           "id": "root",
           "title": "Tablica główna",
-          "originNodeId": null,
           "titleMode": "custom"
         },
         {
           "id": "857dece4-07aa-4345-8970-393c2560327d",
           "title": "Multi select drag",
-          "originNodeId": "0e6f3a19-4431-4e2b-8876-e720969b7db7",
-          "titleMode": "bound"
+          "titleMode": "bound",
+          "originNodeId": "0e6f3a19-4431-4e2b-8876-e720969b7db7"
         }
-      ]
+      ],
+      "parentLayerId": "root",
+      "originNodeId": "0e6f3a19-4431-4e2b-8876-e720969b7db7",
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb"
     },
     {
       "id": "8956e409-0870-474f-81a5-b668f9eae6af",
       "title": "Zoom",
       "titleMode": "bound",
-      "parentLayerId": "root",
-      "originNodeId": "15ceb587-b762-49d3-a9f6-cf888cd6f6a0",
-      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb",
       "path": [
         {
           "id": "root",
           "title": "Tablica główna",
-          "originNodeId": null,
           "titleMode": "custom"
         },
         {
           "id": "8956e409-0870-474f-81a5-b668f9eae6af",
           "title": "Zoom",
-          "originNodeId": "15ceb587-b762-49d3-a9f6-cf888cd6f6a0",
-          "titleMode": "bound"
+          "titleMode": "bound",
+          "originNodeId": "15ceb587-b762-49d3-a9f6-cf888cd6f6a0"
         }
-      ]
+      ],
+      "parentLayerId": "root",
+      "originNodeId": "15ceb587-b762-49d3-a9f6-cf888cd6f6a0",
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb"
+    },
+    {
+      "id": "6e7bb102-f53f-4fa2-9454-0daaeb4bcc07",
+      "title": "poprawka",
+      "titleMode": "bound",
+      "path": [
+        {
+          "id": "root",
+          "title": "Tablica główna",
+          "titleMode": "custom"
+        },
+        {
+          "id": "6e7bb102-f53f-4fa2-9454-0daaeb4bcc07",
+          "title": "poprawka",
+          "titleMode": "bound",
+          "originNodeId": "dee8ef32-e4d0-499b-a9a5-22112bd60774"
+        }
+      ],
+      "parentLayerId": "root",
+      "originNodeId": "dee8ef32-e4d0-499b-a9a5-22112bd60774",
+      "projectId": "bc36525b-02af-4c5b-a18f-0100a2d622cb"
     }
   ],
   "connections": [
     [
-      "n59",
-      "n56"
+      "n58",
+      "n55"
     ],
     [
-      "n121",
-      "n117"
+      "n129",
+      "n124"
     ],
     [
-      "n82",
+      "n81",
       "n84"
     ],
     [
@@ -3790,60 +3628,60 @@
       "n85"
     ],
     [
-      "n83",
-      "n82"
+      "n82",
+      "n81"
+    ],
+    [
+      "n109",
+      "n87"
+    ],
+    [
+      "n96",
+      "n109"
+    ],
+    [
+      "n87",
+      "n115"
     ],
     [
       "n102",
-      "n86"
+      "n110"
     ],
     [
-      "n91",
+      "n110",
+      "n117"
+    ],
+    [
+      "n122",
+      "n123"
+    ],
+    [
+      "n119",
+      "n113"
+    ],
+    [
+      "n70",
+      "n59"
+    ],
+    [
+      "n45",
+      "n46"
+    ],
+    [
+      "n106",
+      "n117"
+    ],
+    [
+      "n106",
+      "n110"
+    ],
+    [
+      "n106",
       "n102"
     ],
     [
-      "n86",
-      "n106"
-    ],
-    [
-      "n95",
-      "n103"
-    ],
-    [
-      "n103",
-      "n109"
-    ],
-    [
-      "n115",
-      "n116"
-    ],
-    [
-      "n111",
-      "n105"
-    ],
-    [
-      "n71",
-      "n60"
-    ],
-    [
       "n46",
-      "n47"
-    ],
-    [
-      "n99",
-      "n109"
-    ],
-    [
-      "n99",
-      "n103"
-    ],
-    [
-      "n99",
-      "n95"
-    ],
-    [
-      "n47",
-      "n50"
+      "n49"
     ],
     [
       "n9",
@@ -3878,52 +3716,52 @@
       "n5"
     ],
     [
-      "n135",
-      "n137"
+      "n144",
+      "n146"
     ],
     [
       "n14",
       "n6"
     ],
     [
-      "n39",
-      "n40"
+      "n38",
+      "n39"
     ],
     [
-      "n42",
-      "n44"
+      "n41",
+      "n43"
     ],
     [
-      "n39",
-      "n42"
+      "n38",
+      "n41"
     ],
     [
-      "n35",
-      "n42"
+      "n34",
+      "n41"
     ],
     [
-      "n35",
-      "n33"
+      "n34",
+      "n32"
     ],
     [
-      "n118",
-      "n122"
+      "n126",
+      "n130"
     ],
     [
-      "n28",
-      "n33"
+      "n27",
+      "n32"
     ],
     [
-      "n54",
-      "n50"
+      "n53",
+      "n49"
     ],
     [
-      "n60",
-      "n68"
+      "n59",
+      "n67"
     ],
     [
-      "n108",
-      "n122"
+      "n116",
+      "n130"
     ],
     [
       "n11",
@@ -3934,76 +3772,76 @@
       "n17"
     ],
     [
-      "n25",
-      "n27"
+      "n24",
+      "n26"
     ],
     [
       "n19",
       "n11"
     ],
     [
-      "n31",
-      "n27"
-    ],
-    [
-      "n26",
-      "n25"
-    ],
-    [
-      "n36",
-      "n31"
-    ],
-    [
-      "n29",
+      "n30",
       "n26"
     ],
     [
-      "n29",
-      "n32"
+      "n25",
+      "n24"
     ],
     [
-      "n29",
+      "n35",
+      "n30"
+    ],
+    [
+      "n28",
+      "n25"
+    ],
+    [
+      "n28",
+      "n31"
+    ],
+    [
+      "n28",
       "n11"
     ],
     [
-      "n43",
-      "n32"
-    ],
-    [
-      "n37",
-      "n43"
+      "n42",
+      "n31"
     ],
     [
       "n36",
-      "n41"
+      "n42"
     ],
     [
-      "n41",
-      "n32"
+      "n35",
+      "n40"
+    ],
+    [
+      "n40",
+      "n31"
     ],
     [
       "n21",
       "n11"
     ],
     [
-      "n31",
-      "n30"
+      "n30",
+      "n29"
     ],
     [
-      "n34",
-      "n30"
+      "n33",
+      "n29"
     ],
     [
-      "n38",
-      "n34"
+      "n37",
+      "n33"
     ],
     [
-      "n24",
+      "n23",
       "n11"
     ],
     [
-      "n24",
-      "n25"
+      "n23",
+      "n24"
     ],
     [
       "n10",
@@ -4014,27 +3852,35 @@
       "n11"
     ],
     [
-      "n51",
-      "n55"
+      "n50",
+      "n54"
+    ],
+    [
+      "n57",
+      "n54"
+    ],
+    [
+      "n57",
+      "n58"
     ],
     [
       "n58",
-      "n55"
+      "n64"
     ],
     [
-      "n58",
-      "n59"
+      "n64",
+      "n69"
     ],
     [
-      "n59",
-      "n65"
+      "n69",
+      "n75"
     ],
     [
-      "n65",
-      "n70"
+      "n75",
+      "n79"
     ],
     [
-      "n70",
+      "n79",
       "n76"
     ],
     [
@@ -4043,59 +3889,51 @@
     ],
     [
       "n80",
-      "n77"
+      "n71"
     ],
     [
-      "n77",
-      "n81"
+      "n71",
+      "n65"
     ],
     [
-      "n81",
-      "n72"
+      "n65",
+      "n60"
     ],
     [
-      "n72",
-      "n66"
+      "n60",
+      "n55"
     ],
     [
-      "n66",
-      "n61"
+      "n55",
+      "n62"
     ],
     [
-      "n61",
+      "n62",
       "n56"
     ],
     [
       "n56",
-      "n63"
+      "n52"
     ],
     [
-      "n63",
-      "n57"
+      "n52",
+      "n66"
     ],
     [
-      "n57",
-      "n53"
+      "n66",
+      "n74"
     ],
     [
-      "n53",
-      "n67"
+      "n74",
+      "n72"
     ],
     [
-      "n67",
-      "n75"
+      "n72",
+      "n50"
     ],
     [
-      "n75",
-      "n73"
-    ],
-    [
-      "n73",
-      "n51"
-    ],
-    [
-      "n79",
-      "n81"
+      "n78",
+      "n80"
     ],
     [
       "n18",
@@ -4106,116 +3944,148 @@
       "n12"
     ],
     [
-      "n48",
-      "n49"
+      "n47",
+      "n48"
     ],
     [
-      "n135",
-      "n126"
-    ],
-    [
-      "n126",
-      "n117"
-    ],
-    [
-      "n65",
-      "n62"
-    ],
-    [
-      "n96",
-      "n86"
-    ],
-    [
-      "n91",
-      "n88"
-    ],
-    [
-      "n124",
-      "n131"
-    ],
-    [
-      "n120",
-      "n124"
-    ],
-    [
-      "n130",
-      "n121"
-    ],
-    [
-      "n108",
-      "n105"
-    ],
-    [
-      "n110",
-      "n124"
-    ],
-    [
-      "n125",
-      "n114"
-    ],
-    [
-      "n119",
-      "n114"
-    ],
-    [
-      "n129",
-      "n136"
-    ],
-    [
-      "n136",
-      "n127"
-    ],
-    [
-      "n132",
-      "n127"
-    ],
-    [
-      "n133",
-      "n127"
-    ],
-    [
-      "n127",
+      "n144",
       "n134"
     ],
     [
-      "n123",
-      "n134"
-    ],
-    [
-      "n128",
-      "n112"
-    ],
-    [
-      "n107",
+      "n134",
       "n124"
-    ],
-    [
-      "n97",
-      "n104"
-    ],
-    [
-      "n98",
-      "n104"
-    ],
-    [
-      "n93",
-      "n97"
-    ],
-    [
-      "n98",
-      "n97"
-    ],
-    [
-      "n124",
-      "n113"
-    ],
-    [
-      "n100",
-      "n93"
     ],
     [
       "n64",
-      "n52"
+      "n61"
+    ],
+    [
+      "n104",
+      "n87"
+    ],
+    [
+      "n96",
+      "n91"
+    ],
+    [
+      "n132",
+      "n139"
+    ],
+    [
+      "n128",
+      "n132"
+    ],
+    [
+      "n138",
+      "n129"
+    ],
+    [
+      "n116",
+      "n113"
+    ],
+    [
+      "n118",
+      "n132"
+    ],
+    [
+      "n133",
+      "n121"
+    ],
+    [
+      "n127",
+      "n121"
+    ],
+    [
+      "n137",
+      "n145"
+    ],
+    [
+      "n145",
+      "n135"
+    ],
+    [
+      "n141",
+      "n135"
+    ],
+    [
+      "n142",
+      "n135"
+    ],
+    [
+      "n135",
+      "n143"
+    ],
+    [
+      "n131",
+      "n143"
+    ],
+    [
+      "n114",
+      "n101"
+    ],
+    [
+      "n112",
+      "n132"
+    ],
+    [
+      "n98",
+      "n103"
+    ],
+    [
+      "n108",
+      "n103"
+    ],
+    [
+      "n132",
+      "n120"
+    ],
+    [
+      "n111",
+      "n98"
+    ],
+    [
+      "n63",
+      "n51"
+    ],
+    [
+      "n86",
+      "n89"
+    ],
+    [
+      "n89",
+      "n98"
+    ],
+    [
+      "n86",
+      "n98"
+    ],
+    [
+      "n125",
+      "n140"
+    ],
+    [
+      "n140",
+      "n136"
+    ],
+    [
+      "n105",
+      "n125"
+    ],
+    [
+      "n83",
+      "n99"
+    ],
+    [
+      "n105",
+      "n93"
+    ],
+    [
+      "n83",
+      "n90"
+    ],
+    [
+      "n95",
+      "n98"
     ]
   ],
   "drawings": [

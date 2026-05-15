@@ -945,7 +945,47 @@ input, textarea {
   border-color: var(--accent);
 }
 
-/* ============ SEMANTIC SETTINGS ============ */
+/* ============ SEMANTIC SETTINGS & TABS ============ */
+
+.settings-tabs {
+  display: flex;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.settings-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 12px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.settings-tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.settings-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: rgba(79, 70, 229, 0.05);
+}
+
+.settings-pane {
+  display: block;
+}
+
+.settings-pane.hidden {
+  display: none;
+}
 
 .semantic-settings-block {
   margin-top: 20px;
@@ -965,7 +1005,7 @@ input, textarea {
 .semantic-field-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 12px;
   margin-top: 12px;
 }
 
@@ -974,7 +1014,7 @@ input, textarea {
   display: block;
   font-size: 11px;
   color: var(--text-muted);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .semantic-field-list input,
@@ -984,8 +1024,8 @@ input, textarea {
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-primary);
-  font-size: 12px;
-  padding: 7px 8px;
+  font-size: 13px;
+  padding: 8px 10px;
 }
 
 .semantic-textarea {

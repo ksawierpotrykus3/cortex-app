@@ -293,35 +293,74 @@ function init() {
     }
   });
 
-  // 16. API Key settings modal
+  // 16. Settings modal with Tabs
   const settingsBtn = document.getElementById('settings-btn');
   const settingsModal = document.getElementById('settings-modal');
-  if (settingsBtn && settingsModal) {
-    settingsBtn.addEventListener('click', () => {
-      const input = document.getElementById('api-key-input');
-      if (input) input.value = vision.getApiKey();
-      renderSemanticSettings();
-      settingsModal.classList.toggle('hidden');
+  const categoryBtn = document.getElementById('category-btn'); // Top bar button
+
+  function openSettingsTab(tabId) {
+    const tabs = document.querySelectorAll('.settings-tab-btn');
+    const panes = document.querySelectorAll('.settings-pane');
+    
+    tabs.forEach(btn => {
+      if (btn.dataset.tab === tabId) btn.classList.add('active');
+      else btn.classList.remove('active');
     });
+    
+    panes.forEach(pane => {
+      if (pane.id === tabId) pane.classList.remove('hidden');
+      else pane.classList.add('hidden');
+    });
+  }
+
+  if (settingsModal) {
+    // Setup tab buttons
+    document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => openSettingsTab(btn.dataset.tab));
+    });
+
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        const input = document.getElementById('api-key-input');
+        if (input) input.value = vision.getApiKey();
+        renderSemanticSettings();
+        // Render categories when opening settings just in case
+        if (typeof categoryManager !== 'undefined') categoryManager.renderList();
+        
+        // Open to default tab or current active
+        openSettingsTab('pane-plankinds');
+        settingsModal.classList.remove('hidden');
+      });
+    }
+
+    if (categoryBtn) {
+      categoryBtn.addEventListener('click', () => {
+        if (typeof categoryManager !== 'undefined') categoryManager.renderList();
+        openSettingsTab('pane-categories');
+        settingsModal.classList.remove('hidden');
+      });
+    }
+
     document.getElementById('close-settings')?.addEventListener('click', () => {
       settingsModal.classList.add('hidden');
     });
+    
     document.getElementById('save-api-key')?.addEventListener('click', () => {
       const input = document.getElementById('api-key-input');
-      if (input) {
-        vision.setApiKey(input.value);
-        settingsModal.classList.add('hidden');
-      }
+      if (input) vision.setApiKey(input.value);
+      // Optional: don't close, just show success? Or close.
+      alert('Klucz API zapisany!');
     });
+    
     document.getElementById('save-semantic-config')?.addEventListener('click', () => {
       saveSemanticSettings();
       canvas.render();
       panel.show(panel.currentNodeId);
+      alert('Statusy semantyczne zapisane!');
     });
-    document.getElementById('open-categories-from-settings')?.addEventListener('click', () => {
-      categoryManager.renderList();
-      document.getElementById('category-modal')?.classList.remove('hidden');
-    });
+    
+    setupSemanticEvents();
+
     settingsModal.addEventListener('click', (e) => {
       if (e.target === settingsModal) settingsModal.classList.add('hidden');
     });
@@ -363,12 +402,134 @@ function renderSemanticSettings() {
     });
   }
 
-  const planKinds = document.getElementById('semantic-plan-kinds');
-  if (planKinds) {
-    planKinds.value = (config.planKinds || [])
-      .map(kind => `${kind.id}: ${kind.label || kind.id}`)
-      .join('\n');
+  renderPlanKindsList();
+}
+
+function renderPlanKindsList() {
+  const list = document.getElementById('semantic-plan-kinds-list');
+  if (!list) return;
+  const config = store.getSemanticConfig();
+  const planKinds = config.planKinds || [];
+  
+  list.innerHTML = '';
+  if (planKinds.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="color: var(--text-muted); font-size: 12px; padding: 10px;">Brak typów planu.</div>';
+    return;
   }
+
+  planKinds.forEach((kind, idx) => {
+    const row = document.createElement('div');
+    row.className = 'category-row';
+
+    const idInput = document.createElement('input');
+    idInput.type = 'text';
+    idInput.className = 'category-name-input';
+    idInput.value = kind.id;
+    idInput.style.width = '100px';
+    idInput.title = 'ID (np. cel)';
+
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.className = 'category-name-input';
+    labelInput.value = kind.label || kind.id;
+    labelInput.placeholder = 'Nazwa...';
+    labelInput.style.flex = '1';
+
+    idInput.addEventListener('change', () => {
+      const success = store.updatePlanKind(kind.id, idInput.value, labelInput.value);
+      if (!success) {
+        idInput.value = kind.id;
+        idInput.style.borderColor = '#c45c5c';
+        setTimeout(() => { idInput.style.borderColor = ''; }, 1500);
+      } else {
+        renderPlanKindsList();
+        canvas.render();
+        panel.show(panel.currentNodeId);
+      }
+    });
+
+    labelInput.addEventListener('change', () => {
+      store.updatePlanKind(kind.id, kind.id, labelInput.value);
+      canvas.render();
+      panel.show(panel.currentNodeId);
+    });
+
+    const upBtn = document.createElement('button');
+    upBtn.className = 'category-action-btn';
+    upBtn.textContent = '▲';
+    upBtn.title = 'Przesuń wyżej';
+    upBtn.disabled = idx === 0;
+    upBtn.addEventListener('click', () => {
+      const ids = planKinds.map(k => k.id);
+      if (idx > 0) {
+        [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+        store.reorderPlanKinds(ids);
+        renderPlanKindsList();
+      }
+    });
+
+    const downBtn = document.createElement('button');
+    downBtn.className = 'category-action-btn';
+    downBtn.textContent = '▼';
+    downBtn.title = 'Przesuń niżej';
+    downBtn.disabled = idx === planKinds.length - 1;
+    downBtn.addEventListener('click', () => {
+      const ids = planKinds.map(k => k.id);
+      if (idx < ids.length - 1) {
+        [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
+        store.reorderPlanKinds(ids);
+        renderPlanKindsList();
+      }
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'category-action-btn danger';
+    delBtn.textContent = '✕';
+    delBtn.title = 'Usuń typ planu';
+    delBtn.addEventListener('click', () => {
+      if (confirm(`Usunąć typ planu "${kind.label}"?`)) {
+        store.deletePlanKind(kind.id);
+        renderPlanKindsList();
+        canvas.render();
+        panel.show(panel.currentNodeId);
+      }
+    });
+
+    row.appendChild(idInput);
+    row.appendChild(labelInput);
+    row.appendChild(upBtn);
+    row.appendChild(downBtn);
+    row.appendChild(delBtn);
+    list.appendChild(row);
+  });
+}
+
+function setupSemanticEvents() {
+  document.getElementById('add-plan-kind-btn')?.addEventListener('click', () => {
+    const idInput = document.getElementById('new-plan-kind-id');
+    const nameInput = document.getElementById('new-plan-kind-name');
+    if (!idInput || !nameInput) return;
+    
+    const id = idInput.value.trim();
+    const name = nameInput.value.trim();
+    
+    if (!id) {
+      alert('Podaj ID dla typu planu.');
+      return;
+    }
+    
+    const result = store.addPlanKind(id, name);
+    if (!result) {
+      alert('Taki typ planu już istnieje lub ID jest nieprawidłowe.');
+      return;
+    }
+    
+    idInput.value = '';
+    nameInput.value = '';
+    renderPlanKindsList();
+    canvas.render();
+    panel.show(panel.currentNodeId);
+  });
 }
 
 function saveSemanticSettings() {
@@ -377,24 +538,16 @@ function saveSemanticSettings() {
     rawStates[input.dataset.rawState] = { label: input.value.trim() || input.dataset.rawState };
   });
 
-  const planKindsInput = document.getElementById('semantic-plan-kinds');
-  const planKinds = String(planKindsInput?.value || '')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const [idPart, ...labelParts] = line.split(':');
-      const id = idPart.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
-      const label = labelParts.join(':').trim() || idPart.trim();
-      return id ? { id, label } : null;
-    })
-    .filter(Boolean);
-
-  store.updateSemanticConfig({
-    rawStates,
-    planKinds,
-  });
+  store.updateSemanticConfig({ rawStates });
   renderSemanticSettings();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -140,9 +140,9 @@ Uwagi:
 - `type` to ID kategorii, nie osobny enum.
 - Domyślna kategoria to ta z `isDefault`, zwykle `rozrzutka`.
 - `priority` jest liczbą 1-10.
-- `rawState` ma stałe ID zachowania; edytowalne są etykiety w `semanticConfig`.
+- `rawState` ma stałe ID zachowania; edytowalne są etykiety w `semanticConfig` (w Ustawieniach).
 - `stage='plan'` oznacza przetworzony element planu.
-- `planKind` jest walidowany względem `semanticConfig.planKinds` plus legacy `PLAN_KINDS`.
+- `planKind` określa cel (np. cel, mechanizm, decyzja). Lista typów jest w pełni edytowalna (CRUD) w panelu Ustawień, podobnie jak Kategorie.
 - `sourceIds` służy do śledzenia pochodzenia, np. elementów wyciągniętych ze screena.
 - Screeny nadal trzymają obraz w pełnym stanie aplikacji, ale nie w eksporcie AI.
 
@@ -215,6 +215,7 @@ Zasady:
 - Jeśli `titleMode='bound'`, tytuł warstwy jest dynamicznie brany z tytułu notki `originNodeId`.
 - Ręczne przemianowanie warstwy przełącza ją na `titleMode='custom'`.
 - `buildLayerPath()` buduje breadcrumbs/path.
+- Powrót z warstwy (strzałka "wstecz" / `backToParentLayer()`) do Tablicy głównej (`ROOT_LAYER_ID`) automatycznie przywraca jako aktywny projekt ten, do którego przypisana była notatka-źródłowa (`originNodeId`), aby uniknąć gubienia kontekstu i lądowania w widoku `Wszystko`.
 - Usunięcie notki będącej `originNodeId` wymaga decyzji w UI: `cancel`, `detach`, albo `delete-layers`.
 - `detach` zamraża tytuł warstwy jako custom.
 - `_deleteLayer()` kasuje warstwę, child layers, notki w tych warstwach, linki do tych notek i rysunki scope `layer`.
@@ -488,7 +489,7 @@ Główne elementy:
 - Export button - semantic export, Shift+click full backup.
 - `AI` - Kopiuj kontekst dla AI.
 - `D-` - usuń rysunki w aktualnym scope.
-- Settings - API key i semantyka.
+- Settings - klucz API, edycja etykiet stanów surowych oraz pełny menedżer Typów Planu (dodawanie, edycja, usuwanie, sortowanie).
 - Categories - modal kategorii.
 - Flash - globalny Flash Chat.
 - Reset - wyczyść bazę.

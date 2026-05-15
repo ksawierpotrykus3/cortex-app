@@ -185,43 +185,75 @@
           </div>
         </div>
       </div>
-      <!-- Settings Modal (API Key) -->
+      <!-- Settings Modal -->
       <div id="settings-modal" class="modal hidden">
-        <div class="modal-content" style="width: 420px;">
+        <div class="modal-content" style="width: 720px; max-height: 85vh; display: flex; flex-direction: column;">
           <div class="modal-header">
             <h2>⚙️ Ustawienia</h2>
             <button id="close-settings">&times;</button>
           </div>
-          <div style="padding: 20px;">
-            <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:8px;">Gemini API Key (AI Studio)</label>
-            <input type="password" id="api-key-input" placeholder="AIzaSy..." style="width:100%;background:var(--bg-primary);border:1px solid var(--border);padding:10px 14px;border-radius:8px;color:white;font-family:JetBrains Mono,monospace;font-size:13px;" />
-            <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Potrzebny do analizy screenshotów przez Flash Vision. Pobierz z <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">AI Studio</a>.</p>
-            <button id="save-api-key" class="action-btn" style="margin-top:16px;width:100%;">Zapisz</button>
-            <div class="semantic-settings-block">
-              <h3>Semantyka</h3>
-              <button id="open-categories-from-settings" class="secondary-btn">Kategorie, kolory, kolejność i auto-tytuły</button>
+          
+          <!-- Tabs Navigation -->
+          <div class="settings-tabs">
+            <button class="settings-tab-btn active" data-tab="pane-categories">🏷️ Kategorie</button>
+            <button class="settings-tab-btn" data-tab="pane-plankinds">🎯 Typy Planu</button>
+            <button class="settings-tab-btn" data-tab="pane-rawstates">📝 Statusy Surowe</button>
+            <button class="settings-tab-btn" data-tab="pane-system">⚙️ System (API)</button>
+          </div>
+
+          <!-- Tabs Content Area -->
+          <div class="settings-content-area" style="flex: 1; overflow-y: auto; padding: 20px;">
+            
+            <!-- Pane 1: Categories -->
+            <div id="pane-categories" class="settings-pane active">
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Kategorie, kolory, kolejność i auto-tytuły</h3>
+                <p style="font-size: 11px; color: var(--text-muted);">Zarządzaj kategoriami, które przypisujesz do swoich notatek. Domyślna kategoria przypisuje się automatycznie do nowo utworzonych kart.</p>
+              </div>
+              <div id="category-list" class="category-list"></div>
+              <div class="category-add-row">
+                <input type="color" id="new-category-color" value="#6b7280" class="category-color-input" title="Kolor" />
+                <input type="text" id="new-category-name" placeholder="Nazwa nowej kategorii..." class="category-name-input" style="flex:1;" />
+                <button id="add-category-btn" class="action-btn" style="padding:6px 14px;">+ Dodaj</button>
+              </div>
+            </div>
+
+            <!-- Pane 2: Plan Kinds -->
+            <div id="pane-plankinds" class="settings-pane hidden">
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Typy Planu (Semantyka)</h3>
+                <p style="font-size: 11px; color: var(--text-muted);">Określ jakie typy planu są dostępne gdy zmieniasz stage notatki z ROBOCZE na PLAN.</p>
+              </div>
+              <div class="semantic-plan-kinds-container">
+                <div id="semantic-plan-kinds-list" class="category-list" style="margin-bottom: 12px; max-height: 350px; overflow-y: auto;"></div>
+                <div class="category-add-row">
+                  <input type="text" id="new-plan-kind-id" placeholder="ID (np. cel)" class="category-name-input" style="width: 100px;" />
+                  <input type="text" id="new-plan-kind-name" placeholder="Nazwa wyświetlana (np. Cel)" class="category-name-input" style="flex:1;" />
+                  <button id="add-plan-kind-btn" class="action-btn" style="padding:6px 14px;">+ Dodaj</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pane 3: Raw States -->
+            <div id="pane-rawstates" class="settings-pane hidden">
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Statusy Semantyczne</h3>
+                <p style="font-size: 11px; color: var(--text-muted);">Zmień nazwy wyświetlane dla wbudowanych statusów systemowych.</p>
+              </div>
               <div id="semantic-raw-state-fields" class="semantic-field-list"></div>
-              <label class="semantic-label" for="semantic-plan-kinds">Typy planu</label>
-              <textarea id="semantic-plan-kinds" class="semantic-textarea" rows="7"></textarea>
-              <button id="save-semantic-config" class="action-btn" style="margin-top:12px;width:100%;">Zapisz semantykę</button>
+              <button id="save-semantic-config" class="action-btn" style="margin-top:20px;width:100%;">Zapisz statusy</button>
             </div>
-          </div>
-        </div>
-      </div>
-      <!-- Category Manager Modal -->
-      <div id="category-modal" class="modal hidden">
-        <div class="modal-content" style="width: 640px;">
-          <div class="modal-header">
-            <h2>🏷️ Kategorie</h2>
-            <button id="close-categories">&times;</button>
-          </div>
-          <div style="padding: 20px;">
-            <div id="category-list" class="category-list"></div>
-            <div class="category-add-row">
-              <input type="color" id="new-category-color" value="#6b7280" class="category-color-input" title="Kolor" />
-              <input type="text" id="new-category-name" placeholder="Nazwa nowej kategorii..." class="category-name-input" style="flex:1;" />
-              <button id="add-category-btn" class="action-btn" style="padding:6px 14px;">+ Dodaj</button>
+
+            <!-- Pane 4: System / API Key -->
+            <div id="pane-system" class="settings-pane hidden">
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Gemini API Key (AI Studio)</h3>
+                <p style="font-size: 11px; color: var(--text-muted);">Potrzebny do analizy screenshotów przez Flash Vision. Pobierz z <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">AI Studio</a>.</p>
+              </div>
+              <input type="password" id="api-key-input" placeholder="AIzaSy..." style="width:100%;background:var(--bg-primary);border:1px solid var(--border);padding:10px 14px;border-radius:8px;color:white;font-family:JetBrains Mono,monospace;font-size:13px;" />
+              <button id="save-api-key" class="action-btn" style="margin-top:16px;width:100%;">Zapisz Klucz API</button>
             </div>
+
           </div>
         </div>
       </div>

@@ -7,32 +7,17 @@ import { canvas } from './canvas.js';
  */
 class CategoryManager {
   constructor() {
-    this.modal = document.getElementById('category-modal');
     this.list = document.getElementById('category-list');
     this.init();
   }
 
   init() {
-    // Open modal
-    document.getElementById('category-btn')?.addEventListener('click', () => {
-      this.renderList();
-      this.modal.classList.toggle('hidden');
-    });
-
-    // Close modal
-    document.getElementById('close-categories')?.addEventListener('click', () => {
-      this.modal.classList.add('hidden');
-    });
-
-    // Close on backdrop click
-    this.modal?.addEventListener('click', (e) => {
-      if (e.target === this.modal) this.modal.classList.add('hidden');
-    });
-
-    // Add category button
+    // Add category button (still exists in settings-modal)
     document.getElementById('add-category-btn')?.addEventListener('click', () => {
       this.handleAdd();
     });
+
+
 
     // Build initial type picker
     this.rebuildTypePicker();

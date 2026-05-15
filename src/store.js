@@ -569,7 +569,22 @@ export class Store {
 
   backToParentLayer() {
     const active = this.getLayerById(this.getActiveLayerId());
-    this.setActiveLayerId(active?.parentLayerId || ROOT_LAYER_ID);
+    const nextLayerId = active?.parentLayerId || ROOT_LAYER_ID;
+
+    let targetProjectId = null;
+    if (nextLayerId === ROOT_LAYER_ID && active?.originNodeId) {
+      const originNode = this.getNodeById(active.originNodeId);
+      if (originNode && originNode.projectId) {
+        targetProjectId = originNode.projectId;
+      }
+    }
+
+    this.setActiveLayerId(nextLayerId);
+
+    if (targetProjectId) {
+      this.state.activeProjectId = targetProjectId;
+      this.save();
+    }
   }
 
   getLayerTitle(id) {
@@ -762,6 +777,88 @@ export class Store {
       if (cat) cat.order = index;
     });
     this.save();
+  }
+
+  addPlanKind(id, label) {
+    const cleanId = String(id || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+    const cleanLabel = String(label || '').trim() || cleanId;
+    if (!cleanId) return null;
+
+    const config = this.getSemanticConfig();
+    const planKinds = [...(config.planKinds || [])];
+    if (planKinds.find(kind => kind.id === cleanId)) return null;
+
+    planKinds.push({ id: cleanId, label: cleanLabel });
+    this.updateSemanticConfig({ planKinds });
+    return { id: cleanId, label: cleanLabel };
+  }
+
+  updatePlanKind(oldId, newId, newLabel) {
+    const config = this.getSemanticConfig();
+    const planKinds = [...(config.planKinds || [])];
+    const kindIndex = planKinds.findIndex(k => k.id === oldId);
+    if (kindIndex === -1) return false;
+
+    const cleanNewId = String(newId || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+    const finalId = cleanNewId || oldId;
+    
+    if (finalId !== oldId && planKinds.find(k => k.id === finalId)) {
+      return false; // Duplicate ID
+    }
+
+    const cleanLabel = String(newLabel || '').trim() || finalId;
+    
+    planKinds[kindIndex] = { id: finalId, label: cleanLabel };
+    this.updateSemanticConfig({ planKinds });
+
+    if (finalId !== oldId) {
+      this.state.nodes.forEach(node => {
+        if (node.planKind === oldId) {
+          node.planKind = finalId;
+          node.updatedAt = new Date().toISOString();
+        }
+      });
+      this.save();
+    }
+
+    return true;
+  }
+
+  deletePlanKind(id) {
+    const config = this.getSemanticConfig();
+    const planKinds = (config.planKinds || []).filter(k => k.id !== id);
+    if (planKinds.length === (config.planKinds || []).length) return false;
+
+    // Reset notes that use this planKind to empty string
+    this.state.nodes.forEach(node => {
+      if (node.planKind === id) {
+        node.planKind = '';
+        node.updatedAt = new Date().toISOString();
+      }
+    });
+
+    this.updateSemanticConfig({ planKinds });
+    return true;
+  }
+
+  reorderPlanKinds(orderedIds) {
+    const config = this.getSemanticConfig();
+    const planKinds = [...(config.planKinds || [])];
+    const newPlanKinds = [];
+    
+    orderedIds.forEach(id => {
+      const kind = planKinds.find(k => k.id === id);
+      if (kind) newPlanKinds.push(kind);
+    });
+
+    // Add any missing ones at the end
+    planKinds.forEach(kind => {
+      if (!newPlanKinds.find(k => k.id === kind.id)) {
+        newPlanKinds.push(kind);
+      }
+    });
+
+    this.updateSemanticConfig({ planKinds: newPlanKinds });
   }
 
   _projectIdForNewNode() {

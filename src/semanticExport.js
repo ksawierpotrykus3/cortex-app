@@ -88,7 +88,7 @@ export function buildSemanticExport(state = {}, options = {}) {
   if (drawings.length) result.drawings = drawings;
   if (options.includeInbox) result.inbox = buildInbox(safeState.inboxMessages);
 
-  return result;
+  return cleanPayload(result);
 }
 
 export function buildSemanticContext(state = {}, options = {}) {
@@ -555,4 +555,27 @@ function round(value) {
 function clampPriority(value) {
   const number = Number.parseInt(value, 10);
   return Number.isFinite(number) ? Math.max(1, Math.min(10, number)) : 1;
+}
+
+function cleanPayload(obj) {
+  if (Array.isArray(obj)) {
+    const cleaned = obj.map(cleanPayload).filter(val => val !== null && val !== undefined && val !== '');
+    return cleaned.length ? cleaned : null;
+  } else if (obj !== null && typeof obj === 'object') {
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const cleaned = cleanPayload(value);
+      // Additional compaction: remove empty strings, nulls, undefined, and empty arrays
+      if (cleaned !== null && cleaned !== undefined && cleaned !== '' && !(Array.isArray(cleaned) && cleaned.length === 0)) {
+        // Remove priority if it's default 1 (optimization)
+        if (key === 'priority' && cleaned === 1) continue;
+        // Remove category if it's identical to type (optimization)
+        if (key === 'category' && obj.type === cleaned) continue;
+        
+        result[key] = cleaned;
+      }
+    }
+    return Object.keys(result).length > 0 ? result : null;
+  }
+  return obj;
 }
