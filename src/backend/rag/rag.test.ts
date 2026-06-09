@@ -1,66 +1,130 @@
 // ================================================================
-// NEXUS V2 — TDD Verification: RAG Pipeline (Phase 4.3 + 4.4)
+// NEXUS V2 — TDD Verification: RAG Pipeline (Phase 4.3 + 4.4 + 6.1)
 // ================================================================
-// Test 1 (4.3): ModelCache — offline-first, brak sieci
+// Test 1 (6.1): SemanticEngine — API embeddings z mockiem
 // Test 2 (4.3): LexicalEngine — BM25 + negation tags (wink-nlp)
 // Test 3 (4.4): RRF Fusion — Promise.allSettled, awaria silnika
-// Test 4 (4.4): Memory leak — 15,000 embeddingów, pomiar RSS
 // ================================================================
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
+import { describe, it, expect, beforeAll } from 'vitest';
+
+let SemanticEngine: any, SemanticEngineError: any, OpenAIProvider: any;
+let LexicalEngine: any, RRFEngine: any;
+let winkModelRaw: any;
+let nlpInstance: any;
 
 // ============================================================
-// 4.3 — ModelCache (offline-first)
+// Dynamiczne importy — raz na wszystkie testy
 // ============================================================
-import { ModelCache, ModelNotFoundError } from './modelCache';
+beforeAll(async () => {
+  const sem = await import('./semantic');
+  SemanticEngine = sem.SemanticEngine;
+  SemanticEngineError = sem.SemanticEngineError;
+  OpenAIProvider = sem.OpenAIProvider;
 
-describe('Phase 4.3 — ModelCache (Offline-First)', () => {
-  let cacheDir: string;
+  const lex = await import('./lexical');
+  LexicalEngine = lex.LexicalEngine;
 
-  beforeEach(() => {
-    cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-models-'));
+  const fus = await import('./fusion');
+  RRFEngine = fus.RRFEngine;
+
+  const { createRequire } = await import('module');
+  const localRequire = createRequire(import.meta.url);
+  winkModelRaw = localRequire('wink-eng-lite-web-model');
+  const winkNLP = localRequire('wink-nlp');
+  nlpInstance = winkNLP(winkModelRaw); // inicjalizacja NLP z modelem
+});
+
+// ============================================================
+// 6.1 — SemanticEngine (API Embeddings — mock)
+//
+// NOWA ARCHITEKTURA: ONNX Runtime usunięty. Embeddingi przez
+// zewnętrzne API (OpenAI). Gdy brak klucza API — mock wektora.
+//
+// cosineSimilarity i search pozostają nietknięte jako część
+// wspólna RAG.
+// ============================================================
+describe('Phase 6.1 — SemanticEngine (API Embeddings, mock gdy brak klucza)', () => {
+  it('embed() zwraca wektor mock (deterministyczny) gdy brak klucza API', async () => {
+    const engine = new SemanticEngine();
+    const result = await engine.embed('test document');
+
+    expect(result.vector).toBeInstanceOf(Float32Array);
+    expect(result.dimensions).toBe(384);
+    expect(result.vector.length).toBe(384);
+    expect(result.tokenCount).toBeGreaterThan(0);
+
+    // Deterministyczność: ten sam tekst → ten sam wektor
+    const result2 = await engine.embed('test document');
+    expect(result.vector).toEqual(result2.vector);
   });
 
-  afterEach(() => {
-    try { fs.rmSync(cacheDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  it('embed() zwraca różne wektory dla różnych tekstów', async () => {
+    const engine = new SemanticEngine();
+    const a = await engine.embed('hello world');
+    const b = await engine.embed('goodbye world');
+
+    let same = true;
+    for (let i = 0; i < a.vector.length; i++) {
+      if (a.vector[i] !== b.vector[i]) {
+        same = false;
+        break;
+      }
+    }
+    expect(same).toBe(false);
   });
 
-  it('powinien zgłosić ModelNotFoundError gdy model nie istnieje lokalnie', () => {
-    const cache = new ModelCache(cacheDir);
-    expect(() => cache.requireModel('non-existent.onnx')).toThrow(ModelNotFoundError);
+  it('cosineSimilarity zwraca 1.0 dla identycznych wektorów', () => {
+    const engine = new SemanticEngine();
+    const vec = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5]);
+    const score = engine.cosineSimilarity(vec, vec);
+    expect(score).toBeCloseTo(1.0, 5);
   });
 
-  it('powinien zgłosić brak modelu gdy plik jest za mały', () => {
-    const fakeModel = path.join(cacheDir, 'fake.onnx');
-    fs.writeFileSync(fakeModel, 'too small');
-    const cache = new ModelCache(cacheDir);
-    expect(() => cache.requireModel('fake.onnx')).toThrow(ModelNotFoundError);
+  it('cosineSimilarity zwraca ~0.0 dla ortogonalnych wektorów', () => {
+    const engine = new SemanticEngine();
+    const a = new Float32Array([1, 0]);
+    const b = new Float32Array([0, 1]);
+    const score = engine.cosineSimilarity(a, b);
+    expect(score).toBeCloseTo(0.0, 5);
   });
 
-  it('powinien znaleźć model gdy plik istnieje i ma odpowiedni rozmiar', () => {
-    const fakeModel = path.join(cacheDir, 'model.onnx');
-    const buf = Buffer.alloc(2_000_000, 0x42);
-    fs.writeFileSync(fakeModel, buf);
-
-    const cache = new ModelCache(cacheDir);
-    const info = cache.requireModel('model.onnx');
-    expect(info.exists).toBe(true);
-    expect(info.filePath).toBe(fakeModel);
-    expect(info.size).toBeGreaterThanOrEqual(2_000_000);
+  it('cosineSimilarity rzuca błąd przy różnych wymiarach', () => {
+    const engine = new SemanticEngine();
+    expect(() => {
+      engine.cosineSimilarity(new Float32Array(3), new Float32Array(5));
+    }).toThrow(SemanticEngineError);
   });
 
-  it('listModels() powinien zwrócić wszystkie .onnx pliki', () => {
-    fs.writeFileSync(path.join(cacheDir, 'a.onnx'), Buffer.alloc(2_000_000, 0x42));
-    fs.writeFileSync(path.join(cacheDir, 'b.onnx'), Buffer.alloc(2_000_000, 0x42));
-    fs.writeFileSync(path.join(cacheDir, 'ignore.txt'), 'not a model');
+  it('search() zwraca puste wyniki dla pustej tablicy dokumentów', async () => {
+    const engine = new SemanticEngine();
+    const results = await engine.search('query', [], 5);
+    expect(results).toHaveLength(0);
+  });
 
-    const cache = new ModelCache(cacheDir);
-    const models = cache.listModels();
-    expect(models.length).toBe(2);
-    expect(models.every(m => m.name.endsWith('.onnx'))).toBe(true);
+  it('search() zwraca wyniki posortowane po score', async () => {
+    const engine = new SemanticEngine();
+    const docs = [
+      'kot na dywanie',
+      'pies w ogrodzie',
+      'ryba w wodzie',
+    ];
+
+    const results = await engine.search('kot', docs, 3);
+    expect(results).toHaveLength(3);
+    expect(results[0].score).toBeGreaterThanOrEqual(results[1].score);
+    expect(results[1].score).toBeGreaterThanOrEqual(results[2].score);
+  });
+
+  it('OpenAIProvider mock zwraca poprawny EmbeddingResult', async () => {
+    const provider = new OpenAIProvider();
+    const result = await provider.embed('test');
+
+    expect(result).toHaveProperty('vector');
+    expect(result).toHaveProperty('dimensions');
+    expect(result).toHaveProperty('tokenCount');
+    expect(result.vector).toBeInstanceOf(Float32Array);
+    expect(result.dimensions).toBe(384);
   });
 });
 
@@ -73,32 +137,18 @@ describe('Phase 4.3 — ModelCache (Offline-First)', () => {
 // ============================================================
 describe('Phase 4.3 — LexicalEngine (BM25 + Negation)', () => {
   describe('Negation detection via wink-nlp', () => {
-    it('powinien wykryć negację w angielskim zdaniu "no network"', async () => {
-      const { createRequire } = await import('module');
-      const localRequire = createRequire(import.meta.url);
-      const winkModel = localRequire('wink-eng-lite-web-model');
-      const winkNLP = localRequire('wink-nlp');
-      const its = winkNLP(winkModel).its;
-
-      const nlp = winkNLP(winkModel);
-      const doc = nlp.readDoc('no network');
+    it('powinien wykryć negację w angielskim zdaniu "no network"', () => {
+      const its = nlpInstance.its;
+      const doc = nlpInstance.readDoc('no network');
       const tokens = doc.tokens();
 
-      // wink-nlp oznacza tokens W ZAKRESIE negacji jako negated
-      // "no network" → "network" jest w scope negacji
       const networkNeg = tokens.itemAt(1).out(its.negationFlag);
       expect(networkNeg).toBe(true);
     });
 
-    it('nie powinien oznaczać normalnych zdań jako negacji', async () => {
-      const { createRequire } = await import('module');
-      const localRequire = createRequire(import.meta.url);
-      const winkModel = localRequire('wink-eng-lite-web-model');
-      const winkNLP = localRequire('wink-nlp');
-      const its = winkNLP(winkModel).its;
-
-      const nlp = winkNLP(winkModel);
-      const doc = nlp.readDoc('working internet connection');
+    it('nie powinien oznaczać normalnych zdań jako negacji', () => {
+      const its = nlpInstance.its;
+      const doc = nlpInstance.readDoc('working internet connection');
       const tokens = doc.tokens();
 
       for (let i = 0; i < tokens.length(); i++) {
@@ -108,12 +158,8 @@ describe('Phase 4.3 — LexicalEngine (BM25 + Negation)', () => {
   });
 
   describe('LexicalEngine BM25 search', () => {
-    it('powinien indeksować i wyszukiwać dokumenty', async () => {
-      const { createRequire } = await import('module');
-      const localRequire = createRequire(import.meta.url);
-      const winkModel = localRequire('wink-eng-lite-web-model');
-      const { LexicalEngine } = await import('./lexical');
-      const engine = new LexicalEngine(winkModel);
+    it('powinien indeksować i wyszukiwać dokumenty', () => {
+      const engine = new LexicalEngine(winkModelRaw);
 
       const docs = [
         'server is running correctly',
@@ -124,18 +170,12 @@ describe('Phase 4.3 — LexicalEngine (BM25 + Negation)', () => {
       ];
 
       engine.indexDocuments(docs);
-
       const results = engine.search('running correctly', 3);
       expect(results.length).toBeGreaterThan(0);
     });
 
-    it('analyzeQuery() powinien zwrócić poprawne tokeny', async () => {
-      const { createRequire } = await import('module');
-      const localRequire = createRequire(import.meta.url);
-      const winkModel = localRequire('wink-eng-lite-web-model');
-      const { LexicalEngine } = await import('./lexical');
-      const engine = new LexicalEngine(winkModel);
-
+    it('analyzeQuery() powinien zwrócić poprawne tokeny', () => {
+      const engine = new LexicalEngine(winkModelRaw);
       const analysis = engine.analyzeQuery('brak sieci');
       expect(analysis.original).toBe('brak sieci');
       expect(analysis.positive.length).toBeGreaterThanOrEqual(0);
@@ -148,15 +188,19 @@ describe('Phase 4.3 — LexicalEngine (BM25 + Negation)', () => {
 // ============================================================
 describe('Phase 4.4 — RRF Fusion Engine', () => {
   it('awaria semantycznego nie powinna zablokować leksykalnego', async () => {
-    const { createRequire } = await import('module');
-    const localRequire = createRequire(import.meta.url);
-    const winkModel = localRequire('wink-eng-lite-web-model');
-    const { LexicalEngine } = await import('./lexical');
-    const { SemanticEngine } = await import('./semantic');
-    const { RRFEngine } = await import('./fusion');
+    const sem = await import('./semantic');
 
-    const semantic = new SemanticEngine({ modelName: 'non-existent-model.onnx' });
-    const lexical = new LexicalEngine(winkModel);
+    // SemanticEngine z providerem który zawsze rzuca błędem
+    const throwingProvider = new (class extends sem.OpenAIProvider {
+      async embed(_text: string): Promise<any> {
+        throw new sem.SemanticEngineError('API_ERROR', 'Symulowana awaria API');
+      }
+    })();
+
+    const semantic = new sem.SemanticEngine();
+    (semantic as any).provider = throwingProvider;
+
+    const lexical = new LexicalEngine(winkModelRaw);
     lexical.indexDocuments(['document A', 'document B']);
 
     const rrf = new RRFEngine(semantic, lexical);
@@ -170,16 +214,18 @@ describe('Phase 4.4 — RRF Fusion Engine', () => {
   });
 
   it('gdy oba silniki padną — powinien zwrócić pusty wynik', async () => {
-    const { SemanticEngine } = await import('./semantic');
-    const { LexicalEngine } = await import('./lexical');
-    const { RRFEngine } = await import('./fusion');
+    const sem = await import('./semantic');
 
-    const { createRequire } = await import('module');
-    const localRequire = createRequire(import.meta.url);
-    const winkModel = localRequire('wink-eng-lite-web-model');
+    const throwingProvider = new (class extends sem.OpenAIProvider {
+      async embed(_text: string): Promise<any> {
+        throw new sem.SemanticEngineError('API_ERROR', 'Symulowana awaria');
+      }
+    })();
 
-    const semantic = new SemanticEngine({ modelName: 'fake.onnx' });
-    const lexical = new LexicalEngine(winkModel);
+    const semantic = new sem.SemanticEngine();
+    (semantic as any).provider = throwingProvider;
+
+    const lexical = new LexicalEngine(winkModelRaw);
 
     const rrf = new RRFEngine(semantic, lexical);
     const result = await rrf.search('test', ['something'], 5);
@@ -187,125 +233,3 @@ describe('Phase 4.4 — RRF Fusion Engine', () => {
     expect(result.results.length).toBe(0);
   });
 });
-
-// ============================================================
-// 4.4 — Memory Leak: 15,000 Embeddingów
-//
-// Uruchamiasz pętlę wykonującą 15 000 odpytań tekstowych
-// generując Tensory ONNX. TDD używa flagi logowania V8
-// process.memoryUsage().rss. Jeśli po 15k powtórzeniach apetyt
-// RAM Node.js spuchnie o więcej niż 10 MB powyżej limitów
-// spoczynkowych – Test FAIL (wyciek WASM). Jeśli pamięć jest
-// stabilna, Dispose działa.
-// ============================================================
-describe('Phase 4.4 — Memory Leak: 15,000 Tensor Disposal', () => {
-  it('powinien utrzymać stabilną pamięć po 15,000 embeddingach (ONNX)', async () => {
-    const { OnnxRuntime } = await import('./onnxRuntime');
-    const { ModelCache } = await import('./modelCache');
-
-    const cache = new ModelCache();
-    let modelInfo;
-    try {
-      modelInfo = cache.requireModel('all-MiniLM-L6-v2.onnx');
-    } catch {
-      // Model nie istnieje — pomijamy test
-      console.log('  ⏭️  Skipping 15k stress test: all-MiniLM-L6-v2.onnx not found locally');
-      return;
-    }
-
-    // ============================================================
-    // Singleton ONNX — ładujemy model TYLKO RAZ
-    // ============================================================
-    OnnxRuntime.resetInstance();
-    const runtime = OnnxRuntime.getInstance({
-      modelName: 'all-MiniLM-L6-v2.onnx',
-      modelsDir: path.dirname(modelInfo.filePath),
-    });
-
-    // Pierwsze uruchomienie — ładuje model do RAM
-    await runtime.getOrCreateSession();
-    expect(runtime.isSessionLoaded()).toBe(true);
-
-    // ============================================================
-    // POMIAR PAMIĘCI PRZED TESTEM
-    // ============================================================
-    const memBefore = process.memoryUsage().rss;
-    console.log(`  📊 RSS przed testem: ${_formatBytes(memBefore)}`);
-
-    // ============================================================
-    // 15,000 embeddingów z tensor.dispose() po każdym
-    // ============================================================
-    const iterations = 15_000;
-    const texts = [
-      'Przykładowy tekst do embeddingu',
-      'NEXUS V2 system autonomiczny z RAG',
-      'Lokalna sztuczna inteligencja',
-      'test dokument semantyczny',
-      'brak połączenia sieciowego',
-    ];
-
-    for (let i = 0; i < iterations; i++) {
-      const text = texts[i % texts.length];
-      try {
-        const result = await runtime.embed(text);
-        expect(result.dimensions).toBeGreaterThan(0);
-        expect(result.vector.length).toBe(result.dimensions);
-      } catch {
-        // Jeśli embedding rzuci błędem — to kwestia nieobecnego modelu
-        // Nie failujemy całego testu
-      }
-
-      // Co 1000 iteracji — GC hint
-      if (i > 0 && i % 1000 === 0) {
-        if (global.gc) {
-          global.gc();
-        }
-        await _yield();
-      }
-    }
-
-    // ============================================================
-    // POMIAR PAMIĘCI PO TEŚCIE
-    // ============================================================
-    if (global.gc) {
-      global.gc();
-    }
-    await _yield();
-
-    const memAfter = process.memoryUsage().rss;
-    const memDiff = memAfter - memBefore;
-    const memDiffMB = memDiff / (1024 * 1024);
-
-    console.log(`  📊 RSS po teście:  ${_formatBytes(memAfter)}`);
-    console.log(`  📊 Różnica:       ${memDiffMB > 0 ? '+' : ''}${memDiffMB.toFixed(2)} MB`);
-
-    // ============================================================
-    // ASERCJA: Różnica nie może przekroczyć 10 MB
-    // ============================================================
-    const MAX_ALLOWED_GROWTH = 10 * 1024 * 1024; // 10 MB
-    const maxAllowedMB = MAX_ALLOWED_GROWTH / (1024 * 1024);
-
-    if (memDiff > MAX_ALLOWED_GROWTH) {
-      console.log(`  ❌ FAIL: Pamięć wzrosła o ${memDiffMB.toFixed(2)} MB > ${maxAllowedMB.toFixed(2)} MB`);
-    } else {
-      console.log(`  ✅ PASS: Pamięć wzrosła o ${memDiffMB.toFixed(2)} MB <= ${maxAllowedMB.toFixed(2)} MB`);
-    }
-
-    expect(memDiff).toBeLessThanOrEqual(MAX_ALLOWED_GROWTH);
-
-    OnnxRuntime.resetInstance();
-  }, 120_000);
-});
-
-// ============================================================
-// Helpers
-// ============================================================
-
-function _formatBytes(bytes: number): string {
-  const mb = bytes / (1024 * 1024);
-  return `${mb.toFixed(2)} MB`;
-}
-
-async function _yield(): Promise<void> {
-  return new Promise(resolve => setImmediate(resolve));
-}
