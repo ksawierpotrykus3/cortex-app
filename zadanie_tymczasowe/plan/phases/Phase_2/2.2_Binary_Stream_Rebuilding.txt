@@ -1,0 +1,22 @@
+=========================================
+=== PHASE 2 STEP: 2.2_Binary_Stream_Rebuilding.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 2.2
+**Moduł:** Binary Stream Rebuilding (Odbudowa Pamięci Offline)
+**Cel 0-100%:** Niskopoziomowy czytnik startowy przy bootowaniu aplikacji. Eliminujemy moduł `readline` ze standardowego ekosystemu Node.js z powodu destrukcyjnych zmian w ucinaniu nowej linii (odcinanie dwubajtowego `\r\n` w OS Windows vs jednobajtowego `\n` na Linuksie) przerywającego matematyczne wskaźniki O(1).
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Środowisko Startowe (`src/backend/storage/indexer.ts`)**:
+   - Powołaj wywoływalny asynchronicznie skrypt `async function rebuildIndex(targetDir: string)`. Funkcja ta zablokuje proces otwierania okna w Chromium aż do wybudowania słownika KeyDir ze 100% zapisanych danych archiwalnych.
+2. **Niskopoziomowe Strumieniowanie Binarne**:
+   - Rozpocznij czytanie pliku wykorzystując rurę strumieniową (stream): `const stream = fs.createReadStream(filePath)`. To uratuje instancję V8 przed zgnieceniem 1GB logiem (Out-Of-Memory Error).
+   - Odbieraj tablice bitowe (chunks) zdarzeniem `.on('data', chunk => ...)`. Utwórz lokalny licznik przechodzący bit-po-bicie `globalOffset += chunk.length`.
+3. **Detekcja Nagłówków Hex**:
+   - Przetwarzaj `Uint8Array` i samodzielnie sprawdzaj istnienie wzorca oddzielającego sekcje binarne lub nagłówki nowych znaków w msgpackr, twardo rejestrując objętość (size) i początek loga (offset). Rób to odmawiając standardowym metodom Node traktowania pliku jako formy stringowej by ratować integralność wielobajtowych "ą" i "ę".
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Tworzysz testowy plik bazy o rozmiarze 50 MB, do którego wstawiasz tysiące wymieszanych celowo formatów zakończeń `\n` oraz `\r\n`. Asercja skanuje dysk binarnie szukając 8454-tej instancji i strzela do metody `get()`. Brak błędu z MessagePack udowadnia twardość systemu i jego ignorowanie pułapek Windows OS.

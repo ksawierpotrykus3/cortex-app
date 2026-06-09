@@ -1,0 +1,86 @@
+Specyfikacja Architektury NEXUS V2 (Desktop AI Orchestrator)
+1. Założenia Fundamentalne (Zmiana Paradygmatu)
+Weryfikacja dotychczasowych założeń architektonicznych wykazała nieadekwatność środowisk typowo webowych (ograniczenia sterty V8, izolacja procesów w przeglądarce, problemy transakcyjności IndexedDB w asynchronicznych potokach LLM) do specyfiki docelowego systemu.
+NEXUS docelowo funkcjonuje jako aplikacja natywna w środowisku Electron (Fat Client). Wymusza to odrzucenie złożonych architektur bazodanowych in-memory na rzecz natywnych operacji dyskowych z wykorzystaniem wbudowanych modułów Node.js (fs, chokidar). Cały stan agentów, definicje workflowów, logi RLHF (Reinforcement Learning from Human Feedback) oraz dane wyjściowe będą przechowywane w jawnej strukturze plików tekstowych i JSON na dysku lokalnym (File-System Driven Architecture).
+Zamiast implementować zamknięte, dedykowane procesy (np. hardkodowany interfejs pod zewnętrzne narzędzia typu Deep Research), system zostaje sprowadzony do prymitywów architektonicznych. Użytkownik łączy reużywalne węzły I/O, co pozwala modelować dowolne przepływy pracy.
+2. Architektura Pamięci Masowej (Workspace Structure)
+Aktualizacja założeń persystencji danych. Globalny plik nexus.workspace.json zostaje odciążony. Główny ciężar danych systemowych zostaje zdecentralizowany do standardowego drzewa katalogów:
+code
+Text
+/Nexus_Workspace
+  ├── /Agents         # Konfiguracje agentów w izolowanych plikach (np. agent_01.json)
+  ├── /Workflows      # Zdefiniowane schematy (DAG) wiążące agentów i logikę bramek
+  ├── /Context_Pool   # Współdzielona wiedza, parsowana globalnie (Markdown/TXT)
+  ├── /Buffers        # Katalogi pośrednie dla strumieni wieloagentowych (Output Buffers)
+  ├── /RLHF_Logs      # Ustrukturyzowane logi poprawek użytkownika (Shadow-writes)
+  └── /Watched_IO     # Katalogi wejścia/wyjścia nasłuchiwane przez serwis chokidar
+3. Typologia Danych i Przepływu (TypeScript Interfaces)
+Aktualizacja Zadań 6.1 (Nowe typy danych) poprzez wprowadzenie abstrakcji węzłów wejścia/wyjścia i wyzwalaczy.
+3.1. Wyzwalacze (Triggers)
+Inicjalizacja potoku (Agenta lub Workflow) jest zdarzeniowa. Rozszerzenie interfejsu konfiguracji o Trigger:
+code
+TypeScript
+export type SystemTrigger = 
+  | { type: 'manual' } // Inwokacja bezpośrednia z interfejsu użytkownika
+  | { type: 'fs_event'; watchPath: string; filePattern: string } // Nasłuchiwanie FS (np. nowy plik PDF)
+  | { type: 'pipeline_event'; sourceId: string; condition?: string }; // Wyzwolenie na podstawie zakończenia innego węzła
+3.2. Bramki Logiczne (Conditional Routing)
+Aby system pozwalał na tworzenie asynchronicznych potoków z obsługą błędów (bez konieczności predefiniowania ich w kodzie bazowym), implementujemy koncepcję warunkowego przekazywania danych:
+code
+TypeScript
+export interface RoutingGate {
+  condition: 'regex_match' | 'contains' | 'always';
+  evaluationString?: string; 
+  onSuccessTargetId: string; // Przekierowanie do kolejnego agenta / bufora
+  onFallbackTargetId?: string; // Obsługa błędu / alternatywny flow
+}
+3.3. Ustrukturyzowane Logi RLHF
+W modelu interaktywnym, weryfikacja danych odbywa się w trybie nadzorowanym. Odrzucone lub edytowane outputy LLM są bazą do optymalizacji. Interfejs DraftAction zostaje rozszerzony o pełną transparentność decyzyjną:
+code
+TypeScript
+export interface FeedbackLogEntry {
+  traceId: string;
+  originalPayload: string;        // Surowy output modelu
+  userEditedPayload: string;      // Zatwierdzona przez operatora wersja
+  userFeedbackNotation?: string;  // Opcjonalna dyrektywa korekcyjna (np. "zbyt formalny ton")
+  frozenContext: AgentSnapshot;   // Stan promptu/kontekstu w momencie wykonania
+  timestamp: string;
+}
+4. Architektura Prymitywów (Modularyzacja Akcji)
+Zamiast dedykowanych funkcji systemowych, AIService i PipelineRunner operują na ustandaryzowanych blokach funkcjonalnych. Każdy Agent składa się z poniższych warstw:
+Warstwa Inputu (Eksploracja Kontekstu):
+Mapowanie konkretnych węzłów z canvasu.
+Agregacja rekursywna plików z katalogu (Directory Ingestion).
+Dołączanie predefiniowanych reguł heurystycznych z wbudowanej Bazy Wiedzy (Wiki/Axioms).
+Warstwa Procesowania:
+Inference Call: Standardowe odpytanie LLM (Gemini/OpenAI) z obsługą strumieniowania do UI.
+System Operation: Wykonanie zadania bez udziału LLM. Przykład: Ekstrakcja 10 wybranych plików kontekstowych i skopiowanie ich do zewnętrznego katalogu "Drop Folder" jako przygotowanie danych do chmurowego narzędzia trzeciego (np. webowego Deep Research).
+Warstwa Outputu:
+Human-in-the-Loop (Draft Zone): Ekspozycja w UI w celu edycji tekstu i wygenerowania logu RLHF przed propagacją.
+Disk Write (Headless): Cichy zapis do pliku .md w docelowym folderze.
+Routing: Ocena warunków (Conditional Gate) i ewaluacja dalszej ścieżki (np. wysłanie do Agenta B).
+5. Kluczowe Fazy Wdrożeniowe (Roadmapa Implementacji)
+Aby bezpiecznie wdrożyć system na istniejącą bazę kodową React (z minimalną ingerencją w istniejące mechanizmy App.tsx), przyjęto architekturę 4 kroków wdrożeniowych.
+Faza A: Warstwa Integracji z Systemem Plików (Node.js IPC)
+Rozszerzenie pliku electron-main.cjs o pełną integrację modułu fs i wdrożenie biblioteki chokidar. Ustanowienie kanałów IPC dla bezpiecznej komunikacji między wątkiem głównym a wątkiem renderującym React:
+ipcRenderer.invoke('fs:read', path)
+ipcRenderer.invoke('fs:write', path, data)
+ipcRenderer.on('fs:watch_event', callback) — pozwala Reactowi reagować na zmiany w obserwowanych katalogach, wyzwalając odpowiednie triggery Agentów.
+Faza B: Warstwa Zarządzania Agentami (Configuration Manager)
+Stworzenie serwisu deserializującego konfiguracje w formacie JSON do obiektów TypeScript. Eliminacja dotychczasowych założeń o trzymaniu stanu maszyn LLM w pamięci RAM. Każda zmiana w konfiguracji agenta (np. zmiana promptu systemowego) skutkuje atomowym zapisem do odpowiedniego pliku w katalogu /Agents.
+Faza C: Rozbudowa Interfejsu Użytkownika (UI Warsztatu AI)
+Dostosowanie zdefiniowanych w specyfikacji (Faza 6.3) komponentów AIWorkshop.tsx:
+Panel konfiguracyjny agenta zostaje wzbogacony o sekcję "Routing" (wizualny interfejs dla obiektów RoutingGate).
+Wdrożenie komponentu Draft Zone (Skrzynka Podawcza) wspierającego jednoczesną edycję tekstu oraz wprowadzanie metadanych (feedback_reason) do celów generowania plików RLHF.
+Faza D: Agent-Architekt (Meta-Agent Systemowy)
+Proof-of-Concept elastyczności systemu. Wdrożenie asystenta o specjalnych uprawnieniach systemowych (read:RLHF_logs, write:agent_configs). Agent ten, funkcjonujący całkowicie w oparciu o podstawowe prymitywy:
+Pobiera jako input zawartość katalogu /RLHF_Logs.
+Dokonuje wnioskowania na temat powtarzalnych korekt dokonywanych przez operatora.
+Formułuje propozycje modyfikacji plików .json z promptami innych agentów i wysyła je do Draft Zone w celu ludzkiej autoryzacji (Human-in-the-Loop).
+6. Realizacja Przykładowych Scenariuszy Biznesowych (Use Cases)
+Konstrukcja oparta na prymitywach pokrywa wszystkie zaawansowane scenariusze projektowe:
+Integracja asynchronicznych procesów zewnętrznych (Drop-folders):
+Zamiast implementować kosztowne lub niedostępne integracje API dla rozwiązań takich jak Deep Research, system izoluje dane. Agent A procesuje pliki projektowe, strukturyzuje je do paczki txt i zapisuje w obserwowanym folderze wejściowym (/Watched_In). Użytkownik ręcznie transferuje to do instancji webowej. Wynik z instancji webowej jest zrzucany do folderu /Watched_Out. Moduł chokidar natychmiast wykrywa plik, inicjując Agenta B do podsumowania i dystrybucji na tablicę Kanban.
+Debata i walidacja wielomodelowa (Multi-Agent Consensus):
+Agent Generatywny przygotowuje propozycję. Węzeł przekazuje ją bezpośrednio do Agenta Audytora. Bramka logiczna ocenia wynik Audytora. Jeśli wynikiem jest "BŁĘDY ZNALEZIONE", potok automatycznie cofa dane do procesu korekcyjnego lub zawiesza działanie, eskalując problem do operatora systemu (powiadomienie UI), generując zwięzły raport syntetyzujący powód sporu między węzłami.
+Dzięki całkowitej rezygnacji z hardkodowania rozwiązań na rzecz natywnego systemu plików, system uzyskuje pełną bezawaryjność na poziomie pamięci oraz absolutną elastyczność w budowaniu dowolnych przepływów logiki biznesowej.

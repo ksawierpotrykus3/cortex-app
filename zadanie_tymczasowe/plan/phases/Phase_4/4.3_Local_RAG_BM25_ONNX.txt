@@ -1,0 +1,20 @@
+=========================================
+=== PHASE 4 STEP: 4.3_Local_RAG_BM25_ONNX.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 4.3
+**Moduł:** Lexical & Semantic Retrieval Pipeline (RAG)
+**Cel 0-100%:** Ustanowienie wielowątkowego RAG na hoście. Odrzucenie obciążeń pamięciowych wektorów, realizacja bez chmury algorytmami BM25 w WinkNLP. 
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Silnik Semantyczny (`src/backend/rag/semantic.ts`)**:
+   - Konfiguracja `onnxruntime-node` i kwantyzowanej wersji `Transformers.js` (`all-MiniLM-L6-v2`).
+   - Ustaw twarde wymogi pobierania modelów (cache/modelPath) z lokalnego repozytorium programu by omijać HuggingFace przy każdym restarcie aplikacji co pochłonęłoby limity połączenia i wydłużyłoby włączenie RAG do 10 minut w Windowsach 2026.
+2. **Silnik Leksykalny (`src/backend/rag/lexical.ts`)**:
+   - Implementacja klasycznej wyszukiwarki precyzyjnej poprzez `wink-nlp` - użyj modyfikacji do negacji z flagowaniem tagów. (Tokeny muszą mieć wsparcie w identyfikacji negacji, ułatwiając obsługę np. "brak sieci").
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Uruchom model ONNX w asercji testowej z wymuszonym odłączeniem karty sieciowej (test odciętego kabla). Model musi poprawnie zaalokować struktury wektorowe na podstawie lokalnego Cache w folderze z projektem bez uderzenia o serwer proxy HTTP, a brak wyjścia nie może zniszczyć startu aplikacji.

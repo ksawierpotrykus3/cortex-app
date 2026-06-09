@@ -1,0 +1,16 @@
+=========================================
+=== PHASE 3 STEP: 3.0_Ogolny_Zamysl_Security.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 3.0
+**Moduł:** Security & Execution Sandboxing - Obronność w głębi
+**Cel 0-100%:** Bezwzględne odcięcie kodu generowanego przez modele sztucznej inteligencji od głównego systemu Windows. Zakładamy, że każdy skrypt wykonawczy napisany przez agenta (szczególnie w środowisku Python / Bash) zawiera ukrytą pętle nieskończoną (Zombie) albo ukierunkowany atak na jądro (Path Traversal `../../`). 
+
+---
+
+## 🛠️ [ZASADY TEORETYCZNE DLA AI]
+1. **Odrzucenie vm2 i Dockera**: Tradycyjne środowiska node'owe takie jak moduły `vm` opierają się na Proxy (Prototype Pollution to pokonuje). Docker instalowany na hoście dysponuje cichym dostępem do systemu podsystemów WSL2, a start kontenera to mordercze minuty. Wprowadzamy wirtualizację z rygorem poniżej <200ms.
+2. **Default Deny**: Jeśli agent wysyła RAG z próbą odczytu dysku "C:", rzuca od razu wyjątkiem i loguje atak. Nic, co nie ma autoryzowanego flagą `allow: true` dostępu w tabeli, nie ma prawa się powieść.
+3. **Hard Hardware Timeouts**: Node.js Event Loop nie może obsłużyć pętli nieskończonej wygenerowanego kodu. Po wyznaczeniu limitu, bez sprawdzania stanu niszczymy twardo przydzielony wątek CPU i wszystkie jego sieroty, uwalniając system operacyjny hosta.
+
+Tylko w ten sposób zachowamy niezawodność, która nie będzie degradować działania laptopa w miarę upływu czasu.

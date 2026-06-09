@@ -1,0 +1,16 @@
+=========================================
+=== PHASE 4 STEP: 4.0_Ogolny_Zamysl_Execution.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 4.0
+**Moduł:** Execution Logic & RAG - Ogólny Zamysł Węzłów Decyzyjnych
+**Cel 0-100%:** Definicja potoków pracy w systemie autonomicznym. System ten nie prosi o wyzwolenia. Agent 1 rzuca wynik do Agenta 2 w formie Directed Acyclic Graph (DAG). Niestety swoboda budowy takich powiązań generuje katastrofalne pętle nieskończone. Faza ta zablokuje takie zjawiska, równocześnie dodając potężny silnik darmowego wyszukiwania RAG działający offline na Windows, stabilnie omijając niestabilności wejściowe systemu.
+
+---
+
+## 🛠️ [ZASADY TEORETYCZNE DLA AI]
+1. **Odrzucenie wektorowych baz chmurowych (Pinecone, Chroma)**: Lokalny RAG używa kwantyzacji `all-MiniLM-L6-v2` w potoku WebAssembly/ONNX, łącząc się z systemem BM25 (Leksykalnym) algorytmem RRF. Nic nie opuszcza maszyny Windows NT.
+2. **Kryzys Chokidar**: Standardowy watcher plików raportuje pobranie gigantycznego pliku jeszcze przed zakończeniem jego strumieniowania na dysku. Nasze nasłuchy blokują wywołanie bez 2000ms absolutnego uśpienia bitowego, chroniąc silniki wektorowe.
+3. **Pętle Grafu (Circular Dependency)**: Architekt musi przyjąć złą wole. Konfiguracje pętli `Agent A -> B -> A` rozrywają V8. Nakładamy limit na głębokość potoku i tniemy stack asertywnymi błędami.
+
+Faza ta spaja mózg agentowy z silnikiem wyszukiwań plików lokalnych, bez dławienia i wycieków pamięci.

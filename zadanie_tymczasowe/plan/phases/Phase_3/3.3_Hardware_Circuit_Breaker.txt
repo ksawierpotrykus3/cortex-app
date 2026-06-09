@@ -1,0 +1,22 @@
+=========================================
+=== PHASE 3 STEP: 3.3_Hardware_Circuit_Breaker.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 3.3
+**Moduł:** Sprzętowy Circuit Breaker i Zombie Killer
+**Cel 0-100%:** Brutalne wymuszanie limitów czasowych (Timeout) dla AI by chronić system hosta przed zamarznięciem poprzez błędy procesora (Denial of Wallet / Infinity Loops) i twarde czyszczenie procesów pobocznych Windowsa.
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Watchdog 1500ms (`src/backend/sandbox/execution.ts`)**:
+   - Wywołaj konstrukt uruchomienia kodu z rygorystycznym ograniczeniem `timeout: 1500`. Zegar tyka od momentu wyjęcia skryptu i musi rzucić wyjątek jeśli wyjście procesora (stdout/stderr) nie wskaże rozwiązania.
+   - Timeout musi wywołać twardy kill. W Linuksie `SIGKILL (-9)`, na powłoce Windows `taskkill /F /T /PID <pid>` uśmiercając całą ścieżkę podprocesów.
+2. **Odkurzacz Procesów (Zombie Killer)**:
+   - Często samo `spawn.kill` rzuca proces potomny Node na warstwy sieroce systemu Windows (Zombies) w dalszym ciągu paraliżując procesor na 100%.
+   - Wykorzystaj biblioteki na wzór `ps-list` lub natywne polecenie systemu Windows `tasklist`. Po użyciu Circuit Breakera wstrzymaj wywołanie, pobierz w tle listę aktywnych wątków dla uprzednio używanego PID, a jeśli nadal wisi w zasobach procesora - uderz drugi raz jądrowym czyszczeniem.
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Uruchom skrypt Node.js lub Python kodowany na pętlę rzezi: `while(true) {}`. Asercja ma użyć precyzyjnego systemu `process.hrtime()` do zmierzenia czy podproces urwał swoje działanie po perfekcyjnie wymierzonym odstępie czasu `1500 ms` z rzutem zwrotnym do skrzynki błędów.
+- **Test 2:** Po przerwaniu asercją, test musi sprawdzić poprzez natywne `tasklist` czy testowy proces Node/Python nie odczepił się i nadal działa jako sierota pętli, obciążając CPU na tarczy OS. Wywołanie i weryfikacja czystości na liście po czasie `500 ms` od ubicia testuje zjawiska "Zombie Process".

@@ -1,0 +1,16 @@
+=========================================
+=== PHASE 1 STEP: 1.0_Ogolny_Zamysl_IO.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 1.0
+**Moduł:** Zero-Copy I/O - Ogólny Zamysł Architektoniczny
+**Cel 0-100%:** Abstrakt i definicja fundamentu pamięciowego aplikacji. Faza 1 odrzuca klasyczne budowanie aplikacji oparte na zapychaniu Event Loopa Node.js. Wprowadzamy brutalną optymalizację wielowątkową, omijając rzutowanie tekstowe (UTF-8 Tearing) oraz przesył asynchroniczny IPC na rzecz surowej pamięci współdzielonej (ZCSMAP).
+
+---
+
+## 🛠️ [ZASADY TEORETYCZNE DLA AI]
+1. **Odrzucenie IPC Structured Clone**: W klasycznym Electronie wątki komunikują się przesyłając JSONy przez `postMessage`. Jest to zakazane. Każdy przesył pociąga za sobą Structured Clone Algorithm w V8, który dławi Garbage Collector. Używamy `SharedArrayBuffer`.
+2. **Natywny TextEncoder**: Kodowanie w Unicode z użyciem `TextEncoder` jest najszybsze i najpewniejsze. Zabraniam zewnętrznych bibliotek typu `msgpackr`. Dzielenie znaków (UTF-8) na styku bufora obsłużymy bezpośrednio zlewając resztki bufora ręcznie.
+3. **Podejście Pesymisty (BHP)**: Pamięć współdzielona to gwarancja błędów wyścigu. ZABRANIA SIĘ blokujących mechanizmów typu CAS Spin-Lock (`Atomics.compareExchange`). Każdy wątek rzuca swój ładunek przez `Atomics.add(this.meta, 0, len)`, co natywnie i bez locków inkrementuje wskaźnik głowy w C++, gwarantując O(1) opóźnienia i zerowe Lock Contention przy tłumie agentów.
+
+Niniejsza faza zbuduje absolutnie kuloodporny potok dla danych zrzucanych na dysk. Następne pliki (1.1, 1.2...) wdrożą to krok po kroku.

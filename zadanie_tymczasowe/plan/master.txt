@@ -1,0 +1,131 @@
+## 1. Założenia Fundamentalne i Rewizja Paradygmatu
+Weryfikacja pierwotnych założeń projektowych wykazała fundamentalną nieadekwatność środowisk typowo webowych do specyfiki docelowego systemu. Ograniczenia sterty silnika V8, izolacja procesów w architekturze przeglądarki oraz problemy transakcyjności baz danych typu IndexedDB w asynchronicznych potokach Large Language Models (LLM) wymuszają zmianę podejścia.
+
+NEXUS docelowo funkcjonuje jako aplikacja natywna w środowisku **Electron (Fat Client)** na systemach z rodziny Windows. Wymusza to całkowite odrzucenie złożonych architektur bazodanowych in-memory oraz relacyjnych baz danych w tle (np. SQLite, Redis) na rzecz natywnych operacji dyskowych z wykorzystaniem wbudowanych modułów Node.js (`fs`, `chokidar`). 
+
+Cały stan agentów, definicje workflowów, logi uczenia maszynowego ze wzmocnieniem (RLHF) oraz ustrukturyzowane dane wyjściowe będą przechowywane w jawnej strukturze plików tekstowych i JSON na dysku lokalnym (File-System Driven Architecture). System odrzuca twarde hardcodowanie funkcji celowych (tzw. "czarnych skrzynek") na rzecz Architektury Prymitywów (Klocków I/O), z których operator modeluje dowolne przepływy pracy.
+
+---
+
+## 2. Architektura Pamięci Masowej i Podsystem I/O
+
+Rozwiązanie problemów związanych z jednoczesnym dostępem wielu agentów do systemu plików (wyścigi o deskryptory, błędy `EBUSY: resource busy or locked` narzucane przez jądro Windows NT) wymaga zastosowania specjalistycznego podsystemu wejścia/wyjścia.
+
+### 2.1. Topologia Przestrzeni Roboczej (Workspace Structure)
+Globalny plik konfiguracyjny zostaje całkowicie odciążony. Ciężar danych zostaje zdecentralizowany do ustandaryzowanego drzewa katalogów:
+*   `/Agents` — Konfiguracje agentów w izolowanych plikach (np. `agent_01.json`).
+*   `/Workflows` — Zdefiniowane schematy (DAG) wiążące agentów, wyzwalacze i logikę bramek.
+*   `/Context_Pool` — Współdzielona wiedza, parsowana globalnie (Markdown/TXT).
+*   `/Buffers` — Katalogi pośrednie dla strumieni wieloagentowych (Magazyny).
+*   `/RLHF_Logs` — Ustrukturyzowane logi poprawek użytkownika (Shadow-writes).
+*   `/Watched_IO` — Katalogi wejścia/wyjścia rygorystycznie nasłuchiwane przez serwis chokidar.
+
+### 2.2. ZCSMAP (Zero-Copy Shared Memory Actor Pool)
+Wyeliminowanie zapychania kanałów IPC (Inter-Process Communication) algorytmem Structured Clone przy przesyłaniu dużych ładunków danych.
+*   W procesie głównym (`electron-main.cjs`) alokowany jest ciągły blok pamięci za pomocą `SharedArrayBuffer`.
+*   Pamięć rzutowana jest jako bufor kołowy (Ring Buffer) z wykorzystaniem widoku `Uint8Array`.
+*   Agenci, jako producenci danych, formatują tekst do kodowania binarnego i przesuwają wskaźnik nagłówka operacjami bezkonfliktowymi `Atomics.add()`. Sygnalizacja gotowości danych do zapisu realizowana jest mikrosekundową instrukcją `Atomics.notify()`.
+
+### 2.3. Wątek Samotnego Autora (Single-Writer Thread) i Paradygmat Bitcask
+Monopolizacja uprawnień modyfikacyjnych plików dyskowych chroni środowisko przed blokadami Windows.
+*   **Izolacja:** Implementacja wykorzystuje dedykowany podproces `node:worker_threads`. Żaden inny agent ani proces interfejsu React nie ma prawa inicjować wywołania zapisu do plików systemowych Nexusa. Wątek znajduje się w stanie wstrzymania procesora (`Atomics.waitAsync()`), budząc się wyłącznie do asynchronicznego zrzutu (flush) na dysk z flagą `append`.
+*   **Append-Only & Tombstoning:** Wzorowane na silniku Bitcask. Brak nadpisywania (update-in-place). Każda zmiana to dopisanie na końcu pliku z czasem O(1). Usunięcie węzła to zapisanie na końcu logu znacznika-nagrobka (Tombstone).
+*   **KeyDir (In-Memory Index):** Odczyt w czasie O(1) realizowany jest przez lekką mapę w RAM (klucz: ID, wartość: offset bajtowy na dysku), omijając deserializację megabajtowych plików JSON do pamięci maszyny V8.
+*   **Komprymacja Pamięci (Log Compaction):** Działający w tle zrobotyzowany proces (lub Agent-Architekt) interwałowo czyta zhistoryzowane logi Append-Only, eliminuje "nagrobki" i nieaktualne klucze, atomowo podmieniając je na skompresowany plik natywny.
+
+### 2.4. Harmonizacja Modułu Chokidar
+Aby zniwelować pętle sprzężenia zwrotnego i wyścigi z instancjami nasłuchującymi `chokidar`, system wprowadza twarde reguły wykluczenia (Ignored) dla plików `*.active.log`, `*.active.jsonl` oraz katalogu `/Buffers`. `Chokidar` obserwuje WYŁĄCZNIE dedykowane foldery I/O użytkownika, takie jak punkt przerzutowy do przeglądarki (Deep Research Drop Folders).
+
+---
+
+## 3. Typologia Danych, Prymitywy i Modularyzacja Akcji
+
+Środowisko rezygnuje z dedykowanych funkcji systemowych na rzecz Architektury Prymitywów (klocków operacyjnych), abstrahujących węzły wejścia, procesowania i wyjścia.
+
+### 3.1. Wyzwalacze (System Triggers)
+Inicjalizacja potoku jest rygorystycznie zdarzeniowa.
+```typescript
+export type SystemTrigger = 
+  | { type: 'manual' } // Inwokacja bezpośrednia z interfejsu (Przycisk [Play])
+  | { type: 'fs_event'; watchPath: string; filePattern: string } // Nasłuchiwanie FS (np. nowy .md)
+  | { type: 'pipeline_event'; sourceId: string; condition?: string }; // Koniec pracy Agenta X
+3.2. Bramki Logiczne i Routing (Conditional Edges)
+Możliwość tworzenia asynchronicznych potoków z obsługą wyjątków bez predefiniowania ich w kodzie bazowym, wykorzystująca dynamiczne ewaluowanie ciągów znakowych z outputów modeli.
+code
+TypeScript
+export interface RoutingGate {
+  condition: 'regex_match' | 'contains' | 'always';
+  evaluationString?: string; // np. "[WYMAGANY_RESEARCH]"
+  onSuccessTargetId: string; // Przekierowanie do kolejnego agenta lub do /Buffers
+  onFallbackTargetId?: string; // Obsługa błędu / alternatywny przebieg potoku
+}
+3.3. Moduły Procesowania (Processing Layers)
+Inference Call: Standardowe odpytanie LLM (Gemini, OpenAI, Anthropic, Custom Endpoint) obsługiwane przez AIService.ts, wyposażony w retry z wariancją opóźnień (exponential backoff + jitter) oraz strumieniowanie odpowiedzi do UI.
+File_Copier (System Operation): Praca z pominięciem LLM. Ekstrakcja n-wybranych plików kontekstowych i fizyczne skopiowanie ich do zewnętrznego katalogu "Drop Folder" jako w pełni zautomatyzowane przygotowanie danych dla chmurowych interfejsów webowych.
+4. Architektura Zero-DB Local Context Ingestion (Lokalny RAG)
+Zastosowanie zewnętrznych baz wektorowych (Pinecone, Chroma) lub naiwnego cięcia tekstu (Character Chunking) kategorycznie łamie zasady Fat Client, niszczy spójność strukturalną kodów źródłowych i wymusza opłaty za komercyjne API Embeddings. System wdraża potężny, dwusilnikowy mechanizm filtrujący in-memory.
+4.1. Silnik Leksykalny (wink-bm25-text-search + wink-nlp)
+Odpowiada za ekstremalnie precyzyjne dopasowanie słów kluczowych i identyfikatorów z pominięciem obciążeń V8 (Memory Footprint).
+Wdraża procesy Natural Language Processing w locie: redukcja stop words, algorytmy lematyzacji oraz Porter Stemmer v2.
+Detekcja Negacji: Wdrożenie flagi its.negationFlag. Słowa poprzedzone przeczeniem otrzymują w indeksie prefiks !, rozwiązując krytyczny błąd rozróżniania intencji logicznych, z którym nie radzą sobie proste systemy wektorowe.
+4.2. Silnik Semantyczny (Transformers.js + ONNX Runtime)
+Lokalne generowanie 384-wymiarowych wektorów gęstych bez połączenia z chmurą, natywnie w silniku onnxruntime-node.
+Zastosowanie lekkiego, skwantyzowanego modelu Xenova/all-MiniLM-L6-v2 w trybie Singleton-based lazy loading, chroniącego przed wyciekami RAM.
+4.3. Reciprocal Rank Fusion (Algorytm Fuzji RRF)
+Łączenie nieliniowych punktacji BM25 oraz podobieństw cosinusowych ONNX poprzez algebraiczny wzór fuzji RRF:
+RRF_Score = 1 / (k + Rank_BM25) + 1 / (k + Rank_ONNX), ze stałą regulacyjną k = 60.
+4.4. Potok Przetwarzania (4-Step Pipeline)
+Directory Ingestion & Semantic Splitting: Wczytywanie asynchroniczne 500+ plików. Fragmentacja realizowana heurystycznie przy użyciu podwójnych znaków nowej linii (\n\n), zabezpieczająca zagnieżdżenia w kodzie i Markdown.
+Dual-Pipeline Execution: Delegowanie zadań obliczeniowych BM25 oraz macierzy ONNX do wyizolowanych instancji worker_threads (współbieżność).
+RRF Culling: Odrzucenie np. 450 najmniej istotnych fragmentów poza pamięć operacyjną, destylując 50 krytycznych instancji o najwyższej korelacji z intencją operatora.
+Token Estimation: Przefiltrowany kontekst podlega weryfikacji przez lokalny kalkulator tokenów, chroniąc potok przed odrzuceniem żądania przez endpoint API (Context Window Explosion).
+5. Środowisko Wykonawcze, Ergonomia i Zabezpieczenia (Execution & Security)
+Dla zapewnienia bezpieczeństwa w scenariuszach wysoce zautomatyzowanych, architektura wprowadza zaawansowane środowiska wykonawcze oraz narzędzia typu Quality of Life (QoL) dla operatora.
+### 5.1. MicroVMs Sandbox (Izolowane Środowisko Skryptowe - Local_CLI_Runner)
+System pozwala Agentom na generowanie oraz uruchamianie skryptów wykonawczych (np. Python, Node.js, Bash). Zamiast polegać na ociężałych kontenerach Docker (wymagających instalacji demonów i WSL2) lub programowych, łatwych do ominięcia izolatorach pamięci (vm2), architektura wdraża natywne, efemeryczne mikromaszyny wirtualne (MicroVMs).
+
+*   **Izolacja Sprzętowa (WHPX + libkrun):** Node.js wykorzystuje wiązania FFI (np. poprzez paczkę `microsandbox` lub `a3s-libkrun-sys`), które integrują się bezpośrednio z natywnym hipernadzorcą Windows (Windows Hypervisor Platform). Każdy wygenerowany przez AI skrypt zostaje zamknięty w swoim własnym, zminiaturyzowanym jądrze systemu Linux, odciętym na poziomie procesora od systemu operacyjnego hosta.
+*   **Sub-second Cold Start:** W przeciwieństwie do tradycyjnych maszyn wirtualnych, inicjalizacja tego środowiska z poziomu kodu Node.js (poprzez instrukcję `await using sandbox = ...`) zajmuje od 100 do 200 milisekund. Gwarantuje to brak zacięć w głównej pętli zdarzeń aplikacji Electron.
+*   **Zero-Block Storage (virtio-fs):** System nie używa niebezpiecznych punktów montowania (Volume Mounts), które otwierają furtkę do ataków typu Path Traversal. Kontekst dla skryptu jest udostępniany poprzez wysoce wydajny, wirtualny serwer plików `virtio-fs`. Agent widzi tylko to, co wrzuciłeś mu do wirtualnego folderu, i nie ma fizycznej możliwości dotknięcia Twojego dysku `C:\`.
+*   **Sprzętowy Circuit Breaker (Timeout):** W celu zabezpieczenia przed nieskończonymi pętlami lub złośliwymi alokacjami pamięci, konstruktor maszyny definiuje sztywny limit czasowy (np. 1500 milisekund). Po przekroczeniu tego czasu, hipernadzorca Windows natychmiastowo zatrzymuje wirtualny rdzeń (vCPU), a maszyna zostaje zniszczona.
+*   **Przechwytywanie (StdOut/StdErr):** Artefakty i strumienie wyjścia z konsoli są podsłuchiwane przez interfejs `virtio-console`, konwertowane przez `TextEncoder` w procesie głównym Node.js, a następnie zwracane bezpośrednio do "Skrzynki Podawczej" (Draft Zone) jako obiekt `FeedbackLogEntry`, umożliwiając systemowi uczenie się na błędach kompilatora.5.2. Kontrola Dostępu (NexusVFS & Granular ACL)
+Aplikacja mapuje swoje wewnętrzne struktury na URI (np. nexus://topology/Projekt_X, nexus://writing/Szkic_01).
+W ustawieniach Agenta wdraża się listy kontroli dostępu (ACL) w trybie Default Deny. Operator buduje reguły (np. ALLOW -> nexus://topology/*, DENY -> nexus://writing/*). System natychmiast blokuje odczyt przy próbie eksploracji nieautoryzowanej przestrzeni przez narzędzia RAG agenta.
+5.3. Bezpieczeństwo Potoku (Global Kill Switch & Circuit Breaker)
+Global Kill Switch: Anulowanie akcji z UI nie opiera się na AbortController. System wysyła do procesu pomocniczego polecenie worker.terminate(), brutalnie i bezwarunkowo ubijając proces roboczy, uwalniając 100% zablokowanego CPU i RAM.
+Circuit Breaker: Awaryjny licznik iteracji. Przekroczenie limitu wywołań API w pętli powoduje zmianę statusu na CIRCUIT_BREAKER_TRIPPED, wstrzymuje środowisko i aktywuje czerwony baner ostrzegawczy z przyciskiem do ręcznego resetowania bezpiecznika przez operatora.
+5.4. Ergonomia Pracy (Templating, Glob, Dry-Run, Command Palette)
+Szablony Promptów (Variables): Prompty obsługują system zmiennych wąsatych (np. {{dokument_wejsciowy}}). Pozwala to na stworzenie presetów-maszyn, które operują na przeciąganych do nich plikach bez konieczności reedycji tekstu polecenia.
+Selekcja Masowa (Glob Patterns): Moduł dodawania kontekstu obsługuje pola filtracji typu Regex/Glob (np. src/**/*.js), pozwalając na zaznaczenie 300 odpowiednich plików w ułamek sekundy zamiast ręcznej interakcji z UI.
+Dry-Run (Symulacja): Funkcja kompilacji całego potoku przygotowawczego (podmiana zmiennych, zasady z Wiki, RAG, wirtualne URI) wypluwająca do UI ostateczny format czystego tekstu przed przesłaniem ładunku do zewnętrznego API, chroniąc budżet operatora przed błędnymi operacjami.
+Command Palette: Wywoływana skrótem klawiszowym (np. Ctrl+K) nakładka centrująca na szybkie inwokacje agentów lub uruchamianie workflowów z pominięciem wizualnej nawigacji kursorem.
+6. Struktura Interfejsu Użytkownika i Doświadczenia (UX/UI: Fazy 3-6)
+Interfejs użytkownika w pełni operuje na systemie modularnym, chroniąc wydajność interaktywną płótna grafowego.
+6.1. Topologia i Mapy Myśli (Faza 3)
+Węzły grafowe z załącznikami multimedialnymi (imageAttachments) ukrywają treść tekstową na mapie NexusCanvas, wyświetlając ją wyłącznie w wywoływanym bocznym panelu (RightPanel).
+Rozwiązanie problemu re-kalkulacji DOM podczas skalowania: wprowadzenie flagi isResizing z użyciem pointer-events: none; overflow: hidden;. Skalowanie płynne do momentu pointerup.
+Teleportacja (LeftSidebar): Kliknięcie notatki wyzwala matematyczną kalkulację offsetu w NexusCanvas, wyśrodkowując węzeł na oknie głównym w płynnej animacji.
+6.2. System Zgłoszeń i Sprzężenia Zwrotnego (Faza 4)
+W pasku TopNavigation funkcjonuje globalny przycisk [🚫 Brakuje mi...].
+Aktywuje on ciche zamrożenie kontekstu (SystemFeedbackContext): wyodrębnienie zaznaczonego tekstu, bieżącego widoku, zamrożenie aktywnych logów i wklejenie do prostego Popovera, generującego obiekt ChangeEntry do widoku LabChanges.
+6.3. Interaktywny Warsztat AI (Faza 6 - Ekran Główny)
+Aplikacja renderuje trójkolumnowy układ przestrzenny (AIWorkshop.tsx).
+Panel Lewy (Budowniczy Kontekstu): Prezentacja plików i Wirtualnego Systemu Plików. Wizualizacja ostrzeżeń: jeśli zaznaczony obiekt przekracza zdefiniowane listy dostępu (ACL) przypisanego Agenta, system podświetla go czerwoną barwą z predykcyjnym ostrzeżeniem (zabezpieczenie UI). Mechanizm Drag&Drop pozwala na fizyczne chwytanie węzłów/plików z panelu i upuszczanie ich w polu Agenta, kreując linki nexus://... zastępujące puste sloty szablonów. Na dole panelu rezyduje interaktywny wskaźnik zużycia tokenów, aktualizowany w czasie rzeczywistym.
+Panel Środkowy (Karty Agentów):
+Układ wertykalny. Moduły wyboru dostawcy (Gemini/OpenAI), parametrów, a także interaktywne etykiety (Chipy) z uprawnieniami.
+Zamiast bazowego przycisku uruchamiania, widnieją bloki Klocków I/O, w tym wizualny konfigurator Bramek Logicznych ([JEŚLI wynik zawiera X] -> [WYŚLIJ DO Agent Y]).
+Zarządzanie Branchami i Iteracjami obsługują przyciski: [🔄 Nowa runda] (czyści prompt, utrzymuje stary output jako kontekst z zachowaniem ID sesji), [🍴 Fork] (wizualna i logiczna duplikacja Agenta z całą jego historyczną trajektorią) oraz [📋 Klonuj] (czysta kopia konfiguracji).
+W panelu znajduje się również wariant dla eksperymentalnego, hybrydowego filtrowania (Local RAG) reprezentowany przełącznikiem [⚡ Zleć AI wyciągnięcie kontekstu].
+Panel Prawy (Changelog i Przypięte Logi):
+Prezentacja chronologicznej aktywności w ramach określonych sesji (Session Tags). Możliwość wstrzyknięcia całej sesji wideo-logu z powrotem do obszaru budowniczego przyciskiem [📎 Użyj całej sesji].
+6.4. Cykl Życia Autonomii i "Draft Zone" (Skrzynka Podawcza)
+Wyniki procesów generatywnych nie modyfikują bezpośrednio struktury danych (np. notatek LabWriting czy zadań LabTodo), lecz wpadają do wyodrębnionej strefy buforowej (Draft Zone).
+Diff Viewer i Edukacja RLHF: Gdy operator otwiera propozycję od AI, widok uruchamia się jako "Split-View Diff" z podświetleniem usunięć (czerwony) i naddatków (zielony). Output modelu jest jednocześnie edytowalnym oknem tekstowym, pozwalającym na bezpośrednią, rzemieślniczą korektę sformułowań.
+Po poprawkach, operator uzupełnia pole [Komentarz dla AI] i potwierdza. Atomowo modyfikuje to bazę danych ORAZ tworzy zjawisko Shadow Write — obiekt FeedbackLogEntry ląduje w folderze /Changelog/RLHF/ zawierający triplet (Oryginał -> Poprawka -> Uzasadnienie) do audytu naukowego.
+Promocja Agenta (Unsupervised Execution): Jeśli Workflow potwierdzi swoją bezbłędność (częste zatwierdzenia bez korekt), operator aktywuje na jego karcie status [Zaufaj / Perma-Accept]. Od tej pory potok omija Draft Zone, wyzwalając asynchroniczne i autonomiczne operacje w tle wraz z bezpośrednim zapisem wyników do struktury plików.
+7. Meta-Automatyzacja i Samodoskonalenie
+Wykorzystanie zdefiniowanych Architektury Prymitywów, Logów RLHF i natywnych zasobów dyskowych skutkuje powołaniem nadrzędnych agentów systemowych wewnątrz przestrzeni roboczej.
+7.1. Baza Wiedzy (WikiView) i Aksjomaty Promptowania
+Zbudowanie w UI interaktywnego, aktywnego słownika operującego pojęciami (np. Grupy Zasad w formatach umów). Wpisanie pojęcia, zdefiniowanego w Wiki, powoduje jego fioletowe podświetlenie (highlight) na żywo podczas budowania Promptów. Hover kursora otwiera Floating Card z wbudowanymi taktykami inżynierii wejścia (Playbook systemu). Dodatkowo, operator może załączać grupy z Bazy Wiedzy jako nienaruszalne reguły systemowe narzucane ostatecznemu zapytaniu.
+7.2. Agent-Architekt (Wzorzec Meta-Systemowy)
+Agent-Nadzorca obdarzony uprawnieniami kontroli dostępu read:RLHF_logs oraz write:agent_configs. Funkcjonujący całkowicie w oparciu o prymitywy, asynchronicznie i autonomicznie odczytuje logi z edycji użytkownika. Dokonuje wnioskowania i samodzielnie konstruuje rekonfiguracje pre-definiowanych plików agentów (JSON) ulepszając ich zachowania na przyszłość. Następnie przekazuje je operatorowi (poprzez kanał Draft Zone) do zatwierdzenia, czyniąc z systemu środowisko adaptacyjne i permanentnie uczące się stylu programistycznego i redaktorskiego swojego twórcy.

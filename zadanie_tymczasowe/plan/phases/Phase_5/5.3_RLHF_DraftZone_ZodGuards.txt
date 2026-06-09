@@ -1,0 +1,26 @@
+=========================================
+=== PHASE 5 STEP: 5.3_RLHF_DraftZone_ZodGuards.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 5.3
+**Moduł:** RLHF Draft Zone & Zod Mutation Guards
+**Cel 0-100%:** Zabezpieczenie przed błędem operatora ludzkiego (Ciebie). Tworzymy bezpieczną sferę DraftZone, z asercyjnym wymuszaniem typowania przy użyciu biblioteki Zod, tak by przed zrzutem konfiguracji zablokować niepoprawne formaty.
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Draft Zone Component (`src/frontend/components/DraftZone.tsx`)**:
+   - Buduj miejsce w którym użytkownik koryguje odpowiedzi agenta (RLHF - Reinforcement Learning from Human Feedback). Zmiany nie zachodzą w locie - są wpisywane w tymczasowy formularz.
+2. **Zod Guards (`src/shared/validators/schemas.ts`)**:
+   - Konstruuj strukturalne typy Zod np: `const AgentMutation = z.object({ id: z.string().min(3), instruction: z.string().min(10) });`
+   - Kiedy użytkownik wciska ZAPISZ, zadeklarowana funkcja przepuszcza dane wejściowe z Formularza przez schemat Zoda: `AgentMutation.parse(draftData)`.
+3. **Komunikacja IPC do WriteWorkera**:
+   - Zod odrzuci śmieci od człowieka (np. pustą korektę). Złap wyjątek po stronie Reacta i użyj powiadomień Tostów by obsobaczyć operatora za błędy logiki.
+   - Po przepuszczeniu, rzuć bezbłędny w 100% ładunek prosto do `ipcRenderer` - ten zostanie bezkolizyjnie przepchnięty przez ZCSMAP Fazy 1 i wyląduje w Append-Only bazie Fazy 2.
+4. **Bezpieczne Klonowanie i Serializacja Cykliczna**:
+   - Wszelkie operacje forkowania/gałęzienia stanu agentów w Zustand realizuj wyłącznie przez natywne `structuredClone`.
+   - Zaimplementuj dedykowany użytek telemetryczny do zapisu logów RLHF, który wykorzystuje stringify zastępujące cykle (np. `flatted` lub custom replacer).
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Użyj RTL (React Testing Library) z emulacją klików myszy. Wybierz wpisanie ucinającej się konfiguracji i spróbuj zasymulować nacisk "Zapisz". Test asertywnie śledzi, czy nie wywołano ani razu podsystemu IPC dla błędnego zapisu, co udowadnia, że walidacja brzegowa utrzyma system w szczelności przed najgorzej sprofanowanymi wejściami danych.

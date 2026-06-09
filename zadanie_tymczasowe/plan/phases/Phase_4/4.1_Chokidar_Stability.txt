@@ -1,0 +1,21 @@
+=========================================
+=== PHASE 4 STEP: 4.1_Chokidar_Stability.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 4.1
+**Moduł:** Chokidar - Nasłuch NTFS i flagi stabilizacyjne
+**Cel 0-100%:** Ustanowienie serwisu obserwatora katalogów potrafiącego bezpiecznie włączać workflow agentów dopiero w momencie faktycznego zakończenia zapisu fizycznego do plików z zewnątrz.
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Konfiguracja Nasłuchu (`src/backend/io/watcherService.ts`)**:
+   - Inicjalizacja instancji `chokidar.watch` nakierowanej na strukturę DropZony (`/Watched_IO/In`).
+   - Wrzucenie żelaznej listy `ignored` uwzględniającej podkatalogi robocze `Buffers` by nigdy nie czytać wewnętrznych zapętleń komunikacyjnych własnej aplikacji.
+2. **Ujarzmienie NTFS (awaitWriteFinish)**:
+   - System Windows podczas ściągania pliku PDF blokuje go tworząc deskryptor. Standardowe czytanie rzuci "EOF error".
+   - Przekaż parametry `awaitWriteFinish: { stabilityThreshold: 2000, pollInterval: 100 }`. Zmusza to moduł Node.js do wywołania pomiaru wagi w 100 milisekundowych pętlach i wystrzału powiadomienia (Event Emitter) dopiero w momencie stabilności wielkości bajtowej trwającej sztywne 2 sekundy (koniec zapisu).
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Skrypt asercyjny pisze symulowany plik co 400 milisekund dopisując sztuczne kawałki. Watcher podpięty na środowisko testowe w żadnym z tych przerw (400ms) nie ma prawa wysłać sygnału ReadyEvent. Asercja wymusza zablokowanie testu jeśli powiadomienie padnie z wynikiem poniżej uśpienia matematycznego progu `2000ms`. Wynik sprawdź różnicą timerów `Date.now()`.

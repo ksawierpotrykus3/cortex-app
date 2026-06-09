@@ -1,0 +1,16 @@
+=========================================
+=== PHASE 2 STEP: 2.0_Ogolny_Zamysl_Persistence.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 2.0
+**Moduł:** Paradygmat Bitcask - Ogólny Zamysł Zapisów Półtrwałych
+**Cel 0-100%:** Odrzucenie relacyjnych baz danych, baz SQLite oraz niewydajnych systemów klucz-wartość (IndexedDB) na rzecz surowego podejścia Bitcask (Log-Structured Hash Table). 
+
+---
+
+## 🛠️ [ZASADY TEORETYCZNE DLA AI]
+1. **Append-Only (Brak aktualizacji w miejscu)**: Nigdy nie nadpisujemy i nie kasujemy żadnego rekordu z pliku JSON. Modyfikacja obiektu (np. Agent konfiguracja) polega na zrzuceniu nowej, poprawionej wersji dokumentu na sam dół pliku dyskowego. Twardy dysk w erze NVMe kocha logi sekwencyjne i omija błędy zablokowanych nagłówków Windowsa.
+2. **Nagrobki (Tombstones)**: Usuwanie pliku polega na zapisaniu wpisu oznaczającego wirtualną śmierć. System na jego podstawie usuwa wezeł z indeksu w pamięci RAM, udając przed aplikacją, że element zniknął na stałe.
+3. **Pamięć O(1) w RAM**: Pamięć Node.js nigdy nie ładuje plików logów do zapytań o dane. Pamięć RAM jest używana w całości tylko do trzymania struktury Hashmapy odwołującej identyfikator wprost do wyliczonych w bajtach koordynatów na tarczy dysku twardego. Pozwala to operować milionami tokenów z niespotykaną prędkością.
+
+Faza 2 zapewnia bezpieczne, niskopoziomowe silniki odczytu, ignorujące zablokowane bajty UTF-8.

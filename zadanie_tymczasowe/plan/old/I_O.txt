@@ -1,0 +1,58 @@
+# Specyfikacja Podsystemu I/O: NEXUS V2
+**Architektura: Lock-Free Single-Writer Append-Only Log (ZCSMAP + Bitcask)**
+
+## 1. Cel Dokumentu
+Dokument definiuje architekturę warstwy persystencji danych dla systemu NEXUS V2 (Electron / Windows). Zastępuje ona klasyczne metody asynchroniczne (`fs.promises`) oraz relacyjne bazy danych rozwiązaniem opartym na fizycznych plikach tekstowych (.json, .md), wykorzystując zaawansowane mechanizmy sprzętowe (SharedArrayBuffer, Atomics) w celu całkowitej eliminacji błędów `EBUSY`, zagłodzenia pętli zdarzeń (Event Loop Starvation) oraz przerw w działaniu Garbage Collectora.
+
+## 2. Architektura Komponentów (Topologia)
+
+Podsystem I/O składa się z trzech nierozerwalnych warstw operacyjnych, izolujących logikę AI i interfejs UI od fizycznego systemu dyskowego NTFS.
+
+### 2.1. ZCSMAP (Zero-Copy Shared Memory Actor Pool)
+Zamiast przesyłania gigabajtów payloadów tekstowych między procesami renderowania (React) a procesem głównym przez powolny protokół IPC (Structured Clone Algorithm), system wdraża pamięć współdzieloną.
+*   **Alokacja:** W procesie głównym (`electron-main.cjs`) alokowany jest ciągły blok pamięci za pomocą `SharedArrayBuffer` (np. 128 MB).
+*   **Struktura:** Pamięć rzutowana jest jako bufor kołowy (Ring Buffer) z wykorzystaniem widoku `Uint8Array`.
+*   **Koordynacja:** Agenci (producenci) formatują tekst do kodowania binarnego i umieszczają w buforze. Przesunięcie wskaźnika nagłówka odbywa się za pomocą operacji bezkonfliktowych `Atomics.add()`. Sygnalizacja gotowości danych realizowana jest w ułamku nanosekundy przez `Atomics.notify()`.
+
+### 2.2. Wątek Samotnego Autora (Single-Writer Thread)
+Całkowita monopolizacja uprawnień do modyfikacji plików na dysku.
+*   **Izolacja:** Implementacja wykorzystuje dedykowany podproces `node:worker_threads`, uruchamiany przy starcie aplikacji.
+*   **Wyłączność:** Żaden inny wątek, Agent ani proces główny React nie ma prawa użyć wywołania zapisu do plików wewnętrznych (logów/konfiguracji). 
+*   **Nasłuch:** Wątek przebywa w stanie hibernacji na poziomie procesora, oczekując na sygnał za pomocą blokującej, asynchronicznej instrukcji `Atomics.waitAsync()`. Pobiera dane z bufora pierścieniowego i asynchronicznie dokonuje zrzutu (flush) na dysk, wykorzystując deskryptory otwarte z flagą `a` (append).
+
+### 2.3. Paradygmat Bitcask (Append-Only Logs & KeyDir)
+Wszystkie operacje zmiany stanu w plikach systemowych NEXUS (aktualizacja konfiguracji agentów, edycja RLHF, modyfikacje Wiki) realizowane są jako dziennik zdarzeń.
+*   **Append-Only:** Brak nadpisywania (Update-in-place) i usuwania. Każda modyfikacja pliku dopisywana jest na samym jego końcu z czasem O(1).
+*   **Tombstoning:** Usunięcie węzła, definicji lub pliku polega na dopisaniu na koniec logu małego rekordu-nagrobka (Tombstone). 
+*   **KeyDir (In-Memory Index):** Dla błyskawicznego odczytu, pamięć RAM przechowuje lekką mapę skrótów. Klucz to ID elementu, wartość to wskaźnik (offset bajtowy) w pliku dyskowym i długość rekordu. Odczyt polega na dyspozycji głowicy dysku w precyzyjne miejsce, co zajmuje czas rzędu mikrosekund i omija potrzebę deserializacji całego pliku do pamięci maszyny V8.
+
+## 3. Komprymacja Pamięci (Log Compaction)
+
+Ze względu na architekturę Append-Only, pliki robocze ulegałyby stopniowej fragmentacji i rozrostowi. System zapobiega temu za pomocą asynchronicznego procesu zagęszczania (Compaction).
+*   **Wyzwalacz:** Proces uruchamiany interwałowo (np. przy niskim obciążeniu CPU) przez "Agenta-Architekta" lub natywny job w tle.
+*   **Mechanika:** Zrobotyzowany wątek odczytuje aktywny plik logu (np. `badacz_config.active.jsonl`), odrzuca wszystkie nieaktualne stany (nadpisane klucze) oraz rekordy oznaczone jako Tombstone, a następnie buduje jeden, płaski plik docelowy (np. czysty `badacz_config.json`).
+*   **Rotacja:** "Wątek Samotnego Autora" otrzymuje atomową instrukcję podmiany wskaźników deskryptora. Po udanym przełączeniu, stary, przerośnięty plik logu jest usuwany z systemu plików Windows.
+
+## 4. Harmonizacja z Modułem Chokidar (Obserwacja FS)
+
+NEXUS V2 wykorzystuje bibliotekę `chokidar` do wyzwalania agentów na podstawie zmian plików z zewnątrz (np. Drop Folders dla Deep Research). Aby zapobiec pętlom sprzężenia zwrotnego (Feedback Loops) i błędom odczytu blokad `EBUSY`:
+*   Instancja `chokidar` operująca w głównym procesie zostaje ściśle skonfigurowana do ignorowania plików roboczych i tymczasowych.
+*   **Reguły wykluczenia (Ignored):** `*.active.log`, `*.active.jsonl`, `*.tmp`, oraz cały katalog buforów systemowych `/Buffers` i przestrzenie modyfikowane przez Wątek Samotnego Autora.
+*   `chokidar` obserwuje WYŁĄCZNIE dedykowane foldery I/O użytkownika (np. `/Watched_IO/In/`), zapobiegając rywalizacji o metadane plików z wewnętrznym mechanizmem persystencji.
+
+## 5. API dla Warstwy Aplikacyjnej (Interfejs dla React/Agentów)
+
+Aby reszta systemu mogła wchodzić w interakcje z I/O bez obciążania programistów detalami SAB i Atomics, system udostępnia prosty, asynchroniczny interfejs w procesie głównym.
+
+```typescript
+interface NexusIO {
+  // Błyskawiczny, nieblokujący zrzut danych do bufora pierścieniowego
+  appendLog(streamId: string, payload: string | Buffer): void;
+  
+  // Odczyt oparty na mapie KeyDir z pominięciem ładowania całych plików
+  readRecord(streamId: string, offset: number, length: number): Promise<string>;
+  
+  // Zgłoszenie fizycznego skopiowania plików na zewnątrz (dla Mostów Hybrydowych)
+  copyToDropFolder(sourcePaths: string[], targetFolder: string): Promise<void>;
+}
+Wdrożenie tej specyfikacji gwarantuje systemowi wydajność równą zaawansowanym bazom danych typu NoSQL, zachowując 100% zgodności z wymogiem oparcia aplikacji o pliki zlokalizowane na lokalnym dysku twardym użytkownika.

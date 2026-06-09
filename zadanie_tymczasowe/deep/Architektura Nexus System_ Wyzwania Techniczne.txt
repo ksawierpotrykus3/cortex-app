@@ -1,0 +1,323 @@
+﻿Architektura Defensywna i Deterministyczna Systemu Nexus: Raport Badawczy na Rok 2026
+Rozwój zaawansowanych aplikacji hybrydowych, łączących interfejsy oparte na bibliotece React z natywnym dostępem do systemu operacyjnego poprzez framework Electron, stanowi jedno z najbardziej wymagających zagadnień współczesnej inżynierii oprogramowania.1 Wdrożenie Fazy 6 (NXS-ENG-001) projektu "Nexus System", polegającej na implementacji wielowątkowego, węzłowego silnika sztucznej inteligencji (Node-Based AI Engine) opartego na architekturze grafów skierowanych (DAG) w izolowanym środowisku Web Workera, potęguje to wyzwanie.2 Kontekst architektoniczny projektu charakteryzuje się wysoce specyficznymi ustawieniami w pliku electron-main.cjs: jawnym wyłączeniem izolacji kontekstu (contextIsolation: false) oraz aktywacją integracji ze środowiskiem Node.js w głównym wątku renderującym (nodeIntegration: true).2 Taka konfiguracja zapewnia potężne możliwości integracyjne, pozwalając na bezpośrednie wywoływanie natywnych modułów, takich jak fs, path czy os, bezpośrednio z poziomu komponentów React, ale jednocześnie otwiera system na bezprecedensowe ryzyka związane ze stabilnością, bezpieczeństwem i zarządzaniem pamięcią.2
+W świetle nadchodzących standardów na rok 2026, środowisko uruchomieniowe V8 narzuca rygorystyczne limity alokacji zasobów, a systemy budowania oparte na narzędziach takich jak Vite oraz electron-builder wykazują udokumentowaną niestabilność przy domyślnych konfiguracjach procesów wielowątkowych.4 W związku z tym, niniejszy raport architektoniczny przyjmuje paradygmat skrajnego pesymizmu inżynieryjnego. Architektura musi być projektowana z założeniem, że mechanizmy asynchroniczne ulegną zakleszczeniu, kolejki zdarzeń zostaną przepełnione, struktury danych ulegną fragmentacji, a systemy pakowania zniszczą względne ścieżki plików roboczych. Każdy komponent silnika PipelineRunner musi zatem opierać się na rozwiązaniach całkowicie deterministycznych, oferujących absolutną gwarancję izolacji błędów i ciągłości działania.
+Poniższa rozprawa stanowi dogłębną analizę czterech krytycznych wyzwań projektowych, dostarczając precyzyjnych rekomendacji technologicznych, struktur danych oraz schematów komunikacyjnych, które zagwarantują bezawaryjną eksploatację systemu Nexus.
+Wyzwanie 1: Deterministyczna Konfiguracja i Ładowanie Web Workera w Ekosystemie Vite i Electron
+Podstawowym wymogiem środowiska wykonawczego dla agentów AI jest przeniesienie ciężaru obliczeniowego poza główny wątek renderujący przeglądarki. W środowisku React, blokada głównego wątku (Event Loop) na czas dłuższy niż 50 milisekund prowadzi do spadku płynności interfejsu (poniżej 60 klatek na sekundę), co w kontekście transformacji gigantycznych drzew syntaktycznych i obsługi protokołów pamięci przez sztuczną inteligencję jest scenariuszem niedopuszczalnym.2 Silnik wykonawczy PipelineRunner musi zostać zainstancjonowany w odseparowanym wątku Web Workera, zlokalizowanym w pliku engine.worker.ts.2 Proces ten, choć w teorii trywialny w czystym środowisku przeglądarkowym, w hybrydowym ekosystemie Vite i Electron napotyka na fundamentalne przeszkody związane z procesem kompilacji i rezolucją ścieżek.
+Analiza Mechanizmów Inicjalizacji Workera
+Standardowa dokumentacja Vite rekomenduje inicjalizację Web Workerów przy użyciu natywnej składni przeglądarkowej wykorzystującej obiekt URL oraz zmienną środowiskową import.meta.url, na przykład: new Worker(new URL('./workers/engine.worker.ts', import.meta.url), { type: 'module' }).2 W trybie deweloperskim (npm run dev), serwer Vite przechwytuje to wywołanie i dynamicznie serwuje plik TypeScript jako osobny moduł ES.4 Niestety, w momencie przejścia do fazy kompilacji produkcyjnej realizowanej przez electron-builder, mechanizm ten ulega całkowitemu załamaniu.
+System Rollup, stanowiący fundament silnika budującego Vite, napotyka trudności w jednoznacznym zmapowaniu dynamicznych ścieżek względem protokołu file://, na którym operuje produkcyjna wersja aplikacji Electron. Często prowadzi to do sytuacji, w której kompilator generuje błędy braku eksportu zmiennych, niewłaściwie interpretuje pliki TypeScript jako inne formaty mediów, lub całkowicie ignoruje worker, co skutkuje błędem ERR_FILE_NOT_FOUND bądź ERR_BLOCKED_BY_RESPONSE podczas próby uruchomienia skompilowanego pliku binarnego.6 Próby obejścia tego problemu za pomocą przyrostków takich jak ?worker&url również zawodzą w zderzeniu ze specyfiką struktury katalogów generowanej przez electron-builder, gubiąc oryginalną nazwę i ścieżkę pliku.10 Alternatywne rozwiązanie w postaci "inline-workerów", polegające na konwersji całego kodu workera do postaci stringa (lub obiektu Blob) i ewaluacji w pamięci, znacząco utrudnia proces debugowania, zaburza raportowanie błędów w konsoli (brak poprawnych map bitowych sourcemaps) oraz może naruszać dyrektywy bezpieczeństwa Content Security Policy (CSP), które z zasady blokują wykonanie dynamicznie ewaluowanego kodu.12
+Aby zapewnić absolutny determinizm w perspektywie długoterminowej, jedynym niezawodnym podejściem jest całkowite odseparowanie procesu budowania Web Workera od głównego łańcucha kompilacji interfejsu React. Wymaga to stworzenia wieloetapowego potoku kompilacji (Multi-Build Pipeline), w którym worker jest traktowany jako autonomiczna aplikacja podrzędna.12
+W tym celu należy zdefiniować niezależny plik konfiguracyjny vite.worker.config.ts, dedykowany wyłącznie do transpilacji silnika AI:
+
+
+
+
+
+
+TypeScript
+import path from 'path';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+ build: {
+   // Definicja stałej, deterministycznej ścieżki wyjściowej
+   outDir: path.resolve(__dirname, 'dist/worker'),
+   lib: {
+     entry: path.resolve(__dirname, 'src/workers/engine.worker.ts'),
+     name: 'EngineWorker',
+     formats: ['iife'], // IIFE gwarantuje izolację zakresu i brak zależności od systemu modułów
+     fileName: () => 'engine.worker.js'
+   },
+   emptyOutDir: true,
+   // Aktywacja map źródłowych wyłącznie poza środowiskiem produkcyjnym
+   sourcemap: process.env.NODE_ENV === 'development'
+ }
+});
+
+Format IIFE (Immediately Invoked Function Expression) jest tu krytyczny, ponieważ eliminuje ryzyko błędów związanych z brakiem wsparcia dla modułów ES (type: 'module') w starszych wdrożeniach i specyficznych konfiguracjach przeglądarek budowanych wewnątrz Electrona. Następnie, w głównym wątku React (np. na poziomie App.tsx lub w specjalizowanym hooku inicjalizacyjnym), instancjacja workera musi zostać zabezpieczona mechanizmem warunkowym, uzależnionym od trybu środowiska:
+
+
+
+
+
+
+TypeScript
+export const initializeAIWorker = (): Worker => {
+ const isDev = process.env.NODE_ENV === 'development';
+ 
+ if (isDev) {
+   // W trybie deweloperskim polegamy na wbudowanym mechanizmie serwera Vite
+   return new Worker(
+     new URL('../workers/engine.worker.ts', import.meta.url), 
+     { type: 'module' }
+   );
+ } else {
+   // Wersja produkcyjna korzysta z API Node.js do jednoznacznej rezolucji protokołu file://
+   const path = window.require('path');
+   const workerAbsolutePath = path.join(__dirname, 'worker', 'engine.worker.js');
+   return new Worker(`file://${workerAbsolutePath}`);
+ }
+};
+
+Powyższa architektura gwarantuje całkowitą odporność na kaprysy systemu Rollup i gwarantuje, że produkcyjna wersja skompilowana przez electron-builder zawsze bezbłędnie zlokalizuje fizyczny plik workera w strukturze katalogów instalacji.
+Architektura Dostępu do Systemu Plików i Odrzucenie Wstrzykiwania Node.js
+Silnik sztucznej inteligencji, w ramach funkcji Local_Disk_MCP, wymaga dostępu do lokalnego systemu plików komputera użytkownika, aby realizować operacje odczytu, modyfikacji i zapisu w kodach źródłowych projektów.2 Ponieważ Web Worker operuje w ścisłej piaskownicy (sandbox) przeglądarki, z definicji jest odcięty od wbudowanych modułów Node.js, takich jak fs czy path. W architekturze Electron istnieją dwa diametralnie różne podejścia do rozwiązania tego problemu, z których jedno stanowi bezpośrednie zagrożenie dla integralności projektu.
+
+
+Podejście Architektoniczne
+	Opis Mechanizmu
+	Zalety
+	Krytyczne Ryzyka i Stabilność (Perspektywa 2026)
+	Opcja A: Zdalne Wywołania Procedur (RPC) przez postMessage
+	Worker komunikuje intencję dostępu do dysku za pomocą systemu zdarzeń. Główny wątek React, wyposażony w nodeIntegration: true, wykonuje operację przez moduł fs i asynchronicznie zwraca wynik.
+	Pełna zgodność z architekturą izolacji pamięci. Bezpieczeństwo wykonania, możliwość walidacji w głównym wątku przed dotknięciem dysku.
+	Skomplikowany narzut asynchroniczny, wymóg implementacji protokołu z unikalnymi identyfikatorami (Correlation ID) w celu uniknięcia kolizji odpowiedzi (Race Conditions).
+	Opcja B: Natywna Integracja Node.js w Workerze
+	Włączenie flagi nodeIntegrationInWorker: true w konfiguracji Electrona.13 Pozwala na wywołanie require('fs') bezpośrednio z poziomu pliku engine.worker.ts.
+	Drastyczne uproszczenie kodu, eliminacja przesyłania danych przez kolejkę komunikatów, synchroniczny dostęp do dysku.
+	Skrajna niestabilność i odrzucenie ze względów bezpieczeństwa.
+	Dogłębna analiza Opcji B wskazuje, że poleganie na fladze nodeIntegrationInWorker jest architektonicznym błędem krytycznym. Mechanizm ten jest głęboko skażony udokumentowanymi podatnościami na ataki typu "Improper Isolation or Compartmentalization".13 Co więcej, w nowoczesnych iteracjach frameworka Electron, obsługa cyklu życia obiektów V8 dziedziczących zasięg (scope) powodowała błędy wyłuskania wskaźnika zerowego (NULL Pointer Dereference), co prowadzi do natychmiastowego zamknięcia całej aplikacji.13 Śledzenie historii zgłoszeń (issue trackers) w repozytorium Electrona ukazuje liczne błędy, gdzie od wersji 11/12 zmieniono sposób alokacji integracji w Workerach i podramkach, doprowadzając do permanentnego błędu Uncaught ReferenceError: require is not defined nawet przy aktywnej fladze nodeIntegrationInWorker.3 Oczekuje się, że w perspektywie roku 2026 wsparcie dla tej funkcji zostanie całkowicie zdeprecjonowane na rzecz wymuszonej izolacji z wykorzystaniem ContextBridge.
+W związku z tym, bezwzględnie rekomendowana i jedyna deterministyczna jest Opcja A. Wymaga ona jednak zabezpieczenia przed zjawiskiem Race Conditions. Jeśli Worker wysyła równolegle pięć zapytań o odczyt różnych plików, asynchroniczna odpowiedź głównego wątku za pośrednictwem postMessage nie gwarantuje zachowania pierwotnej kolejności. Worker musi precyzyjnie wiedzieć, do którego zapytania odnosi się dana odpowiedź.
+Aby to osiągnąć, infrastruktura musi opierać się na systemie korelacji wiadomości (Message Correlation ID).16 Wewnątrz workera implementowana jest klasa mostu komunikacyjnego (WorkerBridge), która generuje unikalne identyfikatory dla każdej transakcji (np. za pomocą crypto.randomUUID()) i zachowuje referencje do nierozstrzygniętych obietnic (Deferred Promises) w globalnej mapie stanu.
+
+
+
+
+
+
+TypeScript
+// Implementacja wewnątrz engine.worker.ts
+interface DeferredTask {
+ resolve: (value: any) => void;
+ reject: (reason?: any) => void;
+ timeoutId: ReturnType<typeof setTimeout>;
+}
+
+const activeFileSystemRequests = new Map<string, DeferredTask>();
+
+export const requestFileRead = async (filePath: string): Promise<string> => {
+ const correlationId = self.crypto.randomUUID();
+ 
+ return new Promise((resolve, reject) => {
+   // Ochrona przed pamięciowymi wyciekami zjawiska "zombie request"
+   const timeoutId = setTimeout(() => {
+     activeFileSystemRequests.delete(correlationId);
+     reject(new Error(`File read timeout for path: ${filePath}`));
+   }, 15000); // 15 sekund limitu na operację dyskową
+
+   activeFileSystemRequests.set(correlationId, { resolve, reject, timeoutId });
+   
+   // Wysłanie żądania do wątku Reacta
+   self.postMessage({
+     type: 'FS_READ_REQUEST',
+     correlationId,
+     payload: { filePath }
+   });
+ });
+};
+
+// Nasłuchiwanie odpowiedzi od głównego wątku
+self.onmessage = (event: MessageEvent) => {
+ const { type, correlationId, payload, error } = event.data;
+ 
+ if (type === 'FS_READ_RESPONSE' && activeFileSystemRequests.has(correlationId)) {
+   const task = activeFileSystemRequests.get(correlationId)!;
+   clearTimeout(task.timeoutId);
+   activeFileSystemRequests.delete(correlationId); // Deterministic garbage collection
+   
+   if (error) {
+     task.reject(new Error(error));
+   } else {
+     task.resolve(payload.content);
+   }
+ }
+};
+
+Powyższy wzorzec uodparnia system na zakleszczenia, izoluje błędy i gwarantuje, że wątek renderujący React zachowuje wyłączną kontrolę nad bezpieczeństwem modyfikacji systemu operacyjnego, całkowicie oddzielając nienaruszalną warstwę I/O od kapryśnych iteracji agentów LLM.
+Wyzwanie 2: Baza danych IndexedDB dla Snapshots i Zapobieganie Błędom OOM (Out Of Memory)
+Serce Fazy 6 opiera się na koncepcji maszyny stanów typu LangGraph, która wymaga utrwalania kompletnego stanu pamięci (Snapshot) po każdym kroku wykonania węzła w obrębie skierowanego grafu acyklicznego (DAG).2 Takie zrzuty pamięci, zawierające gigantyczne zasoby kontekstu konwersacyjnego, wyczerpujące logi z rozumowania agenta oraz metadane telemetrii, generują ogromne obciążenie. Aplikacja w środowisku React będzie odpytywać te zrzuty metodą leniwego ładowania (Lazy Loading) do renderowania wizualizacji Time Travel. Wybór odpowiedniego silnika magazynującego i architektury przesyłu staje się w tym aspekcie sprawą życia i śmierci dla wydajności systemu.
+Ocena Natywnego Nośnika IndexedDB
+Obecna architektura projektu z powodzeniem wykorzystuje lekką bibliotekę idb-keyval do zabezpieczania globalnego stanu przestrzeni roboczej w pliku nexus.workspace.json poprzez zapasowe kopie w IndexedDB.2 Niestety, narzędzie to ewidentnie nie podoła nowym obciążeniom.
+Należy przeanalizować trzy warianty implementacyjne:
+1. Natywne API IndexedDB: Podstawa standardu W3C jest potężna, lecz ekstremalnie rozwlekła. Operacje opierają się na nasłuchiwaniu zdarzeń onsuccess i onerror obiektów IDBRequest. Konstruowanie skomplikowanych, wieloetapowych transakcji (np. zagnieżdżonego usuwania starych gałęzi drzewa) niemal zawsze kończy się wpadnięciem w zjawisko "callback hell". Trudności w asynchronicznym łańcuchowaniu prowadzą do przedwczesnego zatwierdzania transakcji i utraty spójności danych, a błędy w zarządzaniu zdarzeniami są częstym powodem "zawieszenia" bazy.18
+2. Biblioteka idb-keyval: Idealna dla prostych operacji GET/SET na pojedynczych kluczach.2 Nie posiada jednak wsparcia dla mechanizmów indeksowania (Secondary Indexes) oraz zaawansowanych kursorów (Cursors). Próba przechowywania tysięcy Snapshotów wymagałaby deserializacji całego zbioru do pamięci RAM, modyfikacji i ponownego zapisu, co błyskawicznie wyczerpałoby pamięć operacyjną, doprowadzając do zapaści aplikacji.
+3. Wrapper idb: Jest to bezkonkurencyjny kompromis oferujący pełną potęgę natywnego IndexedDB spakowaną w czytelną, promisyfikowaną powłokę.2 Pozwala na asynchroniczne pętle for await, zarządzanie wskaźnikami, kaskadowe usuwanie danych przy pomocy indeksów oraz ścisłą kontrolę cyklu życia transakcji (z użyciem bloku try-catch). Wrapper ten gwarantuje, że skomplikowane algorytmy czyszczenia będą mogły wykonywać operacje masowe na wyodrębnionych gałęziach bez ryzyka utraty kontroli nad pętlą zdarzeń. Zdecydowanie zaleca się integrację tej biblioteki.
+Zator Kolejki Zdarzeń i Eliminacja Zjawiska OOM
+Mechanizm przekazywania informacji pomiędzy Web Workerem a głównym wątkiem przeglądarki polega na wykorzystaniu metody postMessage. Funkcja ta domyślnie aplikuje algorytm "Structured Clone" do serylizacji przesyłanych ładunków.20 Silnik V8 (silnik JavaScript dla Chromium/Electrona) alokuje pamięć w stercie (heap) proporcjonalnie do głębokości i rozmiaru przesyłanego obiektu.
+Gdy agent AI wygeneruje Snapshot zawierający dziesiątki tysięcy tokenów i głęboką strukturę metadanych, próba przesłania tego obiektu w całości przez postMessage w celu zapisania go do IndexedDB w głównym wątku spowoduje natychmiastowe zablokowanie Event Loopu, tzw. zamrożenie interfejsu (Jank). Co ważniejsze, mechanizm ulega awariom z powodu rygorystycznych limitów alokacji pamięci podczas klonowania strukturalnego. Raporty błędu wskazują, że próg stabilności algorytmu potrafi drastycznie spaść, i osiągnięcie ładunku przekraczającego barierę około 80 MB (kMemoryWorkloadThreshold) aktywuje procedury chroniące system operacyjny przed wyczerpaniem zasobów (OOM Intervention), bezpowrotnie zamykając i niszcząc środowisko uruchomieniowe.5
+Optymalny Schemat Buforowania - Architektura Odwrócona:
+Aby zneutralizować ten problem, konieczna jest decentralizacja dostępu do pamięci masowej. Standard IndexedDB jest, z założenia architektonicznego, w pełni wspierany i wielowątkowy – można do niego pisać bezpośrednio z wnętrza Web Workera.
+Architektura powinna wyglądać następująco:
+1. Po każdym węźle transformacji (Node Execution), PipelineRunner tworzy potężny obiekt zrzutu stanu w przestrzeni adresowej Web Workera.
+2. Web Worker asynchronicznie i samodzielnie otwiera połączenie poprzez bibliotekę idb i zapisuje pełen ładunek bezpośrednio na dysk (do Object Store snapshots), z pominięciem głównego wątku.
+3. Web Worker przesyła przez kolejkę postMessage jedynie tzw. "Pustą Referencję" (Hollow Reference). Zamiast gigantycznego JSONa, do Reacta trafia mikroskopijna wiadomość:
+
+
+
+
+
+
+JSON
+{
+ "type": "SNAPSHOT_COMMITTED",
+ "snapshotId": "a1b2c3d4",
+ "metadata": { "nodeName": "HypothesisGenerator", "timestamp": 1718032450 }
+}
+
+4. Interfejs AIWorkshopCanvas w głównym wątku reaguje na ten sygnał, dodając jedynie nowy wierzchołek graficzny (NodeCard) do struktury Canvasu. Jeśli użytkownik fizycznie najedzie kursorem na wierzchołek lub wejdzie w tryb analizy telemetrii, React wykonuje pojedyncze żądanie lokalne do IndexedDB, wykorzystując snapshotId w celu jednorazowego, celowanego wczytania kontekstu do pamięci. To całkowicie omija narzuty mechanizmu klonowania strukturalnego.
+Implementacja Time Travel (Wzorzec Fork and Resume)
+Zastosowanie koncepcji LangGraph, umożliwiającej podróże w czasie po stanach grafu, wprowadza wyzwania dotyczące spójności bazodanowej. Użytkownik przegląda historię w IndexedDB, wybiera stan z przeszłości, koryguje treść promptu i wymusza ponowne uruchomienie od tego punktu (Fork).17 Takie zachowanie powoduje, że wszystkie stany chronologicznie następujące po pierwotnym punkcie stają się "ślepą uliczką" (Dead Branch). Brak natychmiastowego czyszczenia doprowadzi do puchnięcia i stopniowej korupcji pliku bazy w systemie operacyjnym.19
+Projekt Struktury Tabel (idb schema):
+* Object Store: execution_snapshots
+* Klucz główny (Primary Key): id (np. UUIDv7, który dodatkowo wspiera sortowanie chronologiczne ze względu na zaszyty timestamp 17).
+* Indeksy (Indexes):
+   * pipeline_id: grupuje wszystkie węzły dla pojedynczej sesji.
+   * parent_id: klucz obcy wskazujący na to, który snapshot był logicznym "ojcem" w drzewie wykonania.
+Mechanizm Pruning (Przycinania):
+W celu usunięcia zdezaktualizowanej gałęzi grafu wykorzystywane jest algorytmiczne przeszukiwanie w głąb (Depth-First Search) wewnątrz jednej spójnej transakcji bazodanowej. Kiedy React informuje Workera o modyfikacji stanu S_3, Worker uruchamia algorytm DAG_Pruner:
+1. Worker inicjalizuje transakcję readwrite na tabeli execution_snapshots. Zgodnie z zasadami IndexedDB, transakcja taka będzie żywa tak długo, jak długo wywoływane są asynchroniczne żądania, i zostanie zamknięta (committed) dopiero gdy zabraknie kodu do wykonania.18 To gwarantuje, że baza nie pozostanie w stanie niespójnym.
+2. Wykorzystuje kursor po indeksie parent_id, wyszukując wszystkie snapshoty, których rodzicem był porzucony węzeł (oraz rekurencyjnie węzły podrzędne).
+3. Wywołuje komendę delete() dla wszystkich odnalezionych identyfikatorów zmartwych gałęzi.
+4. Worker zapisuje nową iterację (rozgałęzienie) ze zaktualizowanym kontekstem. Nowo powołany stan uważa modyfikację za swoje źródło i kontynuuje przetwarzanie w przód, uwalniając setki megabajtów nieużytkowej pamięci przed nadchodzącymi procesami, zapobiegając błędowi opisanemu w środowiskach mobilnych jako Safari ITP limit wipeout.19
+Wyzwanie 3: Natywne MCP dla Lokalnego Dysku i Protokół Human-in-the-Loop (HitL)
+Zdolności zaawansowanych algorytmów LLM do mutowania lokalnych struktur katalogów i modyfikowania skomplikowanego kodu aplikacji na żądanie są nieocenioną wartością dodaną w Fazie 6. Należy jednak zdawać sobie sprawę, że w pełni autonomiczny system Agentowy przypomina przysłowiowego słonia w składzie porcelany – brak kontroli nad edycją systemu plików lokalnych może doprowadzić do nieodwracalnego uszkodzenia integralności przestrzeni roboczej lub naruszenia zabezpieczeń środowiska. Odpowiedzią na ten dylemat jest wzorzec "Human-in-the-Loop" (HitL), stanowiący rygorystyczny mechanizm weryfikacji działań maszyny przez operatora ludzkiego w krytycznych punktach decyzyjnych.16 Wymóg wstrzymania strumienia potoku bez blokowania wątku wymusza implementację zaawansowanej komunikacji wielowątkowej.
+Projekt Protokołu Komunikacyjnego "Request-Diff-Decision"
+Rozpatrywany potok zdarzeń jest wielowarstwowy, łącząc świat sztucznej inteligencji ze świadomą ingerencją na ekranie wizualnym (Modal Reacta). Aby uniknąć asynchronicznego bałaganu, wdrożona musi zostać ściśle kategoryzowana maszyna stanów, wykorzystująca korelacje żądań.
+1. Inicjalizacja Procedury (Web Worker):
+Węzeł wykonawczy (np. Agent programista) analizuje zapytanie i tworzy finalny zarys zmutowanego pliku (np. index.tsx). Moduł zarządzający PipelineRunner rozpoznaje żądanie natywnego MCP, zatrzymuje propagację logiki LLM i zmienia wewnętrzny stan potoku na PAUSED_FOR_USER. Konstruuje ładunek protokołu:
+JSON
+{
+ "action": "HITL_FILE_EDIT",
+ "correlationId": "req-hitl-8841-f09c",
+ "payload": {
+   "targetPath": "/src/views/Main.tsx",
+   "originalSource": "export const Main...",
+   "proposedSource": "export const Main = ({...}) =>..."
+ }
+}
+
+Wiadomość zostaje wystrzelona do wątku React poprzez self.postMessage.
+2. Zamrożenie Interfejsu i Eskalacja Wizualna (React Renderer): Hook nasłuchujący komunikatów z Workera w aplikacji głównej (np. zagnieżdżony w App.tsx lub w globalnym menedżerze stanu) przechwytuje żądanie. Wykrycie tagu HITL_FILE_EDIT powoduje natychmiastową mutację globalnego stanu w React, wywołując aktualizację interfejsu w postaci zmiany zmiennej typu modal na ModalState: 'hitl-diff'.2 Warstwa renderowania uruchamia dedykowany komponent wyświetlający asynchronicznie załadowaną różnicę kodów (często za pomocą wbudowanych podsystemów z edytora Monaco). Okno modalne blokuje wszelką pozostałą aktywność, czyniąc podgląd priorytetowym elementem środowiska wykonawczego.
+3. Decyzja Ludzka i Autoryzacja: Zgodnie z wymogami bezpieczeństwa dla komponentów typu Tier-2, interwencja wymaga zdefiniowanego czasu trwania zapytania.22 Konfiguracja powinna ustawić ostre granice – jeżeli użytkownik w przeciągu zdefiniowanego czasu (np. 5 minut) nie podejmie decyzji "Akceptuj" lub "Odrzuć", cały proces operacji HitL w obrębie Workera zostaje odrzucony automatycznie poprzez Timeout. Eliminuje to problem wiszących w pamięci zapytań modyfikacyjnych.
+4. Operacja Fizyczna i Odesłanie Sukcesu (React Renderer -> Worker): Jeśli użytkownik kliknie "Akceptuj", interfejs React inicjuje operację Node.js (ponieważ electron-main.cjs gwarantuje w wątku renderowania uprawnienia nodeIntegration: true 2). Zastosowana zostaje funkcja fs.writeFileSync (lub jej bezpieczniejsza wersja kaskadowa omijająca blokady systemowe). Po sukcesie zapisu pliku, moduł odsyła zwrotne potwierdzenie:
+JSON
+{
+ "responseTo": "req-hitl-8841-f09c",
+ "status": "APPROVED",
+ "error": null
+}
+
+Jeżeli zapadnie decyzja "Odrzuć", plik zostaje nietknięty, a odpowiedź zawiera status DENIED.
+5. Wznowienie i Bezpieczny Opad (Worker):
+Po odebraniu statusu APPROVED, Worker zmienia status na RUNNING i informuje LLM o sukcesie wstawienia kodu, kontynuując realizację zadania. Jeżeli natomiast otrzyma status DENIED, Worker wykonuje protokół tzw. Miękkiego Błędu (Soft-Fail). Sztuczna Inteligencja zostaje poinformowana (poprzez uzupełnienie pamięci systemowej): "Operator odrzucił twoje zmiany w kodzie". Taka wiedza pozwoli agentowi LLM w następnym kroku zreewaluować swoje podejście do rozwiązania bez wymuszonego zatrzymywania całego procesu.
+Asynchroniczne Zawieszenie Bez Blokowania Pętli
+Z punktu widzenia fundamentów programowania w środowisku JavaScript, pauzowanie działania silnika Workera nie może polegać na zatrzymaniu cykli CPU w nieskończonej pętli. Napisanie funkcji aktywnego oczekiwania (tzw. spin-lock), wykorzystującej konstrukcję typu while(!response) { /* czekaj */ }, doprowadziłoby do całkowitego zablokowania mechanizmu Event Loop wewnątrz maszyny wirtualnej V8. W rezultacie kolejka zdarzeń mikro i makro zostałaby zapchana, a jakikolwiek nasłuchiwacz self.onmessage odpowiedzialny za odebranie sygnału powrotnego o zaakceptowaniu zmian nigdy nie zostałby wywołany – Worker utknąłby na zawsze. Zostałoby wymuszone uśmiercenie procesu (terminacja) przez system operacyjny.
+Kluczem do optymalnego rozwiązania jest wykorzystanie wzorca uśpionych obietnic (Deferred Promise) mapowanych na Correlation ID, pozwalającego funkcji na zawieszenie swojego wykonania do momentu rozstrzygnięcia, pozostawiając główny kanał komunikacyjny czystym i otwartym na obsługę zdarzeń.16
+Architektura silnika wdraża klasę menedżera korelacji:
+
+
+
+
+
+
+TypeScript
+type ResolveFn = (val: string) => void;
+type RejectFn = (err: Error) => void;
+
+interface PendingHitL {
+ resolve: ResolveFn;
+ reject: RejectFn;
+ timer: NodeJS.Timeout;
+}
+
+const hitlRegistry = new Map<string, PendingHitL>();
+
+// Metoda wywoływana przez węzeł wykonawczy (np. Agent AI)
+export const suspendForHitL = async (payload: HitLPayload): Promise<string> => {
+ const correlationId = self.crypto.randomUUID();
+
+ // Całkowicie asynchroniczne opakowanie
+ return new Promise<string>((resolve, reject) => {
+   // Implementacja limitu czasu oczekiwania na użytkownika (Tier-2 Timeout) 
+   const timer = setTimeout(() => {
+     hitlRegistry.delete(correlationId);
+     reject(new Error("Timeout: The user did not respond in the allocated window."));
+   }, 5 * 60 * 1000); // 5 minut
+
+   hitlRegistry.set(correlationId, { resolve, reject, timer });
+
+   self.postMessage({
+     type: 'HITL_FILE_EDIT_REQUEST',
+     correlationId,
+     payload
+   });
+ }); // Wywołanie await na tej funkcji wstrzymuje stos wywołań w danym bloku try-catch!
+};
+
+Gdy odpowiedź z głównego wątku wraca poprzez listener onmessage, rejestr jest odpytywany na podstawie korelacji, co natychmiast uwalnia zatrzymaną wcześniej funkcję i przywraca stan płynności potokowi sztucznej inteligencji. System ten w teorii charakteryzuje się brakiem opóźnień narzutowych, co pozwala budować skomplikowane łańcuchy interakcji z operatorem przy zerowym dławieniu procesora.
+Wyzwanie 4: Defensywna Implementacja Algorytmów Zabezpieczających i Ich Rygorystyczna Weryfikacja
+Wdrożenie tak bogatego zbioru zaawansowanych algorytmów zabezpieczających i optymalizacyjnych, wynoszącego dziesięć punktów kontrolnych (od zapobiegania nieskończonym pętlom sztucznej inteligencji po monitorowanie utraty spójności i kompresję pamięci), wymaga potężnej bazy strukturalnej.2 Umieszczenie procedur Ouroboros czy Ghost Rollbacks bezpośrednio w logice głównego węzła wywołującego modele LLM, szybko zdegradowałoby spójność kodu do formy "makaronu" (Spaghetti Code), co skutecznie sparaliżowałoby koszty utrzymania i wykluczyłoby skalowanie na rok 2026.
+Architektura "Pipeline Middleware / Interceptors"
+Świat inżynierii backendowej wypracował potężne wzorce przeciwdziałające rozproszeniu logiki, z których flagowym jest wzorzec Middleware, popularny w takich ramach jak gRPC, CORBA czy Koa.24 Wzorzec Przechwytywaczy (Interceptors) idealnie adaptuje się do implementacji PipelineRunner. Zakłada on zbudowanie potoku wykonawczego, w którym jądro (wywołanie modelu AI) otoczone jest warstwami cebuli, składającymi się z modułów wejściowych (Pre-execution) oraz wyjściowych (Post-execution).
+Sama implementacja polega na stworzeniu uniwersalnego obiektu Context, przekazywanego wzdłuż potoku z każdego punktu na punkt, modyfikowanego asynchronicznie przez każdą kolejną funkcję.24 To rozkłada 10 algorytmów na testowalne jednostkowo (unit-testable) moduły w formacji kolejki.
+Rozkład algorytmów na warstwach w PipelineRunner:
+Faza PRE-EXECUTION (Przechwytywacze Wejściowe):
+   1. Swarm Deadlocks TTL: Interceptor będący w pierwszej kolejności zliczający krawędzie obwiedzione przez konkretną ścieżkę instancji. Jeśli głębokość transakcyjna na jednym zadanym zagadnieniu przekracza dozwolony próg (np. "Agent wpadł w zapętlenie i 5 razy prosi o to samo narzędzie"), moduł obronny zrzuca natychmiastowo flagę wyjątku DeadlockError, nie dopuszczając nawet do kosztownego wykonania zapytania na zewnętrznym serwerze LLM. Zapobiega to drenażowi portfela z powodu spalania tokenów przez uszkodzoną świadomość maszyny.
+   2. Schizofrenia Memory Check: Algorytm wykorzystujący uproszczone heurystyki i weryfikację semantyczną logów pobranych z IDB. Zapobiega tak zwanym halucynacjom strukturalnym sztucznej inteligencji – diagnozuje czy żądany przez agenta wektor działań nie narusza bazowych obwarowań systemowych ustaleń poczynionych dwie transakcje wcześniej.
+   3. Kotwica Intencji (Intent Anchor): Algorytm na etapie budowania promptu wejściowego wymusza asymilację z twardym celem głównym. Niezależnie od toku rozmyślania w pętli grafu roboczego, Kotwica wstrzykuje na twardo w kontekst okna oryginalne zadanie postawione przez człowieka, niwelując zjawisko "błądzenia" agenta na przestrzeni setek obrotów pętli.
+   4. Race Conditions Queue: Wąskie gardło dbające o ułożenie żądań zmian i pobrań danych do równoległych wierzchołków grafu.
+   5. Stale HitL Hash (Pre/Post-check): Przed rozpoczęciem fazy wymuszenia oczekiwania operatora oraz tuż po jej zakończeniu, moduł hashuje zawartość edytowanego pliku lokalnego używając funkcji kryptograficznej SHA-256 (dostępnej poprzez węzły protokołów Worker API). Jeżeli hash przed ostatecznym zapisem HitL różni się od tego po wykonaniu odczytu, dowodzi to, iż plik został zmodyfikowany przez inny proces (np. ręcznie przez edytor kodu VSC w tle) podczas podejmowania decyzji. Wystrzeliwany jest błąd naruszenia bezpieczeństwa wykluczający zapis, gwarantując nienaruszoną suwerenność dysku.23
+Faza EXECUTION:
+6. Exponential Backoff (Owijacz): Obejmuje samo jądro. Zaprojektowany po to, aby pochłaniać tymczasowe problemy z serwerami API generującymi LLM. Niepowodzenia (błędy sieciowe, Rate Limits typu 429) są połykane i następuje zaplanowane re-wywołanie po upływie multiplikującego się okresu opóźnienia (  ) w celu zapobiegania trwałej wywrotce programu.
+Faza POST-EXECUTION (Przechwytywacze Wyjściowe):
+7. Schema Validation: Tuż po otrzymaniu odpowiedzi od dostawcy sztucznej inteligencji (zazwyczaj tekstowego formatu JSON), algorytm zaprzęga ścisły analizator typów abstrakcyjnych, wymuszający dokładną zgodność typu w interfejsie TypeScript (np. wykorzystując paczkę zod). Błąd schematu automatycznie przekierowuje zdarzenie do Backoff z poleceniem żądania poprawy struktury od modelu, zanim zepsute obiekty trafią do lokalnej bazy danych.
+8. Lost in the Middle: Technika analizująca i kompensująca słabość LLMów, polegającą na ignorowaniu środkowych części ogromnego wlotu danych. Interceptor ten wykonuje reorganizację wektorów, przenosząc najbardziej krytyczne nowo wkomponowane instrukcje na sam początek zrzutu oraz tuż przed zakończeniem tokenu wiadomości do nowej pętli graficznej.
+9. Ouroboros Auto-kompresja: Potężny system obronny operujący na oknie kontekstu. Mierzy objętość nowo spłodzonego logu. Osiągnięcie np. 80% bariery limitu okna (Context Window) tokenów wyzwala operację asynchronicznego kompresora. Pętla zostaje wstrzymana, a wyznaczona do tego specjalna maszyna kompresująca prosi AI o skonstruowanie gęstego, ezoterycznego podsumowania wszystkich wcześniejszych działań, nadpisując długie wiadomości historyczne krótko zbitą pamięcią streszczenia, uodparniając cały potok na wyczerpanie maksymalnej liczby tokenów.
+10. Ghost Rollbacks: Interceptor stanowiący linię frontu w walce z błędami transakcyjnymi. Rejestruje punkt zwrotny systemu przed zainicjowaniem nowego stanu w IDB. Jeśli wystąpi wyjątek QuotaExceededError w silniku V8, moduł ten przejmuje sterowanie i połyka błąd wykonując wsteczną śrubę operacyjną w grafie (Rollback). Czyści niestabilne krawędzie i informuje główny wątek o krytycznej zapaści, całkowicie maskując katastrofę bazy bez wysadzania całego procesu instancji.
+Analiza Punktów Krytycznych (SPOF - Single Points of Failure)
+Mimo silnego obwarowania architekturą Middleware, implementacja asynchronicznego potoku w tak wrażliwym środowisku kreuje swoiste wady konstrukcyjne, z których najważniejszymi są:
+   1. Utrata Kontroli nad Obietnicami (Unhandled Rejections in Pipelines): Powszechnym zjawiskiem zniekształcającym pracę architektury "Cebulowej" 27 jest ciche gubienie błędów rzucanych z asynchronicznych interceptorów, które nie wywołują await next(). Błąd, który nie trafi do wierzchniego catch, generuje niemożliwy do namierzenia wyciek zwany "Zombie Worker". Wystąpi zatrzymanie łańcucha (szczególnie w fazie Post), aplikacja React na to nie zareaguje, CPU nie pokaże obciążenia, a Agent zawiesi się permanentnie w połowie myśli bez raportu o błędzie w konsoli Vite.
+   2. Niewidzialny Leaking Rejestru Mapy Korelacji (Wyciek hitlRegistry): W omawianej implementacji dostępu do modułu HitL znajduje się mapa zdarzeń. Chociaż narzucono timeout, istnienie potężnych wahań czasu w zegarach operacyjnych czy przypadkowe nadpisanie kluczy ID mogłoby pozostawić nieskorygowane, wiszące obiekty ResolveFn trzymające poprzez domknięcia (closures) wielkie ilości tekstu kontekstu z węzła LLM. Kaskadowe odkładanie takich porzuconych referencji z pewnością przyczyni się z czasem do wysypania Worker Memory.
+Koncepcja Weryfikacji Deterministycznej (Mock Testing i Dry-Runs)
+Aby mieć bezwzględną rację bytu w wyimaginowanych środowiskach awaryjnych przewidywanych na 2026 rok, mechanizmy bezpieczeństwa muszą podlegać zautomatyzowanym procedurom inżynierii chaosu ("Chaos Engineering") i testom "na sucho".2 Ponieważ sztuczna sieć neuronowa z definicji bywa probalistyczna i nieprzewidywalna, nie można weryfikować zachowania maszyny przy użyciu zewnętrznych płatnych połączeń z interfejsami API. Zastosowana musi być bezlitosna stymulacja stochastyczna z użyciem całkowicie wyizolowanych (mockowanych) węzłów agentowych po stronie instancji deweloperskiej środowiska Electron.
+Harmonogram Testowy Warstwy Zabezpieczeń:
+   * Testowanie Modułu Swarm Deadlocks TTL:
+Zestaw testowy uruchamiany automatycznie za pośrednictwem skryptów profilujących definiuje syntetycznego, wrogiego Agenta (Adversarial Agent Mock). Zadaniem owego agenta jest ciągłe, bezustanne żądanie powrotu do tego samego punktu wykonania poprzez funkcję sterującą węzłami: return { next: "self" }.
+Oczekiwany Rezultat Zdeterminowany: Uruchomiona pętla wyzwoli potok logów. Rygorystycznie podczas wylądowania na kroku szóstym (zakładając barierę ucieczki równą pięć), mechanizm Interceptora wyzwala błąd o statusie DEADLOCK_PREVENTED. Jeśli operacja przekroczy do sześciu i wykona wezwanie – architektura zostanie skompilowana jako uszkodzona w raportach budujących.
+   * Weryfikacja Modułu Kompresyjnego (Ouroboros):
+Skrypt napędzający test ładuje do systemu potężny wlot danych – sztucznie nadmuchaną ciągami znaków typu "Z" o wielkości 127 tysięcy tokenów historię symulacyjną, ustawiając barierę ucieczki zaledwie na 128 tysięcy. Puszczenie w potok sztucznego wezwania AI sprawi, że próg kompresyjny algorytmu Ouroborosa zostanie drastycznie zaatakowany. Mock silnika kompresującego, dla odseparowania procesu, ma obowiązek odpisać ustandaryzowanym ciągiem "COMPRESSED_SUMMARY_REPLACEMENT".
+Oczekiwany Rezultat Zdeterminowany: Po pomyślnym wykonaniu kaskady przechwytywacza typu Post-execution, asertywne polecenia testów zweryfikują pojemność tablic pamięci MemorySaver. Długość pakietu przechodząca na nową iterację będzie drastycznie krótsza, potwierdzając niezawodność gilotynowego podejścia.
+   * Weryfikacja Zjawiska Stale HitL Hash:
+Symulator środowiskowy wymusza zatrzymanie Workera protokołem żądania na pliku test_file.md. Test Runner wprowadza maszynę w tryb asynchronicznego oczekiwania przez czas ok. 2 sekund, generując Correlation ID. Następnie środowisko węzła macierzystego V8 podrzuca skrypt bezpośredniej modyfikacji naruszając czas zapisu w pliku przez OS (tzw. cichy edytor w tle). Następnie skrypt testowy fałszywie odpowiada APPROVED.
+Oczekiwany Rezultat Zdeterminowany: Przechwytywacz wykonujący sumę kontrolną natychmiast diagnozuje odchylenie bajtowe, omija wywołanie zgody, cofa operację na potoku i wysyła ostrzeżenie wizualne bez ingerowania w integralność pliku.
+Wnioski Końcowe
+Decyzja o wdrożeniu skrajnie ofensywnych agentów AI napędzanych grafowo do środowiska wieloplatformowego, wyzwalających akcje na systemach lokalnych z pominięciem bezpiecznych nakładek i użyciem bezpośredniego nodeIntegration, kreuje obszar niesamowicie zaawansowanych zagrożeń strukturalnych. Reagując bezwzględnie rygorystycznymi procedurami zapobiegawczymi przedstawionymi w ramach powyższych strategii, "Nexus System" zostanie poddany zbrojeniu adekwatnym do skali podjętego wyzwania, gwarantując niezawodność, odcięcie od problemów wycieków pamięci wielo-obiektowej oraz brak podatności na uszkodzenia wywołane niestabilnością asynchronicznie przesyłanych informacji przez rury wielowątkowego ekosystemu przeglądarki, stając się punktem referencyjnym technologii stacji roboczych zintegrowanych ze sztuczną inteligencją w rocznikach post-2026.
+Cytowane prace
+      1. Best Vite Alternatives & Competitors - SourceForge, otwierano: czerwca 7, 2026, https://sourceforge.net/software/product/Vite-JS/alternatives
+      2. implementation_plan.md
+      3. Electron Uncaught ReferenceError: require is not defined | I have nodeIntegration set to true, otwierano: czerwca 7, 2026, https://stackoverflow.com/questions/66520175/electron-uncaught-referenceerror-require-is-not-defined-i-have-nodeintegratio
+      4. importing electron in a WebWorker doesn't work · Issue #69 - GitHub, otwierano: czerwca 7, 2026, https://github.com/electron-vite/vite-plugin-electron/issues/69
+      5. Diff - e752a3c9f0..d8f75673c2 - chromium/src - Git at Google, otwierano: czerwca 7, 2026, https://chromium.googlesource.com/chromium/src/+/e752a3c9f0..d8f75673c2
+      6. TypeScript WebWorker scripts imported with `new URL()` get inlined as `data:video/mp2t` · Issue #11823 · vitejs/vite - GitHub, otwierano: czerwca 7, 2026, https://github.com/vitejs/vite/issues/11823
+      7. 304 ERR_BLOCKED_BY_RESPONSE for web worker file after enabling same-origin CORS to allow SharedArrayBuffer - Stack Overflow, otwierano: czerwca 7, 2026, https://stackoverflow.com/questions/73652566/304-err-blocked-by-response-for-web-worker-file-after-enabling-same-origin-cors
+      8. Vite docs failing due to vite:worker-import-meta-url plugin · Issue #7499 · vitejs/vite - GitHub, otwierano: czerwca 7, 2026, https://github.com/vitejs/vite/issues/7499
+      9. [vite:worker-import-meta-url] 'sep' is not exported by __vite-browser-external #81 - GitHub, otwierano: czerwca 7, 2026, https://github.com/electron-vite/vite-plugin-electron/issues/81
+      10. Web Worker written in Typescript does not get built/compiled (using vite) into Javascript, otwierano: czerwca 7, 2026, https://stackoverflow.com/questions/76041012/web-worker-written-in-typescript-does-not-get-built-compiled-using-vite-into-j
+      11. How do I build Vue+Vite project that contains web worker and WASM? - Stack Overflow, otwierano: czerwca 7, 2026, https://stackoverflow.com/questions/79600073/how-do-i-build-vuevite-project-that-contains-web-worker-and-wasm
+      12. anytype-ts/CLAUDE.md at develop - GitHub, otwierano: czerwca 7, 2026, https://github.com/anyproto/anytype-ts/blob/develop/CLAUDE.md
+      13. electron 11.5.0 - Snyk Vulnerability Database, otwierano: czerwca 7, 2026, https://security.snyk.io/package/npm/electron/11.5.0
+      14. 'nodeIntegrationInWorker' no longer affects worklets, enabling node integration and 'require' impossible? (regression) #22503 - GitHub, otwierano: czerwca 7, 2026, https://github.com/electron/electron/issues/22503
+      15. [Discussion] Changing the defaults for nodeIntegration and contextIsolation to improve the default security posture of Electron applications · Issue #23506 - GitHub, otwierano: czerwca 7, 2026, https://github.com/electron/electron/issues/23506
+      16. Tool calling authentication for AI agents - Scalekit, otwierano: czerwca 7, 2026, https://www.scalekit.com/blog/tool-calling-authentication-ai-agents
+      17. Use time-travel - Docs by LangChain, otwierano: czerwca 7, 2026, https://docs.langchain.com/oss/javascript/langgraph/use-time-travel
+      18. Timing of IndexedDB requests and transactions [duplicate] - Stack Overflow, otwierano: czerwca 7, 2026, https://stackoverflow.com/questions/61234501/timing-of-indexeddb-requests-and-transactions
+      19. The pain and anguish of using IndexedDB: problems, bugs and oddities - GitHub Gist, otwierano: czerwca 7, 2026, https://gist.github.com/pesterhazy/4de96193af89a6dd5ce682ce2adff49a
+      20. Mozilla Firefox Release Notes, otwierano: czerwca 7, 2026, https://website-archive.mozilla.org/www.mozilla.org/firefox_releasenotes/en-us/firefox/6.0/releasenotes/buglist?ref=siliconfilter.com
+      21. meetings/main/2018/CG-04.md at main · WebAssembly/meetings - GitHub, otwierano: czerwca 7, 2026, https://github.com/WebAssembly/meetings/blob/main/main/2018/CG-04.md
+      22. Credential Broker for Agents (CB4A) - IETF, otwierano: czerwca 7, 2026, https://www.ietf.org/archive/id/draft-hartman-credential-broker-4-agents-00.html
+      23. AESP: A Human-Sovereign Economic Protocol for AI Agents with Privacy-Preserving Settlement - arXiv, otwierano: czerwca 7, 2026, https://arxiv.org/pdf/2603.00318
+      24. What is an Interceptor? - Pedestal, otwierano: czerwca 7, 2026, https://pedestal.io/pedestal/0.7/guides/what-is-an-interceptor.html
+      25. DOT-based pipeline runner for multi-stage AI workflows. Implements the StrongDM Attractor nlspec. - GitHub, otwierano: czerwca 7, 2026, https://github.com/samueljklee/attractor
+      26. Writing a Middleware | RoadRunner, otwierano: czerwca 7, 2026, https://docs.roadrunner.dev/docs/customization/middleware
+      27. Chapter 2 Middleware Principles and Basic Patterns, otwierano: czerwca 7, 2026, https://lig-membres.imag.fr/krakowia/Files/MW-Book/Chapters/Basic/basic-body.html

@@ -1,0 +1,26 @@
+=========================================
+=== PHASE 2 STEP: 2.1_KeyDir_RAM_Index.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 2.1
+**Moduł:** KeyDir - Hashmapa Pamięci Bezpośredniej (O(1))
+**Cel 0-100%:** Wykonanie wewnątrz Node.js słownika z danymi przesunięć bajtowych `Map<string, DocumentMeta>` dla natychmiastowego lokalizowania rekordów historycznych pomijając narzut na I/O i parsery JSON.
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Definicja Słownika (`src/backend/storage/keyDir.ts`)**:
+   - Eksportuj strukturę Typescripta: `interface DocumentMeta { filePath: string; offset: number; size: number; timestamp: number; isTombstone: boolean; }`.
+   - Zdefiniuj instancję trzymającą stan w głównej pamięci instancji Electrona: `private map = new Map<string, DocumentMeta>()`.
+2. **Interfejs O(1) (`.get()`)**:
+   - Skonstruuj asynchroniczne wywołanie `get(id: string)`. Uderza ono natychmiast do słownika: `const meta = this.map.get(id)`. Jeśli `!meta` lub `meta.isTombstone`, odetnij potok zwracając `null`.
+   - Zainicjuj tymczasowy kanał odczytu z flagą Read-Only używając modułów bazowych: `const handle = await fs.promises.open(meta.filePath, 'r')`.
+   - Alokuj pusty bufor pamięci o ścisłym rozmiarze pobranym z Hashmapy: `const buffer = Buffer.alloc(meta.size)`. Absolutny zakaz czytania o bajt więcej w obawie o pobranie szczątków rekordu sąsiadującego, uszkadzającego format JSON.
+   - Odczytaj fizyczny wycinek dysku ze wskazanego bajtu i rzuć na pamięć: `await handle.read(buffer, 0, meta.size, meta.offset)`. Zamknij uchwyt twardo i rozpakuj rezultat funkcją `unpack(buffer)`.
+3. **Nasłuchiwanie Samotnego Autora**:
+   - Zarejestruj nasłuch na potwierdzenia zapisu z subwątku IO (Fazy 1): `worker.on('message', msg => { if (msg.type === 'WRITE_ACK') this.map.set(msg.id, msg) })`. Omijamy problem wyścigów przy odczycie dzięki wymuszonym sygnałom.
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Symulujemy uszkodzenie fizyczne pliku poprzez zewnętrzne nadpisanie ścieżki i powiększenie rozmiaru pliku o kilka wierszy. Wywołujemy asercyjne `await keyDir.get("agent_v2")`. TDD upewnia się, że precyzyjnie zaadresowany skrawek wyciąga stary wynik niezależnie od modyfikacji dalszej części pętli dyskowej.
+- **Test 2:** Wyślij paczkę z ustawioną flagą `isTombstone: true`. Asercja rzuca twardy błąd testowy `Deleted Object Found`, jeśli kod API pozwoli na odczyt logicznie uśmierconego rekordu, przed jego asynchronicznym wykasowaniem (Compaction Engine).

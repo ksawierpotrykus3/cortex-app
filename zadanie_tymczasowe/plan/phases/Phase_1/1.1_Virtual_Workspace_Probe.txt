@@ -1,0 +1,26 @@
+=========================================
+=== PHASE 1 STEP: 1.1_Virtual_Workspace_Probe.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 1.1
+**Moduł:** Virtual Workspace Initialization & Fallback Probe
+**Cel 0-100%:** Stworzenie struktury folderów na maszynie hosta. Zabezpieczenie startu Electrona przed wyrzucaniem błędów `EACCES` spowodowanych przez Windows Defender, Controlled Folder Access lub chmury OneDrive blokujące katalog "Dokumenty".
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Moduł Inicjalizacyjny (`src/backend/io/workspace.ts`)**:
+   - Wykorzystuj wyłącznie natywne moduły `fs/promises` i `path`.
+   - Zbuduj tablicę krytycznych węzłów: `['Agents', 'Workflows', 'Context_Pool', 'Buffers', 'RLHF_Logs', 'Watched_IO/In', 'Watched_IO/Out', 'Changelog']`.
+2. **Sonda Uprawnień (Probe)**:
+   - Domyślny target: `path.join(app.getPath('documents'), 'Nexus_Workspace')`.
+   - Przed pętlą tworzenia wygeneruj plik `probe.tmp` w docelowym folderze. Obejmij to twardym blokiem `try/catch`. 
+   - Jeśli blok `catch` wyłapie `EACCES`, `EPERM` lub `EROFS` - NATYCHMIASTOWO zrzuć wskaźnik bazowy na `%APPDATA%` za pomocą `app.getPath('userData')`.
+3. **Zapobieganie Lock-Pętlom (`workspace.lock`)**:
+   - Zapisz w głównym folderze plik `workspace.lock` przechowujący aktualny `process.pid`.
+   - Podczas startu, jeśli plik istnieje, odczytaj PID. Użyj sygnału `process.kill(parseInt(pid), 0)` by sprawdzić, czy proces-widmo nadal funkcjonuje w Windowsie. Jeśli sygnał rzuca błąd `ESRCH` (proces nie istnieje) - nadpisz blokadę. Jeśli proces żyje - wysadź start (dialog box) i zrób twardy `app.quit()`.
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1**: Napisz mock funkcji `fs.writeFile`, który imituje rzutowanie `EACCES`. Wywołaj logikę startu. Asercja TDD musi sprawdzić czy system bez załamania pomyślnie użył fallbacku dla `app.getPath('userData')`. 
+- **Test 2**: Stwórz plik `workspace.lock` z PID równym `0` (proces bezwzględnie martwy). Uruchom inicjalizację. Asercja musi wykazać, że plik został brutalnie nadpisany aktualnym PID, ignorując martwego zombiaka.

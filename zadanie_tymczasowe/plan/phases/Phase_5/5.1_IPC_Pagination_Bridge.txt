@@ -1,0 +1,21 @@
+=========================================
+=== PHASE 5 STEP: 5.1_IPC_Pagination_Bridge.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 5.1
+**Moduł:** IPC Pagination Bridge & Cursor Tracking
+**Cel 0-100%:** Ograniczenie transferu danych w IPC (Inter-Process Communication). Zamiast przesyłać megabajty danych z Node do Reacta, posyłamy to partiami tylko wtedy, gdy myszka użytkownika zeskrolluje widok w dół.
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Backend Bridge (`src/backend/ipc/pagination.ts`)**:
+   - Kanał IPC `ipcMain.handle('get-logs', ...)` MUSI przyjąć dwa argumenty: `cursorOffset` oraz `limit`.
+   - Korzystając z `KeyDir` pobieraj po 50 ostatnich ID wpisów, zamieniaj w binarne chunki. System wyciąga z O(1) natychmiastowe rozwiązanie i odsyła do Reacta tablicę z wklejonym tagiem `{ nextCursor: id }` na ostatnim obiekcie.
+2. **Frontend Interceptor (`src/frontend/hooks/usePaginatedIPC.ts`)**:
+   - Custom Hook nasłuchujący przesuwania się tarczy. Jeśli użytkownik jest 200 pikseli od dna ekranu (IntersectionObserver), poślij request do IPC o kolejne 50 logów uderzając `window.electron.invoke('get-logs', nextCursor, 50)`.
+   - Zlepiaj nowe wyniki z dotychczasowymi z wykorzystaniem memoizacji `useMemo`.
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Skrypt obciążeniowy generuje w pamięci Node.js słownik liczący 1,000,000 rekordów (np. bot logi rozmów). Test uruchamia środowisko Puppeteer / Playwright by podłączyć wirtualne koło myszy i mierzy rzuty RAM w Chromium. Brak Memory Jitter potwierdza prawidłowość strzałów IPC i ominięcie "Event Loop Block" dla procesu renderowania.

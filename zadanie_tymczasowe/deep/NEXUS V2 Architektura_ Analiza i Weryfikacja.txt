@@ -1,0 +1,545 @@
+﻿Architektura NEXUS V2: Deterministyczny Model Ochrony i Wykonawstwa (2026)
+1. Patologia Ekosystemu Node.js i Paradygmat Defensywny (Krajobraz 2026)
+Współczesne inżynierie oprogramowania bazujące na technologiach webowych wykazują krytyczną niezdolność do zapewnienia integralności danych w środowiskach autonomicznych agentów (LLM). Wymogi systemu NEXUS V2 kategorycznie odrzucają zaufanie do izolacji oferowanej przez wbudowane mechanizmy Node.js, Electron oraz standardowe bazy danych in-memory.1 Analiza podatności z przełomu lat 2025-2026 udowadnia, że natywne modele uprawnień (Permission Models) są architektonicznie uszkodzone i podatne na ominięcia.2
+Aplikacja NEXUS V2 implementuje architekturę File-System Driven Architecture (FSDA), przenosząc ciężar stanu bezpośrednio na kontrolowane struktury dyskowe przy jednoczesnym odizolowaniu warstw wejścia-wyjścia.1 Wszelkie operacje sieciowe, dyskowe i asynchroniczne traktowane są jako potencjalnie wrogie lub z góry skazane na awarię. Zastosowano rygorystyczne mechanizmy weryfikacyjne w celu zablokowania wektorów ataku, które w standardowych aplikacjach prowadzą do zdalnego wykonania kodu (RCE) lub wycieku sterty (Heap Leak).
+
+
+Identyfikator
+	Opis Podatności
+	Wektor Ataku
+	Mitygacja w NEXUS V2
+	CVE-2026-34765
+	Electron RCE via window.open 4
+	Manipulacja kontekstem przeglądania
+	Całkowita blokada nodeIntegrationInWorker 5
+	CVE-2026-21716
+	Ominięcie --allow-fs-write 6
+	Zmiana uprawnień via FileHandle.chmod
+	Implementacja wirtualnego systemu NexusVFS i ACL 1
+	CVE-2026-21636
+	Ominięcie izolacji sieciowej 3
+	Połączenia z Unix Domain Sockets (UDS)
+	Maszyny MicroVMs z izolacją interfejsów (WHPX) 1
+	CVE-2025-55131
+	Wyciek pamięci w Buffer.alloc 9
+	Race condition przy wygaśnięciu timeoutu
+	Odrzucenie V8 na rzecz ZCSMAP i operacji atomowych 1
+	CVE-2025-55130
+	Path Traversal via Symlinks 9
+	Dowiązania symboliczne uciekające z folderu
+	Default Deny w regułach VFS 1
+	2. Inicjalizacja Przestrzeni Roboczej i Blokady Instancyjne
+Platforma nie ufa systemowi plików hosta, który w każdej mikrosekundzie może zostać zablokowany przez procesy antywirusowe (Windows Defender) lub synchronizację w chmurze (OneDrive).1 Ścieżki systemowe ulegają degradacji, a próba ich otwarcia prowadzi do nieprzechwyconych wyjątków zamrażających proces główny Electrona.
+Zwykłe wywołania fs.mkdirSync blokują główny wątek (Event Loop), a brak dostępu do katalogu domyślnego (EACCES) cicho niszczy proces startowy. Pozostawione pliki blokad po awarii uniemożliwiają ponowne uruchomienie systemu.
+Zestaw testów weryfikuje odporność inicjalizacji przez nadpisanie zmiennych systemowych mockiem rzucającym wyjątek EACCES. Asercja TDD udowadnia, że środowisko bez ingerencji operatora przełącza wektor na app.getPath('userData') (Fallback Workspace) i podnosi system z zapasowej lokalizacji.1 Weryfikacja blokady symuluje istnienie workspace.lock z PID aktywnego procesu, wymuszając odrzucenie obietnicy inicjalizacji przed wyrenderowaniem okna.1
+
+
+
+
+
+
+TypeScript
+import { promises as fs, constants } from 'fs';
+import path from 'path';
+import { app, dialog } from 'electron';
+
+export async function initializeWorkspace(basePath: string): Promise<string> {
+ let activePath = basePath;
+ try {
+   const testFile = path.join(activePath, '.nexus_probe');
+   await fs.writeFile(testFile, '0', { flag: 'w' });
+   await fs.unlink(testFile);
+ } catch (err: any) {
+   if (.includes(err.code)) {
+     activePath = path.join(app.getPath('userData'), 'Nexus_Workspace');
+   } else {
+     throw err;
+   }
+ }
+
+ const lockPath = path.join(activePath, 'workspace.lock');
+ try {
+   const lockHandle = await fs.open(lockPath, 'wx');
+   await lockHandle.write(process.pid.toString());
+   await lockHandle.close();
+ } catch (err: any) {
+   if (err.code === 'EEXIST') {
+     const existingPid = await fs.readFile(lockPath, 'utf8');
+     if (isProcessAlive(parseInt(existingPid, 10))) {
+       dialog.showErrorBox("CRITICAL", "Workspace locked by another instance.");
+       app.quit();
+     }
+     await fs.writeFile(lockPath, process.pid.toString());
+   }
+ }
+
+ const REQUIRED_DIRECTORIES =;
+ for (const dir of REQUIRED_DIRECTORIES) {
+   await fs.mkdir(path.join(activePath, dir), { recursive: true });
+ }
+ return activePath;
+}
+
+function isProcessAlive(pid: number): boolean {
+ try { process.kill(pid, 0); return true; } catch (e) { return false; }
+}
+
+3. Pamięć Zero-Copy (ZCSMAP) i Wątek Samotnego Autora
+Błędy przydziału pamięci w natywnych strukturach Node.js doprowadzają do wycieków danych.9 Ponadto, serializacja potężnych stringów (logów LLM) przez standardowe kanały IPC algorytmem Structured Clone nieodwracalnie dławi stertę V8.1 System wdraża Zero-Copy Shared Memory Actor Pool (ZCSMAP). Monopol na fizyczny zapis na dysk w schemacie Append-Only (wzorowanym na Bitcask) posiada wyłącznie jeden zablokowany wątek potomny, omijając błędy EBUSY narzucane przez jądro Windows.1
+Strumienie tekstu wpisywane do Uint8Array przecinają wielobajtowe znaki UTF-8 na granicach bufora kołowego (wrap-around), a równoległy dostęp agentów wywołuje wyścigi niszczące nagłówki ramkowe (Header Framing).
+Test jednostkowy ładuje 10 000 znaków diakrytycznych ("Zażółć gęślą jaźń") z 5 równoległych symulowanych wątków-producentów do bufora o rozmiarze 512 KB, wymuszając ekstremalną fragmentację. Asercja w wątku odczytu sprawdza dekompresję. Obecność uszkodzonego znaku () automatycznie wyrzuca krytyczny status FAIL: UTF-8 CORRUPTION DETECTED i przerywa potok.1
+
+
+
+
+
+
+TypeScript
+// Producent: sharedMemory.ts
+export class SharedMemoryBuffer {
+ private meta: Int32Array;
+ private data: Uint8Array;
+ private capacity: number;
+
+ constructor(sab: SharedArrayBuffer) {
+   this.meta = new Int32Array(sab, 0, 16);
+   this.data = new Uint8Array(sab, 64);
+   this.capacity = sab.byteLength - 64;
+ }
+
+ public write(text: string): void {
+   const encoded = new TextEncoder().encode(text);
+   const len = encoded.length;
+   if (len > this.capacity) throw new Error("Payload exceeds capacity");
+
+   const writeOffset = Atomics.add(this.meta, 0, len + 4) % this.capacity;
+   const header = new Uint8Array(new Uint32Array([len]).buffer);
+   
+   this.writeCircular(writeOffset, header);
+   this.writeCircular((writeOffset + 4) % this.capacity, encoded);
+   
+   Atomics.notify(this.meta, 0, 1);
+ }
+
+ private writeCircular(offset: number, payload: Uint8Array): void {
+   for (let i = 0; i < payload.length; i++) {
+     this.data[(offset + i) % this.capacity] = payload[i];
+   }
+ }
+}
+
+
+
+
+
+
+
+JavaScript
+// Konsument: writerWorker.cjs
+const { parentPort, isMainThread } = require('worker_threads');
+const fs = require('fs');
+
+if (!isMainThread) {
+ parentPort.on('message', (sab) => {
+   const meta = new Int32Array(sab, 0, 16);
+   const data = new Uint8Array(sab, 64);
+   const capacity = sab.byteLength - 64;
+   let tail = 0;
+
+   while (true) {
+     const currentHead = Atomics.load(meta, 0);
+     if (tail === currentHead) {
+       Atomics.wait(meta, 0, currentHead);
+     } else {
+       // Logika odczytu z uwzględnieniem wrap-around i scalania bajtów
+       // przed wywołaniem TextDecoder().decode() by zapobiec usterce UTF-8
+       // Zapis natywny: fs.promises.appendFile(..., { flag: 'a' })
+       Atomics.store(meta, 1, tail); // Aktualizacja tail
+     }
+   }
+ });
+}
+
+4. O(1) KeyDir i Optymalizacja Zapytań Dyskowych
+Każda aktualizacja konfiguracji, zamiast modyfikacji w miejscu (Update-In-Place), jest transakcją Append-Only, dołączającą nowy rekord na końcu pliku z identyfikatorem czasu i flagą isTombstone.1 Wczytywanie całych megabajtowych logów JSONL do pamięci zablokowałoby silnik V8.
+Niewielkie różnice w kodowaniu powrotu karetki (\r\n vs \n) na Windowsie powodują przesunięcie offsetu bajtowego. Bezpośredni odczyt na błędnym offsecie rzuca wyjątek parsowania Unexpected end of JSON input.
+Skrypt test_keydir_read.ts zapisuje logi, a następnie pobiera sztucznie przesunięty wskaźnik o +1 bajt. Asercja TDD musi asertywnie potwierdzić przechwycenie błędu składniowego, udowadniając bezwzględną czułość precyzyjnego pozycjonowania bajtowego na dysku fizycznym bez polegania na buforowaniu silnika.1
+
+
+
+
+
+
+TypeScript
+import { promises as fs } from 'fs';
+
+export interface DocumentMeta { filePath: string; offset: number; size: number; timestamp: number; isTombstone: boolean; }
+
+export class KeyDir {
+ private index = new Map<string, DocumentMeta>();
+
+ public set(id: string, meta: DocumentMeta): void {
+   if (meta.isTombstone) this.index.delete(id);
+   else this.index.set(id, meta);
+ }
+
+ public async get(id: string): Promise<any | null> {
+   const meta = this.index.get(id);
+   if (!meta || meta.isTombstone) return null;
+
+   let handle;
+   try {
+     handle = await fs.open(meta.filePath, 'r');
+     const buffer = Buffer.alloc(meta.size);
+     await handle.read(buffer, 0, meta.size, meta.offset);
+     return JSON.parse(buffer.toString('utf8'));
+   } catch (e) {
+     throw new Error(`KeyDir corruption at offset ${meta.offset}: ${e}`);
+   } finally {
+     if (handle) await handle.close();
+   }
+ }
+}
+
+5. Walidacja Sygnałów I/O (Chokidar) i Wykluczenie Pętli Sprzężenia
+Zjawiska systemowe I/O w architekturze Windows NT są skrajnie niespójne. System potrafi wyemitować zdarzenie pojawienia się pliku na dysku fizycznym, podczas gdy jego deskryptor zapisu pozostaje zablokowany przez proces pobierający (np. przeglądarkę zrzucającą wielogigabajtowy dokument).1
+Naiwny nasłuch reaguje na zerowy nagłówek, podając pusty plik wejściowy dla systemu RAG, co niszczy proces wektoryzacji i doprowadza do asynchronicznej awarii modelu z błędem EOF. Brak wykluczeń na foldery buforowe generuje sprzężenie zwrotne i rekurencyjną eksplozję zdarzeń.
+Test test_chokidar_wait.ts asymiluje dopisywanie porcji 10 KB do pliku przez 3 sekundy. Twarda asercja różnicy Date.now() udowadnia, że flaga awaitWriteFinish wstrzymuje zdarzenie wywołania przez pełen cykl zapisu plus próg 2000 ms, uniemożliwiając pośpieszną egzekucję przed zwolnieniem uchwytów jądra OS.1
+
+
+
+
+
+
+TypeScript
+import chokidar from 'chokidar';
+import { EventEmitter } from 'events';
+
+export class WatcherService extends EventEmitter {
+ private watcher: chokidar.FSWatcher;
+
+ constructor(watchDir: string) {
+   super();
+   this.watcher = chokidar.watch(watchDir, {
+     ignored: [
+       /(^|[\/\\])\../,
+       '**/*.active.log',
+       '**/*.active.jsonl',
+       '**/Buffers/**'
+     ],
+     awaitWriteFinish: {
+       stabilityThreshold: 2000,
+       pollInterval: 100
+     },
+     persistent: true
+   });
+
+   this.watcher.on('add', (filePath) => {
+     this.emit('FileReadyEvent', { path: filePath, timestamp: Date.now() });
+   });
+ }
+}
+
+6. Architektura Konfiguracji: Hot-Reload i Defensywny Zod Guard
+Agenci systemowi przechowują własne definicje (modele, prompty, reguły dostępu) w strukturach JSON. System odrzuca uaktualnienia "update-in-place", traktując pliki na dysku jako wyrocznie ostatecznej prawdy.1
+Ręczne interwencje w plikach JSON lub halucynacyjne manipulacje przez algorytmy samo-optymalizujące powodują błędy składni. Ciche rzutowanie typów doprowadza do wstrzyknięcia tekstu zamiast liczb całkowitych (np. parametry temperaturowe API), wysadzając endpoint LLM.
+Moduł ładujący zostaje zbombardowany uszkodzonymi plikami ("temperature": 3.5, niezamknięte klamry). Skrypt udowadnia, że Zod rzuca wyjątek ZodError, system kwarantanny natychmiast przenosi uszkodzony plik do /Agents/Quarantine/ i powstrzymuje awarię całej instancji Electrona bez naruszania struktury żywych węzłów w pamięci.1
+
+
+
+
+
+
+TypeScript
+import { z } from 'zod';
+import { promises as fs } from 'fs';
+import path from 'path';
+
+export const AgentConfigSchema = z.object({
+ id: z.string(),
+ name: z.string(),
+ systemPrompt: z.string(),
+ allowedPaths: z.array(z.string()),
+ llmProvider: z.enum(['OpenAI', 'Gemini', 'Anthropic', 'Custom']),
+ defaultModel: z.string().optional(),
+ temperature: z.number().min(0).max(2).default(0.7)
+});
+
+export type AgentConfig = z.infer<typeof AgentConfigSchema>;
+
+export class AgentConfigManager {
+ private cache = new Map<string, AgentConfig>();
+
+ public async hotReload(filePath: string): Promise<void> {
+   try {
+     const rawData = await fs.readFile(filePath, 'utf-8');
+     const jsonObj = JSON.parse(rawData);
+     const validConfig = AgentConfigSchema.parse(jsonObj);
+     this.cache.set(validConfig.id, validConfig);
+   } catch (err) {
+     const quarantinePath = path.join(path.dirname(filePath), 'Quarantine', `${path.basename(filePath)}.broken.${Date.now()}`);
+     await fs.rename(filePath, quarantinePath);
+     throw new Error(`Config quarantine triggered: ${err}`);
+   }
+ }
+}
+
+7. Warstwa Integracji LLM i Sieciowy Circuit Breaker
+Odpytywanie zewnętrznych dostawców API przy pomocy wbudowanych bibliotek (np. fetch, @google/genai) rodzi niebezpieczeństwo niekontrolowanego zawieszenia węzłów roboczych.1 Ekstremalne przeciążenia chmur i pule odpowiedzi z kodami 429 Too Many Requests czy 503 Service Unavailable gwarantują nieuchronne spadki wydajności.
+Naiwna iteracyjna pętla oczekująca na retransmisję danych zatrzymuje event loop i doprowadza do degradacji sprzętowej. Współbieżne odpytywania bez czynników losowych tworzą kolizje zapytań u operatora chmurowego.
+Skrypt test_ai_backoff.ts mockuje połączenia HTTP. Zmusza silnik do otrzymania trzech kodów 429. Zegar wykazuje rosnące odstępy czasowe z wykładniczą dystrybucją (  ). Kiedy wstrzyknięty zostaje nieskończony strumień błędów 503, licznik po siódmej (7) iteracji kategorycznie odcina bezpiecznik, rzucając CircuitBreakerTrippedException.1
+
+
+
+
+
+
+TypeScript
+export class AIService {
+ private static MAX_RETRIES = 7;
+ private static BASE_DELAY = 1000;
+
+ public async generateStream(prompt: string, onChunk: (text: string) => void): Promise<string> {
+   let attempt = 0;
+   while (attempt < AIService.MAX_RETRIES) {
+     try {
+       const stream = await this.invokeSdkStream(prompt);
+       let fullText = '';
+       for await (const chunk of stream) {
+         const text = chunk.text || '';
+         fullText += text;
+         onChunk(text);
+       }
+       return fullText;
+     } catch (error: any) {
+       if (.includes(error.status)) {
+         attempt++;
+         if (attempt >= AIService.MAX_RETRIES) {
+           throw new Error('CircuitBreakerTrippedException');
+         }
+         const delay = Math.min(16000, Math.pow(2, attempt) * AIService.BASE_DELAY) + Math.random() * 1000;
+         await new Promise(res => setTimeout(res, delay));
+       } else {
+         throw error;
+       }
+     }
+   }
+   throw new Error('CircuitBreakerTrippedException');
+ }
+
+ private async invokeSdkStream(prompt: string): Promise<any> { /* SDK Wrapper */ }
+}
+
+8. Dynamiczny Routing DAG i Śledzenie Stosu Wywołań
+Definiowanie potoków logicznych opartych o asynchroniczne węzły operacyjne (Bramki RoutingGate) wymaga analizy danych wyjściowych modeli przy użyciu wyrażeń regularnych (regex_match).1 W środowiskach nieustrukturyzowanych, w których dane wyjściowe decydują o parametrze wyzwalającym kolejny krok, pojawia się groźba pętli.
+Model językowy ulega dewiacji, zwracając tekst powracający do poprzedniego agenta, inicjując zjawisko nieskończonej rekurencji. Błędnie zbudowany regex w warunku wejściowym prowadzi do przeciążenia procesora (ReDoS).
+Test ładuje sztuczny graf acykliczny sprowadzający do pętli A -> B -> A. Narzędzie wykonawcze WorkflowEngine loguje rejestr tablicy callStack. Asercja weryfikuje bezwzględne wypchnięcie błędu CircularDependencyException równo po osiągnięciu granicy    odwiedzeń węzłów, blokując proces zjawiskowy w czasie    ms.1
+
+
+
+
+
+
+TypeScript
+export interface RoutingGate {
+ condition: 'regex_match' | 'contains' | 'always';
+ evaluationString?: string;
+ onSuccessTargetId: string;
+ onFallbackTargetId?: string;
+}
+
+interface PipelineContext {
+ pipelineId: string;
+ callStack: string;
+}
+
+export class WorkflowEngine {
+ private static MAX_STACK_DEPTH = 10;
+
+ public async executeNode(nodeId: string, context: PipelineContext): Promise<void> {
+   if (context.callStack.includes(nodeId)) {
+     throw new Error(`CircularDependencyException: Cycle detected at node ${nodeId}`);
+   }
+   if (context.callStack.length >= WorkflowEngine.MAX_STACK_DEPTH) {
+     throw new Error('CircularDependencyException: Max stack depth exceeded');
+   }
+   
+   context.callStack.push(nodeId);
+   // Wywołanie węzła LLM i bramki logicznej w bloku ochronnym
+ }
+}
+
+9. Hybrydowy Local RAG i Ochrona Pamięci Natywnej V8
+Odpytywanie zewnętrznych baz wektorowych jest zagrożeniem dla spójności prywatnych dokumentów i naraża projekt na koszty API.1 Zastosowano proces lokalny wykorzystujący dwutorowe przetwarzanie leksykalno-semantyczne bez wychodzenia poza obszar maszyny deweloperskiej.
+9.1. Silnik Leksykalny i Tagowanie Negacji
+Klasyczne systemy wyszukiwania gubią się wobec instrukcji przeczących. Model BM25 wspierany jest potokiem Wink-NLP.1 Redukcja entropii wejściowej poprzez eliminację stop-words oraz mapowanie form gramatycznych (Porter Stemmer v2) przygotowuje zbiór. Zjawiskiem kluczowym jest atrybut its.negationFlag analizujący topologię zdania. Oznaczenie prefiksem negacji wyklucza tokeny asymilowane w zapytaniu, co dowodzi w badaniu testowym z wykorzystaniem zapytań krzyżowych o fałszywych dopasowaniach.1
+9.2. Semantyka Tensorowa, RRF i Wycieki Pamięci w ONNX
+Przetwarzanie semantyczne wykonuje @xenova/transformers napędzany natywnie silnikiem onnxruntime-node. Biblioteki powiązane mostem FFI z kodem C++ wykazują niekontrolowane wycieki pamięci poza stertą (Off-heap) przy masowym przeliczaniu 384-wymiarowych tablic matematycznych.1
+Akumulacja przeliczonych macierzy tensorowych nie ulega niszczeniu przez standardowy Garbage Collector w V8, co prowadzi do gwałtownego wyczerpania zasobów RAM (Out of Memory) po analizie setek plików Markdown.
+Asercja TDD narzuca twardy rygor pamięci operacyjnej. Wirtualna flaga Node --expose-gc mierzy różnicę po 200 iteracyjnych wywołaniach sieci wektorowej. Przyrost zużycia sterty wyższy niż 30 MB automatycznie oznacza cichy wyciek w jądrze ONNX C++ i rzuca krytyczny błąd deweloperski FAIL: ONNX RUNTIME NATIVE MEMORY LEAK DETECTED.1 Połączenie dwóch wyników odbywa się równoległym wstrzykiwaniem wag w ułamkowym wzorze Fuzji RRF, chroniąc LLM przed zjawiskiem eksplozji okna kontekstu.1
+Dokument
+	Wynik Leksykalny (BM25)
+	Wynik Semantyczny (ONNX)
+	Punktacja RRF (k=60)
+	DocA
+	Rank 1
+	Rank 2
+	  
+
+	DocB
+	Rank 2
+	Rank 1
+	  
+
+	DocC
+	Brak
+	Rank 3
+	  
+
+	10. Architektura MicroVMs i Bezpieczeństwo Piaskownic (WHPX)
+Uruchamianie niezweryfikowanego kodu napisanego przez AI na środowisku hosta to prosta droga do katastrofy. Użycie izolacji poprzez Docker bywa niebezpieczne (dostęp do uprzywilejowanych węzłów jądra) i wymaga instalacji złożonych demonów w systemie.
+NEXUS V2 wykorzystuje bibliotekę libkrun sprzęgniętą z platformą hipernadzorcy Windows (WHPX). Konfiguracja narzuca powołanie osobnego jądra Linuksa w czasie mniejszym niż 200ms (Sub-200ms Startup), oferując precyzyjną separację hardware'ową i odcięcie interfejsów sieciowych bez opóźnień obciążających wątek Electron.1
+Aplikacje skryptowe ulegają zawieszeniu z uwagi na wstrzyknięcie zjawiska nieskończonej pętli. Tradycyjne sygnały zakończenia na Windows pozostawiają procesy zombie w tle, konsumujące całą dostępną moc vCPU. Mapowanie całych dysków umożliwia atakom przeszukiwanie katalogów systemowych hosta.
+Test TDD odpala instrukcję while(true){}. Mechaniczny wyłącznik obcina cykl wywołania jądra równo po 1500 milisekundach. Asercja pobierając status drzewa komendą tasklist nie ma prawa odnaleźć identyfikatorów PID przypisanych instancji mikromaszyny. Ponadto, zapytanie odczytujące nieautoryzowane dowiązania z wolumenu virtio-fs jest trwale blokowane.1
+
+
+
+
+
+
+TypeScript
+import { spawn } from 'child_process';
+
+export class LocalCLIRunner {
+ private static TIMEOUT_MS = 1500;
+
+ public async runScript(scriptPath: string, workspacePath: string): Promise<string> {
+   return new Promise((resolve, reject) => {
+     const vmProcess = spawn('microsandbox', [
+       'run',
+       '--network', 'none',
+       '--memory', '128m',
+       '--cpus', '1',
+       '-v', `${workspacePath}:/data`,
+       'python', `/data/${scriptPath}`
+     ]);
+
+     let output = '';
+     vmProcess.stdout.on('data', (data) => { output += new TextDecoder().decode(data); });
+     vmProcess.stderr.on('data', (data) => { output += new TextDecoder().decode(data); });
+
+     const watchdog = setTimeout(() => {
+       // Twarde ubicie drzewa procesów na Windows NT by wykluczyć powstawanie Zombie
+       spawn('taskkill',);
+       reject(new Error('Sandbox Circuit Breaker Triggered: CPU Timeout'));
+     }, LocalCLIRunner.TIMEOUT_MS);
+
+     vmProcess.on('exit', (code) => {
+       clearTimeout(watchdog);
+       resolve(output);
+     });
+   });
+ }
+}
+
+11. Systemy Zabezpieczeń Ochronnych i Globalny Kill Switch
+Ponieważ moduł uprawnień Node.js nie funkcjonuje prawidłowo i umożliwia ominięcie izolacji sieciowej 3 oraz dyskowej za pomocą FileHandle.chmod 6, system implementuje nakładkę rygoru wewnętrznego – Nexus Virtual File System (NexusVFS).
+Modelowanie wejść z otwartych wektorów naraża system na Path Traversal (np. wstrzyknięcie ../../Windows/System32/cmd.exe). Dostępność agentów do zaszyfrowanej dokumentacji skutkuje kompromitacją danych projektowych.
+Mechanika weryfikuje bezwzględne rzucanie asercji w postaci wyjątków ForbiddenVfsAccessException (Default Deny List) i PathTraversalAttemptException na sztywnych zestawach danych wejściowych w trybie offline. Testy Global Kill Switch potwierdzają natomiast zwalnianie całego środowiska roboczego poprzez destrukcyjne iterowanie worker.terminate() w zasobach procesora.1
+
+
+
+
+
+
+TypeScript
+export class NexusVFS {
+ private basePath: string;
+
+ constructor(basePath: string) {
+   this.basePath = path.resolve(basePath);
+ }
+
+ public resolveUri(uri: string, rules: string): string {
+   const relativePath = uri.replace('nexus://', '');
+   const absolutePath = path.resolve(this.basePath, relativePath);
+
+   if (!absolutePath.startsWith(this.basePath)) {
+     throw new Error('PathTraversalAttemptException');
+   }
+
+   const hasAllow = rules.some(r => r.startsWith('ALLOW') && this.matchPattern(r, uri));
+   const hasDeny = rules.some(r => r.startsWith('DENY') && this.matchPattern(r, uri));
+
+   if (hasDeny ||!hasAllow) {
+     throw new Error('ForbiddenVfsAccessException');
+   }
+
+   return absolutePath;
+ }
+
+ private matchPattern(rule: string, uri: string): boolean {
+   // Glob logic implementation
+   return true; 
+ }
+}
+
+12. Most Komunikacyjny IPC i Wstrzymywanie Strumieni Danych
+Architektura odcina frontend Reacta (19.x) od dostępu do plików systemowych hosta w izolacji środowiska Chromium. Pośredniczący kanał Inter-Process Communication (IPC) przy braku odpowiedniej przepustowości powoduje zablokowanie mechanizmu wyświetlania UI, zwłaszcza przy generowaniu tysięcy węzłów odpowiedzi.
+Przesłanie pełnego zrzutu logu do widoku frontendowego na poziomie wielu megabajtów (Structured Clone) dławi stertę V8 procesu głównego Electrona.
+Sztuczny kanał weryfikuje odporność mechaniki paginacyjnej. Wysłanie 10 000 żądań strumieniowych ma potwierdzić niegubienie ramek (0 wycieków wiadomości). Wykrycie paczki przewyższającej sztywny limit bezpieczeństwa (50 KB) generuje kategoryczny wyjątek odrzucenia pakietu PayloadTooLargeException, zmuszając klienta webowego do stosowania stronicowania za pomocą sygnałów offsetów (Shallow Notifications).1
+13. Ochrona Złożoności Płótna (NexusCanvas)
+Obsługa ponad 500 węzłów asocjacyjnych w grafie umieszczonym na architekturze HTML5/SVG obciąża kalkulatory CSS i niszczy wskaźniki klatek (Layout Thrashing). Architektura blokuje renderowanie pełnego DOM, wymuszając dynamiczne odciążenie pamięci (Lazy Rendering) elementów tekstowych.1
+Modyfikacje skali i przesuwanie węzłów obfitują w nadmierną liczbę przeliczeń zdarzeń najechania kursorem (:hover, pointerenter) przez silnik przeglądarki, wywołując gwałtowne piki obciążeniowe procesora i zamrożenie mapy operacyjnej.
+Test renderowania środowiska jsdom zasymuluje zdarzenie pointerdown. Skrypt wykazuje włączenie sprzętowej akceleracji stylów o klasie .canvas-resizing, nakładając definicję pointer-events: none chroniącą wszystkie obiekty potomne grafu przed niepotrzebnymi odrysowaniami struktury pikselowej. Test telemetrii sprawdza asercjami matrycę translacji upewniając się, że    i    precyzyjnie celują środkowym wektorem ekranu w klikniętą etykietę węzła przy jednoczesnym uniknięciu zapętlenia klas przejścia CSS.1
+14. Ochrona Interakcyjna i Mechanizmy Walidacji (Drag&Drop, Token Estimation)
+Zarządzanie wektorami z danymi wejściowymi poprzez środowisko wizualne wymaga prewencyjnego powstrzymywania zagrożeń jeszcze w cyklu życia podglądu UI. Lewy panel budowniczego wstrzykuje i przelicza wektory glob bez angażowania operatora do tysięcy kliknięć.1
+Przeciągnięcie tajnych kluczy dostępu lub logów systemowych bezpośrednio w okno docelowe zapytania omija izolację bazy i ryzykuje eksfiltracją do nieodizolowanego agenta LLM. Ponadto nałożenie na model tekstów przekraczających pojemność bufora Context Window wysadza instancję po stronie chmury.
+W trakcie testowania incydentu onDragOver TDD wymusza kontrolę ścieżek względem logiki ACL przypisanej karcie. Naruszenie filtru generuje dynamiczne wstrzyknięcie sygnatury wizualnej do strefy upuszczenia i twardą anulację operacji onDrop. Tokenizer działający w przestrzeni Worker weryfikuje wolumen załączników z marginesem 50ms, alarmując o skrajnym zapotrzebowaniu API i blokując spust polecenia.1
+15. Referencje Cykliczne i Klonowanie Ochronne (Fork/Dry-Run)
+Zarządzanie stanem (State Management) za pomocą systemu Zustand nieodłącznie wiąże się ze zjawiskiem płytkiego duplikowania obiektów tablicowych (Shallow Clone za pomocą operatora spread ...).
+Jeżeli instancja Agenta i kopia Agenta odwołują się do tożsamych referencji pamięci w przestrzeni zapytań (History Trajectories), zmiana przebiegu jednego z nich uszkodzi zapisy oryginalnego modelu testowego w locie, niszcząc spójność logiczną wejścia AI.1 Dodatkowo próba zebrania logów cyklicznych wyrzuca system z awarią parsera JSON.
+Eksperyment sprawdzający modyfikację skopiowanego agenta weryfikuje nieobecność cichych współdzielonych odniesień – structuredClone() zamyka całkowitą izolację w architekturze pamięci RAM. Telemetryczne przechwytywanie z cyklicznie powiązanymi węzłami (np. rodzic i dziecko) weryfikowane jest za pomocą metody safeJsonStringify wykorzystującej WeakSet, wyrzucając string [Circular], dowodząc bezawaryjnej serializacji informacji serwisowej o stanie awarii.1
+
+
+
+
+
+
+TypeScript
+export function safeJsonStringify(obj: any, spaces: number = 2): string {
+ const seen = new WeakSet();
+ return JSON.stringify(obj, (key, value) => {
+   if (typeof value === "object" && value!== null) {
+     if (seen.has(value)) {
+       return "[Circular]";
+     }
+     seen.add(value);
+   }
+   return value;
+ }, spaces);
+}
+
+16. Konstrukcja Audytowa RLHF i Izolacja Draft Zone
+Mechanizmy operacyjne AI nigdy nie podmieniają plików środowiskowych bezpośrednio na warstwie docelowej. Odpowiada za to Skrzynka Podawcza (Draft Zone), pełniąca funkcję punktu styku wektora różnicowego.
+Obliczanie różnic dyferencjałów (Split-View Diff) za pomocą powszechnych algorytmów tekstu o wymiarach rzędu megabajtów blokuje odrysowywanie przeglądarki na czas trwania iteracji kalkulatora zjawiskowego. Zmiany bez rygorystycznej kontroli potrafią zaniedbać ustrukturyzowany zrzut analityczny.
+Ciężar przeliczeń diff-match-patch obsługiwany jest poprzez interfejsy Worker w oderwaniu od głównej matrycy renderingu. Poddanie asercji dwóch wektorów ważących ponad 1 MB wykazuje w teście TDD ciągłą responsywność wątku wejścia zdarzeń.1 Naciśnięcie zatwierdzenia generuje zapis potrójny: korektę właściwego repozytorium oraz atomowy Shadow Write zrzucający hermetyczną dokumentację FeedbackLogEntry w warstwie chmur badawczych /RLHF_Logs, nienaruszony przez upływ cyklu uruchamiania.1
+17. Złożoność Wyrażeń w Locie (WikiView) i Optymalizacja Zdarzeniowa
+Wyciąganie wektorowych definicji reguł słownikowych (Baza Wiedzy) prosto na edytor za pomocą wyrażeń regularnych stanowi obciążenie ciągłe i prowadzi do bolesnego wektora ataku.
+Wykonanie mechanizmu RegExp po każdym uderzeniu klawisza klawiatury doprowadza do gwałtownego Input Lagu. Zjawisko zamrożenia zjawia się, gdy wbudowane struktury DOM wymuszają repainty z ułamkowym opóźnieniem wpisywania.
+Aby odrzucić problem opóźnienia, architektura wdraża moduł debounce(300). Uruchomienie asercyjnego potoku 50 zdarzeń naciskania klawiatury rozproszonego co kilkadziesiąt milisekund wewnątrz środowiska vi.useFakeTimers() potwierdza brak inicjalizacji zapytań dopóki licznik nie utrzyma pełnej przerwy de-fragmentacyjnej trwającej 300 ms, oszczędzając zasoby silnika CSS od natłoku komend fioletowego wstrzykiwania highlight.1 Interfejs wspomaga szybka nawigacja poleceniowa z wywoływaniem ukrytych zasobów za pomocą skrótu systemowego Ctrl+K.
+18. Ewolucja Meta-Architektoniczna i Nienaruszalność Modeli (Zod Guard)
+Agent-Architekt realizuje wizję samomodyfikującej się przestrzeni maszynowej na bazie wstrzyknięć RLHF. Systematycznie konsoliduje wyznaczniki błędów ludzkich z plików cieniowych (Shadow Writes) i proponuje ulepszoną rekonfigurację instrukcji systemowych agentów. Wystawienie infrastruktury opartej na wstrzyknięciach modeli wyuczonych wprowadza gigantyczne ryzyko halucynacyjnej manipulacji plikami konfiguracyjnymi (JSON).
+Błędy polegające na braku znaczników domykających klamer w odpowiedzi AI, lub odrzuceniu formatowania numerycznego załączanego w polach wagi dyskryminacyjnej unieruchamiają bazy V8 Node.js, kompromitując strukturę wewnętrzną przestrzeni operacyjnej Nexusa.
+Pancerz Zod (Zod Guard) bezlitośnie filtruje propozycje. Ekstremalny przypadek testowy serwuje string ze sprytnie wstrzykniętym zaburzeniem typologicznym do zwalidowania przez moduł validateAndParseConfig. System z góry wyrzuca InvalidAgentConfigException, chroniąc integralność. Logika Rollback deeskaluje zapis na węzłach docelowych, co asertywnie potwierdza niezmieniona zawartość modyfikowanych pakietów na dysku.1
+Architektura NEXUS V2 demonstruje pesymizm jako podstawowy imperatyw tworzenia kodów we współczesnym środowisku inżynieryjnym. Odrzucenie konwencjonalnego zaufania do ekosystemu zewnętrznego oraz narzucenie deterministycznego reżimu TDD buduje środowisko o rygorystycznej bezawaryjności operacyjnej. Wdrożone filtry ochronne udowadniają, że spójność i optymalizacja nie biorą się z ignorancji błędów asynchronicznych, lecz z przewidywania destrukcyjnych załamań na każdym szczeblu wywoławczym.
+Cytowane prace
+1. master_all_detailed.txt
+2. Node.js Security Baseline: Defaults You Should Expect in 2026 | by Modexa - Medium, otwierano: czerwca 9, 2026, https://medium.com/@Modexa/node-js-security-baseline-defaults-you-should-expect-in-2026-05bf18c093fb
+3. CVE-2026-21636 Detail - NVD, otwierano: czerwca 9, 2026, https://nvd.nist.gov/vuln/detail/CVE-2026-21636
+4. CVE-2026-34765: Electron Framework RCE Vulnerability - SentinelOne, otwierano: czerwca 9, 2026, https://www.sentinelone.com/vulnerability-database/cve-2026-34765/
+5. Improper Isolation or Compartmentalization in electron | CVE-2026-34775 | Snyk, otwierano: czerwca 9, 2026, https://security.snyk.io/vuln/SNYK-JS-ELECTRON-15876334
+6. CVE-2026-21716: Node.js Permission Bypass Vulnerability - SentinelOne, otwierano: czerwca 9, 2026, https://www.sentinelone.com/vulnerability-database/cve-2026-21716/
+7. A flaw in Node.js's permission model allows Unix Domain... · CVE-2026-21636 - GitHub, otwierano: czerwca 9, 2026, https://github.com/advisories/GHSA-7xhv-hcmf-4rfv
+8. Microsandbox | Ry Walker Research, otwierano: czerwca 9, 2026, https://rywalker.com/research/microsandbox
+9. Tuesday, January 13, 2026 Security Releases - Node.js, otwierano: czerwca 9, 2026, https://nodejs.org/en/blog/vulnerability/december-2025-security-releases

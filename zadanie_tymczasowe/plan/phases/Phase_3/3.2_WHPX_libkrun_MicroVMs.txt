@@ -1,0 +1,22 @@
+=========================================
+=== PHASE 3 STEP: 3.2_WHPX_libkrun_MicroVMs.txt ===
+=========================================
+
+# NEXUS V2 IMPLEMENTATION - PHASE 3.2
+**Moduł:** MicroVMs Sandboxing (WHPX + libkrun)
+**Cel 0-100%:** Fizyczne oparcie kompilowania i odpalania procesów agentowych o warstwę hipernadzorcy, powołując czyste, efemeryczne kernele Linuksa na warstwie Windowsa z całkowitym odcięciem interfejsów sprzętowych.
+
+---
+
+## 🛠️ [ZADANIA DLA AI - CODERA]
+
+1. **Uruchomienie Hipernadzorcy (`src/backend/sandbox/hypervisor.ts`)**:
+   - Odczytaj powiązania dla Windows Hypervisor Platform (WHPX). Zintegruj je poprzez silnik MicroVM typu `libkrun` (lub podobne CLI nakładki dla Windows). 
+   - Powołanie maszyny ma odbyć się w poniżej `200 ms` by zachować UX i nie rzucać spinnerami w oczy użytkownika. Każde wywołanie kompilacji Pythona otwiera nowy kernel (czysta instancja VCPU i odseparowane strony pamięci).
+2. **Odcięcie Sieciowe**:
+   - Agenty mają ZAKAZ robienia requestów API po cichu. Przekaż argument zablokowania interfejsów (np. `--network none` / TAP off) przy konstruowaniu instancji hypervisora.
+3. **Virtio-FS Volume Mapping**:
+   - Komunikacja na temat zwrotnych logów lub kodu wejściowego korzysta z wąskich lejków `virtio-fs`. Zamontuj jako Read-Only wyłącznie ten sam folder w którym przebywa Agent, izolując maszynę od struktury katalogów nadrzędnych. Przekazanie plików `C:\` jako dysku do wewnątrz sandboxa oblałoby system bezwarunkowo.
+
+**[WERYFIKACJA DETERMINISTYCZNA (TDD DLA 2026)]**
+- **Test 1:** Stwórz polecenie Python `import urllib.request; urllib.request.urlopen('http://example.com')` wrzucając do klasy środowiskowej uruchamiania `LocalCLIRunner`. Asercja testowa TDD MUSI potwierdzić zwrot błędu środowiska "Name Resolution Failed" potwierdzając totalne odcięcie TCP/UDP podprocesu z zachowaniem płynności interfejsu.
