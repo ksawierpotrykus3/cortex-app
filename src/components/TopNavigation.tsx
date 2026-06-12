@@ -1,5 +1,5 @@
 import React from "react";
-import { Activity, Download, Settings, FileText, PanelLeft } from "lucide-react";
+import { Activity, Download, Settings, FileText, PanelLeft, ScrollText, PenSquare, Bot } from "lucide-react";
 import { ViewMode, RightPanelState, ModalState } from "../types";
 
 export function TopNavigation({
@@ -85,6 +85,41 @@ export function TopNavigation({
             }`}
           >
             Raw Fragments
+          </button>
+          <div className="w-px h-6 bg-[rgb(var(--border))] mx-1" />
+          <button
+            onClick={() => setActiveView("agents")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "agents"
+                ? "text-violet-400 border-violet-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5" />
+            Agenci
+          </button>
+          <div className="w-px h-6 bg-[rgb(var(--border))] mx-1" />
+          <button
+            onClick={() => setActiveView("logs")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "logs"
+                ? "text-cyan-400 border-cyan-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <ScrollText className="w-3.5 h-3.5" />
+            Agent Logs
+          </button>
+          <button
+            onClick={() => setActiveView("draft")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "draft"
+                ? "text-emerald-400 border-emerald-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <PenSquare className="w-3.5 h-3.5" />
+            RLHF Draft
           </button>
         </div>
       </div>

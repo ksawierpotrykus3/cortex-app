@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Bot } from "lucide-react";
 import { LeftSidebar } from "./components/LeftSidebar";
 import { TopNavigation } from "./components/TopNavigation";
 import { NexusCanvas } from "./components/NexusCanvas";
@@ -14,9 +15,26 @@ import { RawFragmentsView } from "./components/RawFragmentsView";
 import { RightPanel } from "./components/RightPanel";
 import { ExportModal } from "./components/ExportModal";
 import { SettingsModal } from "./components/SettingsModal";
+import { LogViewer } from "./components/LogViewer";
+import { DraftZone } from "./components/DraftZone";
 import { ViewMode, RightPanelState, ModalState, NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta } from "./types";
 import { uid } from "./utils/ids";
 import { useFileSystemWatcher } from "./fs";
+
+// Phase 1: Agents UI
+import { AgentListPanel } from "./renderer/components/agents/AgentListPanel";
+import { AgentConfigPanel } from "./renderer/components/agents/AgentConfigPanel";
+import { ChangelogPanel } from "./renderer/components/changelog/ChangelogPanel";
+import { useAgentStore } from "./renderer/store/agentStore";
+import { useChangelogStore } from "./renderer/store/changelogStore";
+import { ChangelogEntry, AgentStatus } from "./shared/types/schema";
+import { NexusBridge } from "./shared/types/ipc";
+
+declare global {
+  interface Window {
+    nexusBridge?: NexusBridge;
+  }
+}
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewMode>("nexus");
@@ -42,8 +60,6 @@ export default function App() {
   
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const centerProjectIdRef = useRef<string | null>(null);
-
   useEffect(() => {
     import('./fs').then(async ({ initFS, loadWorkspace, isConnected, hasStoredHandle }) => {
       await initFS();
@@ -54,24 +70,8 @@ export default function App() {
       const isEmpty = !state.nodes?.length && !state.links?.length;
       
       if (isEmpty) {
-        try {
-          const anyWindow = window as any;
-          if (anyWindow.require) {
-            const fs = anyWindow.require('fs');
-            const path = anyWindow.require('path');
-            const os = anyWindow.require('os');
-            const docsPath = path.join(os.homedir(), 'Documents', 'nexus', 'nexus.workspace.json');
-            if (fs.existsSync(docsPath)) {
-              const content = fs.readFileSync(docsPath, 'utf8');
-              const parsed = JSON.parse(content);
-              const { set } = await import('idb-keyval');
-              await set('nexus_state', parsed);
-              state = parsed;
-            }
-          }
-        } catch (e) {
-          console.log('Auto-import failed:', e);
-        }
+        // Auto-import was removed — contextIsolation: true blokuje require() w renderer
+        // Import z plików workspace będzie dodany w Phase 3 przez StorageEngine IPC
       }
       
       setNodes(state.nodes || []);
@@ -105,7 +105,7 @@ export default function App() {
           import('./store').then(({ saveWorkspace }) => {
               saveWorkspace({ nodes, links, tasks, drafts, axioms, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas });
           });
-          (window as any).__nexusState = { nodes, links, tasks, drafts, axioms, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas };
+          // __nexusState removed — legacy pattern. State is managed via Zustand + StorageEngine IPC
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -165,11 +165,43 @@ export default function App() {
     }
   };
 
-  const handleProjectCenter = useCallback((projectId: string) => {
-    centerProjectIdRef.current = projectId;
-  }, []);
-
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
+
+  // =========================================================================
+  // Phase 1: Agents IPC hooks
+  // =========================================================================
+  useEffect(() => {
+    const bridge = window.nexusBridge;
+    if (!bridge) return;
+
+    // Load agents from main process on mount
+    bridge.getAgents().then(agents => {
+      if (agents?.length > 0) {
+        useAgentStore.getState().setAgents(agents);
+      }
+    });
+
+    // Listen for agent output — finalizuje streaming entry zamiast tworzyć nowy
+    const cleanupOutput = bridge.onAgentOutput((output) => {
+      useChangelogStore.getState().completeEntry(output.agentId, output);
+    });
+
+    // Listen for streaming tokens
+    const cleanupStream = bridge.onAgentStream((data) => {
+      useChangelogStore.getState().updateStream(data.agentId, data.token);
+    });
+
+    // Listen for status changes
+    const cleanupStatus = bridge.onAgentStatus((data) => {
+      useAgentStore.getState().updateAgentStatus(data.agentId, data.status);
+    });
+
+    return () => {
+      cleanupOutput();
+      cleanupStream();
+      cleanupStatus();
+    };
+  }, []);
 
   if (!isLoaded) return null;
 
@@ -196,7 +228,10 @@ export default function App() {
                handleNodesSelect(pNodes.map(n => n.id));
             }}
             onProjectDragStart={(pid) => setDraggedProject(pid)}
-            onProjectCenter={handleProjectCenter}
+            onProjectCenter={(pid) => {
+               const pNodes = nodes.filter(n => (n.projectId === pid || (!n.projectId && pid === 'Uncategorized')));
+               handleNodesSelect(pNodes.map(n => n.id));
+            }}
             expandedProjects={expandedProjects}
             toggleProject={(pid) => setExpandedProjects(prev => ({ ...prev, [pid]: !prev[pid] }))}
             onRenameProject={handleRenameProject}
@@ -237,7 +272,6 @@ export default function App() {
         <div className="flex-1 overflow-hidden relative">
           {activeView === "nexus" && (
               <NexusCanvas 
-                  ref={centerProjectIdRef}
                   nodes={nodes}
                   setNodes={setNodes}
                   links={links}
@@ -249,8 +283,6 @@ export default function App() {
                   expandedProjects={expandedProjects}
                   draggedProject={draggedProject}
                   onDraggedProjectRelease={() => setDraggedProject(null)}
-                  centerProjectId={centerProjectIdRef.current}
-                  onProjectCenter={handleProjectCenter}
               />
           )}
 
@@ -286,6 +318,22 @@ export default function App() {
                 availableProjects={Array.from(new Set(nodes.map(n => n.projectId).filter(Boolean))) as string[]}
             />
           )}
+          {activeView === "logs" && (
+            <LogViewer height={window.innerHeight - 56} pageSize={50} />
+          )}
+          {activeView === "draft" && (
+            <div className="flex items-start justify-center pt-8 h-full overflow-y-auto">
+              <DraftZone
+                onSaved={(mutation) => console.log('[NEXUS] Mutation saved:', mutation)}
+                onValidationError={(errors) => console.warn('[NEXUS] Validation errors:', errors)}
+              />
+            </div>
+          )}
+
+          {/* Phase 1: Agents View — 3-kolumnowy layout */}
+          {activeView === "agents" && (
+            <AgentsView />
+          )}
         </div>
 
         {/* Right Panel Overlay */}
@@ -304,13 +352,64 @@ export default function App() {
         />
       </div>
 
-      <ExportModal state={modal} onClose={() => setModal("none")} nodes={nodes} links={links} axioms={axioms.map(a => a.content).join('\n')} />
+      <ExportModal state={modal} onClose={() => setModal("none")} nodes={nodes} links={links} axioms={axioms.map(a => a.text).join('\n')} />
       <SettingsModal 
           state={modal} 
           onClose={() => setModal("none")} 
           geminiKey={geminiKey}
           setGeminiKey={setGeminiKey}
       />
+    </div>
+  );
+}
+
+// ===========================================================================
+// Phase 1: Agents View — 3-kolumnowy layout (Lista | Konfiguracja | Changelog)
+// ===========================================================================
+function AgentsView() {
+  const { agents, selectAgent } = useAgentStore();
+
+  const handleExecuteAgent = async (agentId: string) => {
+    const bridge = window.nexusBridge;
+    if (!bridge) {
+      console.warn('[AgentsView] No IPC bridge — cannot execute agent without main process');
+      return;
+    }
+
+    // Add streaming entry
+    const entry: ChangelogEntry = {
+      id: `entry_${Date.now()}`,
+      agentId,
+      agentName: useAgentStore.getState().agents.find(a => a.id === agentId)?.name || 'Agent',
+      isStreaming: true,
+      streamedContent: '',
+      createdAt: new Date().toISOString(),
+    };
+    useChangelogStore.getState().addEntry(entry);
+
+    // Execute via IPC
+    const result = await bridge.executeAgent({ id: agentId });
+    if (!result.success) {
+      useChangelogStore.getState().setEntryError(agentId, (result as any).error || 'Unknown error');
+    }
+  };
+
+  const handleStopAgent = async (agentId: string) => {
+    const bridge = window.nexusBridge;
+    if (bridge) {
+      await bridge.stopAgent({ id: agentId });
+    }
+    useAgentStore.getState().updateAgentStatus(agentId, AgentStatus.ACTIVE);
+  };
+
+  return (
+    <div className="flex flex-1 overflow-hidden">
+      <AgentListPanel
+        onExecuteAgent={handleExecuteAgent}
+        onStopAgent={handleStopAgent}
+      />
+      <AgentConfigPanel onExecute={handleExecuteAgent} />
+      <ChangelogPanel />
     </div>
   );
 }

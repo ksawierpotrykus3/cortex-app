@@ -410,7 +410,7 @@ const TaskCard: React.FC<{
   collapsed?: boolean;
   onToggle: () => void;
   onDelete: () => void;
-  onEdit?: (updates: { title: string; description: string; priority: string }) => void;
+  onEdit?: (updates: { title: string; description: string; priority: "Low" | "Medium" | "Critical" }) => void;
   onAddAnnotation: (category: 'comment' | 'raw-fragment' | 'issue', content: string) => void;
   onDeleteAnnotation: (annId: string) => void;
   onToggleMarker: (marker: ThoughtMarker) => void;
@@ -428,7 +428,7 @@ const TaskCard: React.FC<{
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDesc, setEditDesc] = useState(task.description || "");
-  const [editPriority, setEditPriority] = useState(task.priority || "Medium");
+  const [editPriority, setEditPriority] = useState<string>(task.priority || "Medium");
 
   // Annotation Editor state
   const [activeAnnotationEditor, setActiveAnnotationEditor] = useState<string | null>(null);
@@ -441,7 +441,7 @@ const TaskCard: React.FC<{
   const handleSave = () => {
     setIsEditing(false);
     if (onEdit && (editTitle !== task.title || editDesc !== (task.description || "") || editPriority !== task.priority)) {
-      onEdit({ title: editTitle, description: editDesc, priority: editPriority });
+      onEdit({ title: editTitle, description: editDesc, priority: editPriority as "Low" | "Medium" | "Critical" });
     }
   };
 

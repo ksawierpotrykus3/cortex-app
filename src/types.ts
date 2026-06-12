@@ -1,4 +1,4 @@
-export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments';
+export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'draft' | 'agents';
 export type RightPanelState = 'none' | 'axioms' | 'properties';
 export type ModalState = 'none' | 'export' | 'settings';
 

@@ -6,3 +6,16 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Build outputs
+out/
+release/
+
+# Local tooling config
+.kilo/
+
+# Archived documents (moved to _documents/nieaktualne/)
+_documents/nieaktualne/
+
+# Data directory (runtime)
+data/

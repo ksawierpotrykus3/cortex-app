@@ -82,3 +82,386 @@ select:hover {
 select:focus {
   outline: none;
 }
+
+/* ================================================================
+   NEXUS V2 — Phase 5.2: LogViewer (Virtual Windowing)
+   ================================================================
+   .log-item { height: 60px; contain: strict; } — twarde granice
+   CSS containment zapobiega Layout Thrashing.
+   ================================================================ */
+
+.log-viewer-container {
+  display: flex;
+  flex-direction: column;
+  background: rgb(var(--panel));
+  border: 1px solid rgb(var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.log-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgb(var(--border));
+  flex-shrink: 0;
+}
+
+.log-viewer-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--text-main));
+}
+
+.log-viewer-count {
+  font-size: 12px;
+  color: rgb(var(--text-muted));
+}
+
+.log-viewer-error {
+  font-size: 12px;
+  color: #ef4444;
+  margin-left: 8px;
+}
+
+.log-viewer-list-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.log-viewer-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgb(var(--text-muted));
+  font-size: 13px;
+}
+
+.log-viewer-sentinel {
+  width: 100%;
+  pointer-events: none;
+}
+
+/* ================================================================
+   Log Item — pojedynczy wiersz wirtualnej listy
+   contain: strict — izolacja CSS, brak Layout Thrashing
+   ================================================================ */
+
+.log-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 60px;
+  contain: strict;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: background 0.1s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.log-item:hover {
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.log-item-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgb(var(--text-muted));
+  width: 80px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.log-item-payload {
+  font-size: 12px;
+  color: rgb(var(--text-main));
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-item-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgb(var(--text-muted));
+  width: 70px;
+  flex-shrink: 0;
+  text-align: right;
+  opacity: 0.6;
+}
+
+/* ================================================================
+   NEXUS V2 — Phase 5.3: DraftZone (RLHF)
+   ================================================================ */
+
+.draft-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgb(var(--panel));
+  border: 1px solid rgb(var(--border));
+  border-radius: 8px;
+  max-width: 520px;
+}
+
+.draft-zone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.draft-zone-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--text-main));
+}
+
+.draft-zone-counter {
+  font-size: 11px;
+  color: rgb(var(--text-muted));
+}
+
+.draft-zone-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.draft-zone-field--checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+
+.draft-zone-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(var(--text-muted));
+}
+
+.draft-zone-input {
+  padding: 8px 12px;
+  background: rgb(var(--background));
+  border: 1px solid rgb(var(--border));
+  border-radius: 6px;
+  color: rgb(var(--text-main));
+  font-size: 13px;
+  font-family: var(--font-mono);
+  transition: border-color 0.15s ease;
+}
+
+.draft-zone-input:focus {
+  outline: none;
+  border-color: rgb(var(--accent));
+}
+
+.draft-zone-textarea {
+  padding: 8px 12px;
+  background: rgb(var(--background));
+  border: 1px solid rgb(var(--border));
+  border-radius: 6px;
+  color: rgb(var(--text-main));
+  font-size: 13px;
+  font-family: var(--font-sans);
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.15s ease;
+}
+
+.draft-zone-textarea:focus {
+  outline: none;
+  border-color: rgb(var(--accent));
+}
+
+.draft-zone-textarea--small {
+  min-height: 40px;
+}
+
+.draft-zone-hint {
+  font-size: 10px;
+  color: rgb(var(--text-muted));
+  margin-top: 2px;
+}
+
+.draft-zone-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.draft-zone-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 4px;
+  font-size: 11px;
+  color: rgb(var(--accent));
+}
+
+.draft-zone-tag-remove {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.draft-zone-tag-remove:hover {
+  opacity: 1;
+}
+
+.draft-zone-tag-input {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px dashed rgb(var(--border));
+  border-radius: 4px;
+  color: rgb(var(--text-muted));
+  font-size: 11px;
+  min-width: 120px;
+  flex: 1;
+}
+
+.draft-zone-tag-input:focus {
+  outline: none;
+  border-color: rgb(var(--accent));
+  color: rgb(var(--text-main));
+}
+
+.draft-zone-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgb(var(--text-muted));
+  cursor: pointer;
+}
+
+.draft-zone-checkbox-label input[type="checkbox"] {
+  accent-color: rgb(var(--accent));
+}
+
+.draft-zone-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+}
+
+.draft-zone-error-item {
+  font-size: 11px;
+  color: #ef4444;
+}
+
+.draft-zone-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.draft-zone-btn {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.draft-zone-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.draft-zone-btn--save {
+  background: rgb(var(--accent));
+  color: #fff;
+  border-color: rgb(var(--accent));
+}
+
+.draft-zone-btn--save:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.draft-zone-btn--clear {
+  background: transparent;
+  color: rgb(var(--text-muted));
+  border-color: rgb(var(--border));
+}
+
+.draft-zone-btn--clear:hover:not(:disabled) {
+  color: rgb(var(--text-main));
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Toast notifications */
+.draft-zone-toasts {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.draft-zone-toast {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: toast-in 0.2s ease-out;
+  max-width: 360px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.draft-zone-toast--success {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.draft-zone-toast--error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.draft-zone-toast--info {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

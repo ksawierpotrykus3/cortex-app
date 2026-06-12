@@ -23,7 +23,7 @@ export const NexusCanvas = forwardRef<NexusCanvasHandle, React.ComponentProps<ty
     }
   }));
 
-  return <NexusCanvasInner {...props} panToProjectRef={panToProjectRef} />;
+  return <NexusCanvasInner {...props} />;
 });
 
 NexusCanvas.displayName = 'NexusCanvas';
@@ -1135,16 +1135,16 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
           <span className="text-[10px] text-[rgb(var(--text-muted))] hidden group-hover:block opacity-70">
              {node.id.substring(0,4)}
           </span>
-          <Plus 
-             className="w-4 h-4 text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer"
+          <span
+             className="w-4 h-4 text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer flex items-center justify-center"
              onPointerDown={(e) => { e.stopPropagation(); setIsAddingAnnotation(!isAddingAnnotation); setShowSettings(false); }}
              title="Add inline annotation"
-          />
-          <Settings2 
-             className={`w-4 h-4 transition-colors cursor-pointer ${showSettings ? 'text-[rgb(var(--text-main))] opacity-100' : 'text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))]'}`}
+          >+</span>
+          <span
+             className={`w-4 h-4 transition-colors cursor-pointer flex items-center justify-center ${showSettings ? 'text-[rgb(var(--text-main))] opacity-100' : 'text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))]'}`}
              onPointerDown={(e) => { e.stopPropagation(); setShowSettings(!showSettings); setIsAddingAnnotation(false); }}
              title="Settings"
-          />
+          >...</span>
           {showSettings && (
              <div className="absolute top-6 right-0 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg shadow-xl p-2 z-50 min-w-[140px]" onPointerDown={e => e.stopPropagation()}>
                 <div className="text-[10px] font-bold text-[rgb(var(--text-muted))] uppercase mb-1">Font Family</div>
