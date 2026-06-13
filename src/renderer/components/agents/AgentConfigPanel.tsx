@@ -4,12 +4,15 @@
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
-import { Save, RotateCcw, Play, Trash2, Settings } from 'lucide-react';
+import { RotateCcw, Play, Trash2, Settings, Clipboard, Folder, Globe, Bot, BookOpen } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
 import { PromptEditor } from './PromptEditor';
 import { TriggerConfig } from './TriggerConfig';
+import { ContextConfigPanel } from './ContextConfigPanel';
+import { ContextBuilder } from './ContextBuilder';
+import { PermissionPanel } from './PermissionPanel';
 import { ProviderSettingsPanel } from './ProviderSettingsPanel';
-import { AgentStatus, AIProvider, TriggerType, OutputDestinationType } from '../../../shared/types/schema';
+import { AgentStatus, AIProvider, TriggerType, OutputDestinationType, PermissionSet, DEFAULT_PERMISSION_SET } from '../../../shared/types/schema';
 
 // === Provider options ======================================================
 interface ModelOption {
@@ -40,6 +43,16 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
   const { agents, selectedAgentId, updateAgent, removeAgent, selectAgent } = useAgentStore();
   const agent = agents.find(a => a.id === selectedAgentId);
 
+  // HOOKS MUST be before any early return (Rules of Hooks)
+  const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
+  const [providerSettingsOpen, setProviderSettingsOpen] = useState(false);
+  useEffect(() => {
+    const bridge = window.nexusBridge;
+    if (bridge?.getAvailableModels) {
+      bridge.getAvailableModels().then(models => setAvailableModels(models));
+    }
+  }, []);
+
   if (!agent) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[rgb(var(--background))]">
@@ -57,16 +70,7 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
   }
 
   const isRunning = agent.status === AgentStatus.RUNNING;
-
-  // Load available models from bridge
-  const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
-  const [providerSettingsOpen, setProviderSettingsOpen] = useState(false);
-  useEffect(() => {
-    const bridge = window.nexusBridge;
-    if (bridge?.getAvailableModels) {
-      bridge.getAvailableModels().then(models => setAvailableModels(models));
-    }
-  }, []);
+  const [activeTab, setActiveTab] = useState<'general' | 'context' | 'triggers' | 'permissions'>('general');
 
   // Get unique provider configs
   const providerConfigs = Array.from(new Set(availableModels.map(m => m.providerLabel)));
@@ -120,8 +124,29 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-[rgb(var(--border))] bg-[rgb(var(--panel))]/20 px-6">
+        {(['general', 'context', 'triggers', 'permissions'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 text-[12px] font-medium border-b-2 transition-colors cursor-pointer ${
+              activeTab === tab
+                ? 'text-[rgb(var(--accent))] border-[rgb(var(--accent))]'
+                : 'text-[rgb(var(--text-muted))] border-transparent hover:text-[rgb(var(--text-main))] hover:border-[rgb(var(--text-muted))]/30'
+            }`}
+          >
+            {tab === 'general' ? 'Ogólne' :
+             tab === 'context' ? 'Kontekst' :
+             tab === 'triggers' ? 'Triggers' :
+             tab === 'permissions' ? 'Uprawnienia' : tab}
+          </button>
+        ))}
+      </div>
+
       {/* Body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {activeTab === 'general' && (
         <div className="p-6 space-y-6">
           {/* Description */}
           <div>
@@ -140,12 +165,6 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
           <PromptEditor
             value={agent.promptTemplate}
             onChange={(v) => updateAgent(agent.id, { promptTemplate: v })}
-          />
-
-          {/* Trigger Config */}
-          <TriggerConfig
-            config={agent.trigger}
-            onChange={(v) => updateAgent(agent.id, { trigger: v })}
           />
 
           {/* AI Model — dynamicznie z ProviderRegistry */}
@@ -330,12 +349,12 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
                         : 'bg-[rgb(var(--panel))] text-[rgb(var(--text-muted))] border-[rgb(var(--border))] hover:border-[rgb(var(--accent))]/30'
                     }`}
                   >
-                    {dest === 'CHANGELOG' ? '📋 Changelog' :
-                     dest === 'FILE' ? '📁 Plik' :
-                     dest === 'WEBHOOK' ? '🌐 Webhook' :
-                     dest === 'AGENT' ? '🤖 Agent' :
-                     dest === 'CLIPBOARD' ? '📋 Schowek' :
-                     dest === 'KNOWLEDGE' ? '📚 Baza Wiedzy' : dest}
+                    {dest === 'CHANGELOG' ? <><Clipboard className="w-3 h-3 inline mr-1" />Changelog</> :
+                     dest === 'FILE' ? <><Folder className="w-3 h-3 inline mr-1" />Plik</> :
+                     dest === 'WEBHOOK' ? <><Globe className="w-3 h-3 inline mr-1" />Webhook</> :
+                     dest === 'AGENT' ? <><Bot className="w-3 h-3 inline mr-1" />Agent</> :
+                     dest === 'CLIPBOARD' ? <><Clipboard className="w-3 h-3 inline mr-1" />Schowek</> :
+                     dest === 'KNOWLEDGE' ? <><BookOpen className="w-3 h-3 inline mr-1" />Baza Wiedzy</> : dest}
                   </button>
                 );
               })}
@@ -376,6 +395,51 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
             />
           </div>
         </div>
+        )}
+
+        {activeTab === 'context' && (
+          <div className="p-6 space-y-6">
+            <ContextConfigPanel
+              config={agent.contextConfig}
+              onChange={(cfg) => updateAgent(agent.id, { contextConfig: cfg })}
+              agentId={agent.id}
+              agentName={agent.name}
+            />
+
+            {/* Separator */}
+            <div className="border-t border-[rgb(var(--border))]" />
+
+            {/* Context Builder (F6.8) */}
+            <div>
+              <label className="block text-[11px] font-medium text-[rgb(var(--text-muted))] uppercase tracking-wider mb-2">
+                Builder kontekstu — wybierz elementy z workspace
+              </label>
+              <ContextBuilder
+                config={agent.contextConfig}
+                onChange={(cfg) => updateAgent(agent.id, { contextConfig: cfg })}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'triggers' && (
+          <div className="p-6">
+            <TriggerConfig
+              config={agent.trigger}
+              onChange={(v) => updateAgent(agent.id, { trigger: v })}
+            />
+          </div>
+        )}
+
+        {activeTab === 'permissions' && (
+        <div className="p-6">
+          <PermissionPanel
+            value={agent.permissions}
+            onChange={(perms) => updateAgent(agent.id, { permissions: perms })}
+            availableModels={availableModels}
+          />
+        </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -386,11 +450,11 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => updateAgent(agent.id, { ...agent, status: AgentStatus.ACTIVE })}
+            onClick={() => updateAgent(agent.id, { status: AgentStatus.ACTIVE })}
             className="px-2.5 py-1 text-[11px] bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))] rounded-lg hover:bg-[rgb(var(--accent))]/20 transition-colors cursor-pointer flex items-center gap-1"
           >
             <RotateCcw className="w-3 h-3" />
-            Resetuj
+            Aktywuj
           </button>
         </div>
       </div>

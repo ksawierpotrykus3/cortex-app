@@ -1,5 +1,5 @@
 import React from "react";
-import { Activity, Download, Settings, FileText, PanelLeft, ScrollText, PenSquare, Bot } from "lucide-react";
+import { Download, Settings, FileText, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Sparkles } from "lucide-react";
 import { ViewMode, RightPanelState, ModalState } from "../types";
 
 export function TopNavigation({
@@ -10,9 +10,6 @@ export function TopNavigation({
   setModal,
   isSidebarOpen,
   setIsSidebarOpen,
-  fsConnected,
-  hasStoredFS,
-  onConnectFS,
 }: {
   activeView: ViewMode;
   setActiveView: (view: ViewMode) => void;
@@ -21,9 +18,6 @@ export function TopNavigation({
   setModal: (modal: ModalState) => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (v: boolean) => void;
-  fsConnected?: boolean;
-  hasStoredFS?: boolean;
-  onConnectFS?: () => void;
 }) {
   return (
     <div className="h-14 border-b border-[rgb(var(--border))] bg-[rgb(var(--panel))] flex items-center justify-between px-6 shrink-0 z-50 shadow-sm">
@@ -121,6 +115,61 @@ export function TopNavigation({
             <PenSquare className="w-3.5 h-3.5" />
             RLHF Draft
           </button>
+          <button
+            onClick={() => setActiveView("changes")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "changes"
+                ? "text-amber-400 border-amber-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            Zmiany
+          </button>
+          <button
+            onClick={() => setActiveView("wiki")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "wiki"
+                ? "text-emerald-400 border-emerald-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            Wiki
+          </button>
+          <button
+            onClick={() => setActiveView("pipeline")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "pipeline"
+                ? "text-purple-400 border-purple-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <Network className="w-3.5 h-3.5" />
+            Pipeline
+          </button>
+          <button
+            onClick={() => setActiveView("workflows")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "workflows"
+                ? "text-orange-400 border-orange-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <Workflow className="w-3.5 h-3.5" />
+            Workflows
+          </button>
+          <button
+            onClick={() => setActiveView("git")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
+              activeView === "git"
+                ? "text-orange-400 border-orange-400"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            <GitBranch className="w-3.5 h-3.5" />
+            Git
+          </button>
         </div>
       </div>
 
@@ -143,6 +192,20 @@ export function TopNavigation({
             </button>
         </div>
         
+        <div className="w-px h-6 bg-[rgb(var(--border))] ml-1" />
+        
+        {/* KillSwitch button — only icon, full banner in App.tsx */}
+        <KillSwitchTopButton />
+
+        {/* Semantic Search trigger — wysyła custom event do SemanticSearch */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('nx:toggle-search', { detail: {} }))}
+          className="p-2 text-[rgb(var(--text-muted))] hover:text-purple-400 hover:bg-[rgb(var(--background))] transition-colors cursor-pointer rounded-lg"
+          title="Szukaj AI (Ctrl+Shift+F)"
+        >
+          <Sparkles size={16} />
+        </button>
+
         <div className="w-px h-6 bg-[rgb(var(--border))]" />
 
         <button
@@ -154,5 +217,56 @@ export function TopNavigation({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Mini KillSwitch button for TopNavigation — always visible icon */
+function KillSwitchTopButton() {
+  const [active, setActive] = React.useState(false);
+  const [hasProcesses, setHasProcesses] = React.useState(false);
+
+  React.useEffect(() => {
+    const check = async () => {
+      try {
+        const bridge = (window as any).nexusBridge as any;
+        if (bridge?.getKillSwitchStatus) {
+          const status = await bridge.getKillSwitchStatus();
+          setActive(status.active);
+          setHasProcesses(status.activeAgents > 0 || status.activePipelines > 0 || status.activeWorkflows > 0);
+        }
+      } catch {}
+    };
+    check();
+    const interval = setInterval(check, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const toggle = async () => {
+    try {
+      const bridge = (window as any).nexusBridge as any;
+      if (active) {
+        await bridge.deactivateKillSwitch();
+        setActive(false);
+      } else {
+        await bridge.activateKillSwitch({ reason: 'Kill from TopNav' });
+        setActive(true);
+      }
+    } catch {}
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      className={`p-2 rounded-lg transition-all cursor-pointer ${
+        active
+          ? 'text-red-400 bg-red-500/20 animate-pulse'
+          : hasProcesses
+            ? 'text-amber-400'
+            : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--background))]'
+      }`}
+      title={active ? 'Kill Switch aktywny — dezaktywuj' : hasProcesses ? 'Zatrzymaj wszystkie procesy' : 'Kill Switch (emergency stop)'}
+    >
+      <Shield size={16} />
+    </button>
   );
 }

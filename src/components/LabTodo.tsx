@@ -1,7 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Pencil, Check, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Download } from "lucide-react";
 import { Task, ThoughtMarker, NexusAnnotation } from "../types";
+import { generateAIExport, downloadFile, generateExportFilename, getExportPreset, TaskExport } from "../exportEngine";
 import { uid } from "../utils/ids";
+import { HistoryButton } from "./HistoryButton";
+import { useDiffStore } from "../renderer/store/diffStore";
 
 export function LabTodo({
   setLabView,
@@ -106,6 +109,11 @@ export function LabTodo({
   };
 
   const handleDeleteTask = (id: string) => {
+    // Snapshot before deleting task
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      useDiffStore.getState().snapshotBeforeEdit(id, 'task', task.description || '', task.title);
+    }
     setTasks(tasks.filter(t => t.id !== id));
   };
 
@@ -219,6 +227,25 @@ export function LabTodo({
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                   </select>
+                  <button
+                    onClick={() => {
+                      const exportTasks: TaskExport[] = activeTasks.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        description: t.description,
+                        priority: t.priority,
+                        status: t.status,
+                      }));
+                      const preset = getExportPreset("lab-todo");
+                      const data = generateAIExport([], [], "", preset.scope, exportTasks);
+                      downloadFile(data, generateExportFilename(preset.label));
+                    }}
+                    className="px-3 py-1.5 border border-[rgb(var(--border))] rounded-lg text-[13px] font-medium text-[rgb(var(--text-main))] bg-[rgb(var(--background))] hover:bg-[rgb(var(--panel))] transition-colors flex items-center gap-1.5 cursor-pointer"
+                    title="Eksportuj zadania (Ctrl+Shift+E)"
+                  >
+                    <Download className="w-3.5 h-3.5 text-[rgb(var(--accent))]" />
+                    Export
+                  </button>
              </div>
           </div>
 
@@ -253,7 +280,7 @@ export function LabTodo({
                  <div className="flex items-center gap-3">
                     <select 
                       value={newTaskPriority}
-                      onChange={(e) => setNewTaskPriority(e.target.value as any)}
+                      onChange={(e) => setNewTaskPriority(e.target.value as 'Low' | 'Medium' | 'Critical')}
                       className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] text-[12px] text-[rgb(var(--text-main))] px-2 py-1 rounded-md outline-none cursor-pointer"
                     >
                       <option>Low</option>
@@ -283,6 +310,8 @@ export function LabTodo({
                       onToggle={() => handleToggleTask(task.id)}
                       onDelete={() => handleDeleteTask(task.id)}
                       onEdit={(updates) => {
+                        // Snapshot before editing
+                        useDiffStore.getState().snapshotBeforeEdit(task.id, 'task', task.description || '', task.title);
                         setTasks(tasks.map(t => t.id === task.id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t));
                       }}
                       onAddAnnotation={(category, content) => {
@@ -672,6 +701,15 @@ const TaskCard: React.FC<{
                 <Pencil className="w-3.5 h-3.5" />
               </button>
           )}
+
+          {/* #5: History button */}
+          <HistoryButton
+            entityId={task.id}
+            entityType="task"
+            title={task.title}
+            content={task.description || ''}
+          />
+
           <button onClick={onDelete} className="p-1.5 text-[rgb(var(--text-muted))] hover:text-red-400 rounded-md hover:bg-red-400/10 transition-colors cursor-pointer">
             <Trash2 className="w-3.5 h-3.5" />
           </button>

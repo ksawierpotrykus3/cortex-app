@@ -162,11 +162,5 @@ describe('LogViewer — Performance: 2000 messages under 16ms commit', () => {
     // który naturalnie rośnie — ale w rzeczywistym komponencie
     // react-window, commit time jest STAŁY.
     console.log(`Processing times (ms): min=${minTime}, max=${maxTime}, diff=${maxTime - minTime}`);
-
-    // Ten test jest asertywny — jeśli Virtual Windowing nie działa,
-    // czas renderowania będzie rósł liniowo z liczbą elementów.
-    // W prawdziwym środowisku DOM (JSDOM/Playwright), zmierzylibyśmy
-    // faktyczny czas React commit.
-    expect(true).toBe(true); // strukturalna weryfikacja przeszła
   }, 30_000);
 });

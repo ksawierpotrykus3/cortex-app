@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { X, Plus, Activity, Image as ImageIcon, Link2, Unlink, Trash2, Move } from "lucide-react";
+import { X, Plus, Activity, Image as ImageIcon, Link2, Unlink, Trash2, Move, Loader2, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 import { RightPanelState, NexusNode, NexusAnnotation, NexusLink } from "../types";
 import { uid } from "../utils/ids";
 
@@ -226,7 +226,7 @@ function PropertiesPanelContent({
                     {att.mimeType.split('/')[1]?.toUpperCase() || 'IMG'}
                   </div>
                   <div className="text-[11px] text-[rgb(var(--text-muted))]">
-                    {att.isProcessing ? '⏳ Analizuję...' : att.geminiResponse ? '✅ Przetworzono' : att.geminiError ? '⚠ Błąd' : '⏳ Oczekuje'}
+                    {att.isProcessing ? <><Loader2 className="w-3 h-3 inline animate-spin mr-1" />Analizuję...</> : att.geminiResponse ? <><CheckCircle className="w-3 h-3 inline mr-1" />Przetworzono</> : att.geminiError ? <><AlertTriangle className="w-3 h-3 inline mr-1" />Błąd</> : <><Clock className="w-3 h-3 inline mr-1" />Oczekuje</>}
                   </div>
                 </div>
                 <button
@@ -307,7 +307,7 @@ function PropertiesPanelContent({
                           className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] text-[12px] text-[rgb(var(--text-main))] px-2 py-1 rounded-md outline-none cursor-pointer"
                           value={ann.category}
                           onChange={(e) => {
-                             const updated = (selectedNode.annotations || []).map(a => a.id === ann.id ? { ...a, category: e.target.value as any } : a);
+                             const updated = (selectedNode.annotations || []).map(a => a.id === ann.id ? { ...a, category: e.target.value as 'comment' | 'raw-fragment' | 'issue' } : a);
                              onNodeUpdate?.(selectedNode.id, { annotations: updated });
                           }}
                        >

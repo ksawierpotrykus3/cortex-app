@@ -1,5 +1,5 @@
 import React from "react";
-import { Loader2, X, Expand } from "lucide-react";
+import { Loader2, X, Expand, AlertTriangle } from "lucide-react";
 import { ImageAttachment } from "../types";
 
 export interface ImageAttachmentsUIProps {
@@ -57,7 +57,7 @@ export function ImageAttachmentsUI({ attachments, onRemove }: ImageAttachmentsUI
 
           {att.geminiError && (
             <div className="px-3 py-2 bg-red-500/10 text-red-400 text-[12px] border-t border-red-500/30">
-              ⚠ {att.geminiError}
+              <AlertTriangle className="w-3.5 h-3.5 inline mr-1" /> {att.geminiError}
             </div>
           )}
         </div>

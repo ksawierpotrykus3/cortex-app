@@ -43,40 +43,44 @@ export const useChangelogStore = create<ChangelogStoreState>((set, get) => ({
     return { entries: newEntries };
   }),
 
-  updateStream: (agentId, token) => set((state) => ({
-    entries: state.entries.map((e) =>
-      e.agentId === agentId && e.isStreaming
-        ? { ...e, streamedContent: e.streamedContent + token }
-        : e
-    ),
-  })),
+  updateStream: (agentId, token) => set((state) => {
+    // Find the most recent streaming entry for this agent to avoid updating stale entries
+    const lastIdx = state.entries.findIndex((e) => e.agentId === agentId && e.isStreaming);
+    if (lastIdx === -1) return state;
+    const entries = [...state.entries];
+    const entry = { ...entries[lastIdx], streamedContent: entries[lastIdx].streamedContent + token };
+    entries[lastIdx] = entry;
+    return { entries };
+  }),
 
-  completeEntry: (agentId, output) => set((state) => ({
-    entries: state.entries.map((e) =>
-      e.agentId === agentId && e.isStreaming
-        ? {
-            ...e,
-            isStreaming: false,
-            streamedContent: output.content,
-            output,
-          }
-        : e
-    ),
-  })),
+  completeEntry: (agentId, output) => set((state) => {
+    const lastIdx = state.entries.findIndex((e) => e.agentId === agentId && e.isStreaming);
+    if (lastIdx === -1) return state;
+    const entries = [...state.entries];
+    const entry = {
+      ...entries[lastIdx],
+      isStreaming: false,
+      streamedContent: output.content,
+      output,
+    };
+    entries[lastIdx] = entry;
+    return { entries };
+  }),
 
-  setEntryError: (agentId, error) => set((state) => ({
-    entries: state.entries.map((e) =>
-      e.agentId === agentId && e.isStreaming
-        ? {
-            ...e,
-            isStreaming: false,
-            output: e.output
-              ? { ...e.output, error, status: AgentStatus.CRASHED }
-              : undefined,
-          }
-        : e
-    ),
-  })),
+  setEntryError: (agentId, error) => set((state) => {
+    const lastIdx = state.entries.findIndex((e) => e.agentId === agentId && e.isStreaming);
+    if (lastIdx === -1) return state;
+    const entries = [...state.entries];
+    const entry = {
+      ...entries[lastIdx],
+      isStreaming: false,
+      output: entries[lastIdx].output
+        ? { ...entries[lastIdx].output!, error, status: AgentStatus.CRASHED }
+        : undefined,
+    };
+    entries[lastIdx] = entry;
+    return { entries };
+  }),
 
   approveEntry: (entryId) => set((state) => ({
     entries: state.entries.map((e) =>

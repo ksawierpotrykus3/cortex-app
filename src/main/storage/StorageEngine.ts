@@ -15,7 +15,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Agent, AgentOutput } from '../../shared/types/schema';
+import { Agent, AgentOutput, Pipeline, WorkspaceEntity } from '../../shared/types/schema';
+import { WorkflowDefinition, WorkflowExecutionResult } from '../../shared/types/workflow';
 
 // === Database Row Types ====================================================
 interface AgentRow {
@@ -88,6 +89,7 @@ export class StorageEngine {
         id TEXT PRIMARY KEY,
         agent_id TEXT NOT NULL,
         agent_name TEXT NOT NULL,
+        status TEXT DEFAULT 'ACTIVE',
         content TEXT,
         tokens_used INTEGER DEFAULT 0,
         execution_ms INTEGER DEFAULT 0,
@@ -201,12 +203,12 @@ export class StorageEngine {
     if (this.db) {
       try {
         const stmt = this.db.prepare(`
-          INSERT INTO outputs (id, agent_id, agent_name, content, tokens_used, execution_ms,
+          INSERT INTO outputs (id, agent_id, agent_name, status, content, tokens_used, execution_ms,
             trigger_type, model_name, rating, approved, tags, error, created_at, completed_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         stmt.run(
-          output.id, output.agentId, output.agentName, output.content,
+          output.id, output.agentId, output.agentName, output.status || 'ACTIVE', output.content,
           output.tokensUsed, output.executionMs, output.triggerType,
           output.modelName, output.rating,
           output.approved === null ? null : output.approved ? 1 : 0,
@@ -315,6 +317,55 @@ export class StorageEngine {
   }
 
   // =========================================================================
+  // Output Stats & Management (F6.3)
+  // =========================================================================
+
+  getOutputStats(agentId: string): { total: number; avgTokens: number; avgExecutionMs: number; errorRate: number } {
+    if (this.db) {
+      const row = this.db.prepare(`
+        SELECT
+          COUNT(*) as total,
+          COALESCE(AVG(tokens_used), 0) as avgTokens,
+          COALESCE(AVG(execution_ms), 0) as avgExecutionMs,
+          CAST(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) as errorRate
+        FROM outputs WHERE agent_id = ?
+      `).get(agentId) as any;
+      return {
+        total: row.total,
+        avgTokens: row.avgTokens,
+        avgExecutionMs: row.avgExecutionMs,
+        errorRate: row.errorRate || 0,
+      };
+    }
+
+    // Fallback: scan JSONL
+    const outputs = this.getOutputs(agentId, 10000);
+    const total = outputs.length;
+    if (total === 0) return { total: 0, avgTokens: 0, avgExecutionMs: 0, errorRate: 0 };
+    const sumTokens = outputs.reduce((s, o) => s + o.tokensUsed, 0);
+    const sumMs = outputs.reduce((s, o) => s + o.executionMs, 0);
+    const errors = outputs.filter(o => o.error).length;
+    return {
+      total,
+      avgTokens: Math.round(sumTokens / total),
+      avgExecutionMs: Math.round(sumMs / total),
+      errorRate: errors / total,
+    };
+  }
+
+  deleteOutput(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM outputs WHERE id = ?').run(id);
+    }
+  }
+
+  clearOutputs(agentId: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM outputs WHERE agent_id = ?').run(agentId);
+    }
+  }
+
+  // =========================================================================
   // System Logs
   // =========================================================================
 
@@ -330,6 +381,142 @@ export class StorageEngine {
       ...entry,
       timestamp: new Date().toISOString(),
     }) + '\n', 'utf8');
+  }
+
+  // =========================================================================
+  // Workspace Entity Storage (F6.2) — przechowuje encje z workspace renderera
+  // =========================================================================
+
+  private workspaceEntities: WorkspaceEntity[] = [];
+
+  syncWorkspaceEntities(entities: WorkspaceEntity[]): void {
+    this.workspaceEntities = entities;
+    // Persist to disk
+    const wsDir = path.join(this.basePath, 'workspace');
+    if (!fs.existsSync(wsDir)) {
+      fs.mkdirSync(wsDir, { recursive: true });
+    }
+    fs.writeFileSync(
+      path.join(wsDir, 'entities.json'),
+      JSON.stringify(entities, null, 2),
+      'utf8'
+    );
+  }
+
+  getWorkspaceEntities(): WorkspaceEntity[] {
+    if (this.workspaceEntities.length > 0) return this.workspaceEntities;
+    // Fallback: read from disk
+    const wsPath = path.join(this.basePath, 'workspace', 'entities.json');
+    if (fs.existsSync(wsPath)) {
+      try {
+        this.workspaceEntities = JSON.parse(fs.readFileSync(wsPath, 'utf8')) as WorkspaceEntity[];
+        return this.workspaceEntities;
+      } catch { /* ignore */ }
+    }
+    return [];
+  }
+
+  getWorkspaceEntitiesByType(type: WorkspaceEntity['type']): WorkspaceEntity[] {
+    return this.getWorkspaceEntities().filter(e => e.type === type);
+  }
+
+  // =========================================================================
+  // Pipeline Storage (F6.12)
+  // =========================================================================
+
+  savePipeline(pipeline: Pipeline): void {
+    const pipelineDir = path.join(this.basePath, 'pipelines');
+    if (!fs.existsSync(pipelineDir)) {
+      fs.mkdirSync(pipelineDir, { recursive: true });
+    }
+    fs.writeFileSync(
+      path.join(pipelineDir, `${pipeline.id}.json`),
+      JSON.stringify(pipeline, null, 2),
+      'utf8'
+    );
+  }
+
+  getPipeline(id: string): Pipeline | null {
+    const pipelinePath = path.join(this.basePath, 'pipelines', `${id}.json`);
+    if (fs.existsSync(pipelinePath)) {
+      return JSON.parse(fs.readFileSync(pipelinePath, 'utf8')) as Pipeline;
+    }
+    return null;
+  }
+
+  getAllPipelines(): Pipeline[] {
+    const pipelineDir = path.join(this.basePath, 'pipelines');
+    if (!fs.existsSync(pipelineDir)) return [];
+    return fs.readdirSync(pipelineDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(pipelineDir, f), 'utf8')) as Pipeline);
+  }
+
+  deletePipeline(id: string): void {
+    const pipelinePath = path.join(this.basePath, 'pipelines', `${id}.json`);
+    if (fs.existsSync(pipelinePath)) {
+      fs.unlinkSync(pipelinePath);
+    }
+  }
+
+  // =========================================================================
+  // Workflow Storage (#1)
+  // =========================================================================
+
+  saveWorkflow(workflow: WorkflowDefinition): void {
+    const workflowDir = path.join(this.basePath, 'workflows');
+    if (!fs.existsSync(workflowDir)) {
+      fs.mkdirSync(workflowDir, { recursive: true });
+    }
+    fs.writeFileSync(
+      path.join(workflowDir, `${workflow.id}.json`),
+      JSON.stringify(workflow, null, 2),
+      'utf8'
+    );
+  }
+
+  getWorkflow(id: string): WorkflowDefinition | null {
+    const workflowPath = path.join(this.basePath, 'workflows', `${id}.json`);
+    if (fs.existsSync(workflowPath)) {
+      return JSON.parse(fs.readFileSync(workflowPath, 'utf8')) as WorkflowDefinition;
+    }
+    return null;
+  }
+
+  getAllWorkflows(): WorkflowDefinition[] {
+    const workflowDir = path.join(this.basePath, 'workflows');
+    if (!fs.existsSync(workflowDir)) return [];
+    return fs.readdirSync(workflowDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(workflowDir, f), 'utf8')) as WorkflowDefinition);
+  }
+
+  deleteWorkflow(id: string): void {
+    const workflowPath = path.join(this.basePath, 'workflows', `${id}.json`);
+    if (fs.existsSync(workflowPath)) {
+      fs.unlinkSync(workflowPath);
+    }
+  }
+
+  saveWorkflowResult(result: WorkflowExecutionResult): void {
+    const resultsDir = path.join(this.basePath, 'workflow-results');
+    if (!fs.existsSync(resultsDir)) {
+      fs.mkdirSync(resultsDir, { recursive: true });
+    }
+    fs.writeFileSync(
+      path.join(resultsDir, `${result.id}.json`),
+      JSON.stringify(result, null, 2),
+      'utf8'
+    );
+  }
+
+  getWorkflowResults(workflowId: string): WorkflowExecutionResult[] {
+    const resultsDir = path.join(this.basePath, 'workflow-results');
+    if (!fs.existsSync(resultsDir)) return [];
+    return fs.readdirSync(resultsDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(resultsDir, f), 'utf8')) as WorkflowExecutionResult)
+      .filter(r => r.workflowId === workflowId);
   }
 
   // =========================================================================

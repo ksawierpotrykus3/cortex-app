@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { create } from 'zustand';
-import { Agent, AgentStatus, TriggerType, AIProvider, AgentOutput } from '../../shared/types/schema';
+import { Agent, AgentStatus, TriggerType, AIProvider, AgentOutput, OutputDestinationType } from '../../shared/types/schema';
 
 // === Default Agent Template ================================================
 export function createDefaultAgent(name?: string): Agent {
@@ -42,6 +42,7 @@ export function createDefaultAgent(name?: string): Agent {
     errorCount: 0,
     rating: 0,
     tags: [],
+    permissions: undefined,
   };
 }
 

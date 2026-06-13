@@ -1,7 +1,7 @@
 # NEXUS SYSTEM — Pełny przegląd stanu projektu
 
 > Dokumentacja adresowana do każdego AI. Po wklejeniu tego pliku AI ma kompletne zrozumienie projektu bez potrzeby czytania kodu źródłowego.
-> **Status: AKTUALNY na 2026-06-12.**
+> **Status: AKTUALNY na 2026-06-13.**
 
 ---
 
@@ -24,16 +24,18 @@ Technologicznie to aplikacja **Electron + Vite + React 19 + TypeScript**, stylow
 
 ## 2. Komendy gita i historia wersji (dowód deterministyczny)
 
-Repozytorium zawiera **2 commity**:
+Repozytorium zawiera **3 commity**:
 
 | Hash | Data | Autor | Opis |
 |------|------|-------|------|
 | `eeec02d` | 2026-06-09 23:20 | Ksawier | feat(architecture): complete Phase 1-4 backend engine |
 | `deb8420` | 2026-06-09 23:58 | Ksawier | feat(rag): remove ONNX runtime, migrate to API embeddings (Phase 6.1) |
+| `f3029ad` | 2026-06-12 16:27 | Ksawier | cleanup: phase 1-2 completion, lint & test fixes, archive old docs |
 
 - **Branch**: `master`
-- **Status working directory**: liczne pliki niecommitowane (untracked) — nowa architektura agentów, frontend Phase 1-2, przebudowa backendu.
-- **Pliki usunięte z gita**: stary `electron-main.cjs`, stare pliki backendu `src/backend/*`, stare pliki `vite.config.ts`, `vite.worker.config.ts`.
+- **Status working directory**: czysty — wszystkie zmiany zacommitowane.
+- **Pliki usunięte z gita**: stary `electron-main.cjs`, stare pliki backendu `src/backend/*`, stare pliki `vite.config.ts`, `vite.worker.config.ts`, całe `zadanie_tymczasowe/` (przeniesione do archiwum).
+- **Brak remote**: repozytorium istnieje tylko lokalnie.
 
 ---
 
@@ -46,9 +48,9 @@ Repozytorium zawiera **2 commity**:
 ├── tsconfig.json                # TypeScript
 ├── vitest.config.ts             # Vitest (testy)
 ├── .env.example                 # Szablon zmiennych środowiskowych
-├── metadata.json                # Metadane AI Studio
-├── nexus_drafts_2026-06-07.json # Export draftów
+├── COMMIT_MSG.txt              # Tymczasowy plik commita (do usunięcia)
 ├── NEXUS_PROJECT_STATUS.md      # → TEN PLIK
+├── NEXUS_IMPLEMENTATION_PLAN.md # Plan wdrożenia faz 3-6
 │
 ├── src/
 │   ├── main.tsx                 # Bootstrap React
@@ -121,13 +123,16 @@ Repozytorium zawiera **2 commity**:
 │   └── utils/
 │       ├── ids.ts, image.ts, dates.ts, geminiVision.ts
 │
-├── zadanie_tymczasowe/         # Dokumentacja planistyczna
-│   ├── plan_uzytkownika.md     # Plan funkcjonalny bez technikaliów
-│   ├── 2/                      # V2 Architecture — GOTOWCE DLA FLASHA
-│   │   └── NEXUS_V2_GOTOWCE_DLA_FLASHA/  # Pełny kod źródłowy V2
-│   ├── 3/                      # V3 — Deep research + fazy
-│   ├── PAKIETY_BADAWCZE_Mega_Mind/ # 5 rund audytu architektury
-│   └── ARCHIWUM_Stare_Koncepcje/  # Historia decyzji
+├── _documents/
+│   ├── aktualne/
+│   │   ├── NEXUS_PROJECT_STATUS.md      # Stan projektu (kopia)
+│   │   ├── NEXUS_IMPLEMENTATION_PLAN.md # Plan wdrożenia (kopia)
+│   │   └── plan_uzytkownika.md          # Plan funkcjonalny
+│   └── nieaktualne/                     # Archiwum dokumentów
+│       ├── Resolving Nexus Project Tasks.md
+│       ├── nexus_drafts_2026-06-07.json
+│       ├── metadata.json
+│       └── zadanie_tymczasowe/          # Cała stara dokumentacja
 │
 ├── out/                        # Build output (electron-vite)
 ├── release/                    # Instalatory (Nexus System Setup 1.0.0.exe)
@@ -143,7 +148,7 @@ Wszystkie typy zdefiniowane w [types.ts](file:///c:/Users/Ksawier/Pictures/Scree
 ### Podstawowe typy UI
 | Typ | Kluczowe pola | Rola |
 |---|---|---|
-| `ViewMode` | `'nexus' \| 'lab-todo' \| 'lab-writing' \| 'sandbox' \| 'raw-fragments' \| 'logs' \| 'draft' \| 'agents'` | 8 widoków |
+| `ViewMode` | `'nexus' \| 'lab-todo' \| 'lab-writing' \| 'sandbox' \| 'raw-fragments' \| 'logs' \| 'draft' \| 'agents' \| 'changes' \| 'wiki' \| 'git' \| 'pipeline'` | 12 widoków |
 | `RightPanelState` | `'none' \| 'axioms' \| 'properties'` | Stan prawego panelu |
 | `ModalState` | `'none' \| 'export' \| 'settings'` | Modal |
 | `ThoughtMarker` | `'certain' \| 'hypothesis' \| 'question' \| 'answer'` | Kropki pewności |
@@ -182,7 +187,7 @@ Wszystkie typy zdefiniowane w [types.ts](file:///c:/Users/Ksawier/Pictures/Scree
 `App.tsx` jest centralnym orchestreatorem. Przechowuje stan w `useState`:
 
 ```
-activeView          — 8 widoków (nexus, lab-todo, lab-writing, sandbox, raw-fragments, logs, draft, agents)
+activeView          — 12 widoków (nexus, lab-todo, lab-writing, sandbox, raw-fragments, logs, draft, agents, changes, wiki, git, pipeline)
 rightPanel          — 'none' | 'axioms' | 'properties'
 modal               — 'none' | 'export' | 'settings'
 nodes / links       — graf
@@ -223,7 +228,7 @@ Komunikacja renderer ↔ main przez `contextBridge` + `ipcMain.handle`:
 
 ---
 
-## 6. Widoki aplikacji (8 widoków)
+## 6. Widoki aplikacji (12 widoków)
 
 ### 6.1 `nexus` (płótno node-graph)
 - Komponenty: `NexusCanvas` + `LeftSidebar` + `TopNavigation`
@@ -409,42 +414,43 @@ Plik: [src/main/index.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/sr
 | 2.8 Adnotacje w Lab | ✅ | types.ts — `NexusAnnotation` na Task/WritingDraft |
 | 2.9 Kolorowe kropki pewności | ✅ | types.ts — `ThoughtMarker` |
 
-### FAZA 3 — Topology (0/5 ❌)
+### FAZA 3 — Topology (4/4 ✅)
 | Zadanie | Status | Dowód |
 |---------|--------|-------|
-| 3.1 Screenshoty bez tekstu | ❌ | Brak kodu |
-| 3.2 Freeze resize nodów | ❌ | Brak kodu |
-| 3.3 Collapse nodów | ❌ | Brak kodu |
-| 3.4 Teleport z nawigacji | ❌ | Brak kodu |
-| 3.5 Usuwanie połączeń (już w F1) | ✅ | Przeniesione do F1.9 |
+| 3.1 Screenshoty bez tekstu | ✅ | [NexusCanvas.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/NexusCanvas.tsx) — `cleanImageMode` |
+| 3.2 Freeze resize nodów | ✅ | [NexusCanvas.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/NexusCanvas.tsx) — uchwyt resize w NodeCard |
+| 3.3 Collapse nodów | ✅ | [NexusCanvas.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/NexusCanvas.tsx) — `collapsed` toggle |
+| 3.4 Teleport z nawigacji | ✅ | [NexusCanvas.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/NexusCanvas.tsx) — `panToProject`/`centerOnNode` przez ref |
 
-### FAZA 4 — Tablica Zmian (0/1 ❌)
+### FAZA 4 — Tablica Zmian (3/3 ✅)
 | Zadanie | Status | Dowód |
 |---------|--------|-------|
-| 4.1 Tablica Zmian + "Brakuje mi..." | ❌ | Brak kodu — nie istnieje widok "changes" w ViewMode |
+| 4.1 Typy `ChangeEntry` + `FeedbackEntry` | ✅ | [types.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/types.ts) — interfejsy + `ViewMode` zawiera 'changes' |
+| 4.2 `ChangesPanel` z filtrowaniem i infinite scroll | ✅ | [ChangesPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ChangesPanel.tsx) — timeline, filtry typ/data, infinite scroll |
+| 4.3 `ChangeLog` + integracja z `App.tsx` + `FeedbackButton` | ✅ | [changelog.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/changelog.ts) — CircularBuffer + [FeedbackButton.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/FeedbackButton.tsx) |
 
-### FAZA 5 — Export (0/3 ❌)
+### FAZA 5 — Export (3/3 ✅)
 | Zadanie | Status | Dowód |
 |---------|--------|-------|
-| 5.1 Nazwy plików z nazwą projektu | ❌ | [ExportModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ExportModal.tsx) — stary export |
-| 5.2 Multi-scope + ptaszki | ❌ | Brak implementacji |
-| 5.3 Export z każdego miejsca | ❌ | Tylko jeden przycisk Export |
+| 5.1 Nazwy plików z nazwą projektu | ✅ | [exportEngine.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/exportEngine.ts#L128-L143) — `sanitizeFilename()`, `generateExportFilename()`, `generateProjectFilename()` |
+| 5.2 Multi-scope + ptaszki | ✅ | [ExportScopeSelector.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ExportScopeSelector.tsx) — checkboxy, hasData, disabled, tooltip, toggle all |
+| 5.3 Export kontekstowy | ✅ | [ExportModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ExportModal.tsx) — VIEW_EXPORT_PRESETS, quick export 1-klik w LabTodo/LabWriting/RawFragments/NexusCanvas |
 
-### FAZA 6 — Warsztat AI (zrealizowane podzbiory)
+### FAZA 6 — Warsztat AI (12/12 ✅)
 | Zadanie | Status | Dowód |
 |---------|--------|-------|
 | 6.1 System agentów (CRUD + execute) | ✅ | AgentOrchestrator + IPC Bridge + UI |
-| 6.2 Multi-provider (Gemini/OpenRouter/Ollama) | ✅ | ProviderRegistry + adaptery |
+| 6.2 Context Builder | ✅ | ContextConfigPanel.tsx + AgentOrchestrator.buildContext() |
 | 6.3 Streaming outputów | ✅ | ChangelogPanel + IPC stream |
 | 6.4 DraftZone (RLHF feedback) | ✅ | DraftZone.tsx + testy |
 | 6.5 LogViewer | ✅ | LogViewer.tsx + testy |
 | 6.6 Approve/reject outputów | ✅ | ChangelogStore + ChangelogPanel |
-| 6.7 Permission system | ❌ | Brak kodu |
-| 6.8 Budowniczy kontekstu z ptaszkami | ❌ | Brak kodu |
-| 6.9 Magazyny (buffery agentów) | ❌ | Brak kodu |
-| 6.10 Wiki / Baza wiedzy (CRUD) | ❌ | Brak kodu (Sandbox to nie Wiki) |
-| 6.11 System feedbacku "Brakuje mi..." | ❌ | Brak kodu |
-| 6.12 Presety agentów | ❌ | Brak kodu |
+| 6.7 Permission system | ✅ | [PermissionPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/PermissionPanel.tsx) + testy + enforcement w AgentOrchestrator |
+| 6.8 Magazyny outputów (historia + paginacja) | ✅ | [AgentHistoryPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/AgentHistoryPanel.tsx) — modal z infinite scroll, filtrami, statystykami |
+| 6.9 Wiki / Baza wiedzy (CRUD + search) | ✅ | [WikiPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/WikiPanel.tsx) — lista, search, kategorie, CRUD |
+| 6.10 System feedbacku "Brakuje mi..." | ✅ | [FeedbackModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/FeedbackModal.tsx) — #26 Universal Feedback z kontekstem |
+| 6.11 Presety agentów (4 szablony) | ✅ | [AgentPresets.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/AgentPresets.ts) — Streszczacz, Korektor, Brainstormer, Analityk |
+| 6.12 Pipeline DAG (łączenie agentów) | ✅ | [PipelineExecutor.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/PipelineExecutor.ts) — silnik DAG + [PipelineEditor.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/PipelineEditor.tsx) — wizualny edytor + 10 testów |
 
 ---
 
@@ -453,20 +459,53 @@ Plik: [src/main/index.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/sr
 ### W 100% zrealizowane:
 - **Faza 1** (9 bugfixów) — całość
 - **Faza 2** (9 funkcji zarządzania treścią) — całość
+- **Faza 3** (Topologia: screenshoty, freeze/resize, collapse, teleport) — całość
+- **Faza 4** (Tablica Zmian: ChangeEntry, ChangesPanel, ChangeLog, FeedbackButton) — całość
+- **Faza 5** (Export: nazwy plików, multi-scope, export kontekstowy) — całość
+- **Faza 6** (Warsztat AI) — **12/12 (wszystkie zadania kompletne)**
+- **Pipeline DAG (F6.12)** — silnik DAG (PipelineExecutor) + wizualny edytor (PipelineEditor) + testy
 - **Backend agentów** — AgentOrchestrator, ProviderRegistry, IPC Bridge, StorageEngine
 - **UI agentów** — AgentListPanel, AgentConfigPanel, ChangelogPanel
+- **Context Builder** (F6.2) — ContextConfigPanel, buildContext, IPC handlery
+- **Permission System** (F6.7) — PermissionPanel + enforcment + testy
+- **AgentHistoryPanel** (F6.8) — historia outputów z paginacją, filtrami, statystykami
+- **Wiki** (F6.9) — WikiPanel: lista, search, kategorie, CRUD
+- **Universal Feedback** (F6.10) — FeedbackModal z entity pickerem, auto-kontekstem, ratingiem
+- **Presety agentów** (F6.11) — 4 szablony: Streszczacz, Korektor, Brainstormer, Analityk
 - **DraftZone** z walidacją Zod i testami
 - **LogViewer** z wirtualnym scrollingiem i testami
 - **System providerów** — Gemini, OpenRouter, Ollama
 
-### Nierozpoczęte:
-- **Faza 3** (Topology: screenshoty, freeze, collapse, teleport)
-- **Faza 4** (Tablica Zmian + feedback systemowy)
-- **Faza 5** (Export: multi-scope, ptaszki, nazwy plików)
-- **Faza 6** (Permission system, budowniczy kontekstu, magazyny, Wiki, presety)
+### Nierozpoczęte / Opcjonalne (poza planem F1-F6):
+
+#### #1 — Workflows (w trakcie planowania)
+- [Plan implementacji](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/_plans/workflows/WORKFLOWS_PLAN.md)
+- **Model architektoniczny: wszystko customizable**
+  - Wszystko jest konfigurowalne przez Ciebie bez grzebania w kodzie
+  - Pluginowy system akcji — rejestrujesz własne typy akcji przez config
+  - Wyrażenia zamiast stałych — każdy warunek to `{source, operator, value}`
+  - Templates engine z rejestracją zmiennych i funkcji
+  - Każdy workflow to czysty JSON — export, import, duplikacja, modyfikacja ręczna
+  - Brak limitu na liczbę triggerów, warunków, akcji, kroków
+- **Tryb bezpieczeństwa: domyślnie Sandbox (dry-run)**
+  - Wszystko co tworzysz działa w trybie sandbox — żadna akcja nie jest wykonywana naprawdę
+  - Dopiero ręczne przełączenie na Live powoduje faktyczne wykonanie
+  - Dotyczy każdego workflow, agenta i akcji z osobna
+- **Szacunek: ~37h**
+- Obejmuje też: Bramki Logiczne (#6), Szablony outputu, Dry-Run (#10), Webhooki, Notyfikacje
+
+#### #5 — Diff Viewer
+#### #12 — Command Palette
+#### #23 — Integracja z Gitem (branchowanie, commit, diff, auto-push)
+#### #6 — Bramki Logiczne (częściowo wliczone w #1)
+#### #10 — Dry-Run (częściowo wliczone w #1)
+#### Inne
+- Testy E2E / integracyjne — Playwright / pełny cykl agenta
+- Manual / Poradnik — miejsce z dokumentacją funkcji i przykładami
+- Architektura V2 — native C++ addony, RigidBlueprint, VramCulling (z `zadanie_tymczasowe/`)
 
 ### Do weryfikacji:
-- Testy jednostkowe istnieją tylko dla DraftZone i LogViewer — reszta wymaga testów
+- Testy jednostkowe istnieją dla: DraftZone, LogViewer, FeedbackModal, exportEngine, ExportModal, ExportScopeSelector, AgentOrchestrator, PermissionPanel, ContextBuilder, ContextConfigPanel, AgentHistoryPanel, WikiPanel, AgentPresets, PipelineExecutor, PipelineEditor **(152 testy łącznie)**
 - Integracja z procesem głównym Electron (IPC) niewytestowana w środowisku CI
 
 ---
@@ -482,4 +521,4 @@ Plik: [src/main/index.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/sr
 ---
 
 *Ten plik jest samowystarczalny — AI które wklei ten plik do kontekstu ma pełne zrozumienie projektu NEXUS System.*
-*Ostatnia aktualizacja: 2026-06-12.*
+*Ostatnia aktualizacja: 2026-06-13.*

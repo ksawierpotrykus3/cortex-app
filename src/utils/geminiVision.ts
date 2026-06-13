@@ -4,6 +4,11 @@ let aiInstance: GoogleGenAI | null = null;
 
 function getAI() {
   if (!aiInstance) {
+    // UWAGA: Klucz Gemini jest przechowywany w localStorage (plaintext).
+    // Jest to świadoma decyzja: klucz pochodzi z darmowego konta Google AI Studio
+    // (API Key jest FREE, nie ma naliczania opłat — pay-as-you-go wymaga manualnego
+    // odblokowania w konsoli Google). Ryzyko bezpieczeństwa jest akceptowalne,
+    // ponieważ nawet w przypadku wycieku klucz nie umożliwia naliczenia kosztów.
     const key = (import.meta as any).env?.VITE_GEMINI_API_KEY || localStorage.getItem('nexus_gemini_key') || (window as any).__nexusState?.geminiKey;
     if (!key) throw new Error('Brak GEMINI_API_KEY — ustaw w Settings (Google AI Studio Key)');
     aiInstance = new GoogleGenAI({ apiKey: key });

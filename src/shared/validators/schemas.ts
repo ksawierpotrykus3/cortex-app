@@ -14,6 +14,7 @@
 // ================================================================
 
 import { z } from 'zod';
+import { ContextConfig } from '../types/schema';
 
 // ============================================================
 // Stałe walidacyjne
@@ -155,4 +156,31 @@ export function validateSubmissionSafe(draftData: unknown) {
     return { success: true as const, data: result.data };
   }
   return { success: false as const, error: result.error };
+}
+
+// ============================================================
+// Context Config schemas (F6.2)
+// ============================================================
+
+// Context Source
+export const ContextSourceSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  description: z.string(),
+  enabled: z.boolean(),
+  config: z.record(z.any()),
+});
+
+// Context Config
+export const ContextConfigSchema = z.object({
+  sources: z.array(ContextSourceSchema).min(1, 'Co najmniej jedno źródło kontekstu'),
+  maxTokens: z.number().int().positive('Limit tokenów musi być dodatni').max(131072),
+  includeSystemPrompt: z.boolean(),
+  customInstructions: z.string().max(5000, 'Instrukcje nie mogą przekraczać 5000 znaków').default(''),
+});
+
+export function validateContextConfig(data: unknown): { success: boolean; data?: ContextConfig; error?: string } {
+  const result = ContextConfigSchema.safeParse(data);
+  if (result.success) return { success: true, data: result.data as ContextConfig };
+  return { success: false, error: result.error.errors.map(e => e.message).join('; ') };
 }

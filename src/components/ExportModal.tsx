@@ -1,40 +1,102 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { ModalState, NexusNode, NexusLink } from "../types";
-import { generateAIExport, downloadFile } from "../exportEngine";
+import { ModalState, NexusNode, NexusLink, Task, WritingDraft, ExportScope, DEFAULT_EXPORT_SCOPE, ViewMode } from "../types";
+import { generateAIExport, downloadFile, generateExportFilename, getExportPreset, TaskExport, DraftExport } from "../exportEngine";
+import { ExportScopeSelector } from "./ExportScopeSelector";
 
 export function ExportModal({
   state,
   onClose,
   nodes,
   links,
-  axioms
+  axioms,
+  scopeFromView,
+  selectedNodeIds,
+  tasks,
+  drafts,
 }: {
   state: ModalState;
   onClose: () => void;
   nodes: NexusNode[];
   links: NexusLink[];
   axioms: string;
+  scopeFromView?: ViewMode;
+  selectedNodeIds?: string[];
+  tasks?: Task[];
+  drafts?: WritingDraft[];
 }) {
-  const [scope, setScope] = useState<string>("All nodes");
+  // Pobierz preset dla aktualnego widoku
+  const [exportScope, setExportScope] = useState<ExportScope>({ ...DEFAULT_EXPORT_SCOPE });
+  const [filename, setFilename] = useState("");
+  const isFilenameEdited = useRef(false);
+
+  // Reset gdy modal się otwiera; nie nadpisuj ręcznie edytowanej nazwy przy zmianie scopeFromView
+  useEffect(() => {
+    if (state === "export") {
+      const preset = getExportPreset(scopeFromView);
+      setExportScope({ ...preset.scope });
+      if (!isFilenameEdited.current) {
+        setFilename(generateExportFilename(preset.label));
+      }
+    } else {
+      // Reset flagi gdy modal się zamyka
+      isFilenameEdited.current = false;
+    }
+  }, [state, scopeFromView]);
+
+  // Determinisityczne hasData — które kategorie mają dane
+  const hasData = {
+    nodes: nodes.length > 0,
+    links: links.length > 0,
+    tasks: (tasks && tasks.length > 0) || false,
+    drafts: (drafts && drafts.length > 0) || false,
+    axioms: axioms.trim().length > 0,
+    images: nodes.some((n) => n.imageAttachments && n.imageAttachments.length > 0) || false,
+  };
+
+  const hasAnySelected = (Object.keys(exportScope) as (keyof ExportScope)[])
+    .filter((k) => k !== "onlySelected")
+    .some((k) => exportScope[k] === true);
 
   if (state !== "export") return null;
 
   const handleSave = () => {
+    if (!hasAnySelected) return;
+
     let selectedNodes = nodes;
-    
-    if (scope === "Uncategorized") {
-      selectedNodes = nodes.filter(n => !n.projectId || n.projectId === 'Uncategorized');
+    if (exportScope.onlySelected && selectedNodeIds && selectedNodeIds.length > 0) {
+      selectedNodes = nodes.filter((n) => selectedNodeIds.includes(n.id));
     }
 
-    const exportData = generateAIExport(selectedNodes, links, axioms);
-    downloadFile(exportData, `nexus_context_${new Date().toISOString().split('T')[0]}.json`);
+    const exportTasks: TaskExport[] | undefined = tasks?.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      priority: t.priority,
+      status: t.status,
+    }));
+
+    const exportDrafts: DraftExport[] | undefined = drafts?.map((d) => ({
+      id: d.id,
+      title: `Draft ${d.id.slice(0, 6)}`,
+      content: d.content,
+      status: "draft",
+      folderId: d.folderId,
+    }));
+
+    const exportData = generateAIExport(
+      selectedNodes, links, axioms,
+      exportScope, exportTasks, exportDrafts
+    );
+
+    const finalFilename = filename.trim() || generateExportFilename("nexus");
+    downloadFile(exportData, finalFilename);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-xl shadow-2xl w-[500px] overflow-hidden flex flex-col">
+      <div className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-xl shadow-2xl w-[520px] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[rgb(var(--border))]">
           <h2 className="text-lg font-bold text-white tracking-wide">
@@ -49,30 +111,33 @@ export function ExportModal({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6 flex-1">
-          <div className="space-y-2">
+        <div className="p-6 space-y-5 flex-1">
+          {/* Nazwa pliku */}
+          <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-300">
-              Export scope:
+              Nazwa pliku:
             </label>
-            <div className="relative">
-              <select 
-                value={scope}
-                onChange={(e) => setScope(e.target.value)}
-                className="w-full bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg px-4 py-2.5 text-sm text-gray-200 appearance-none focus:outline-none focus:border-gray-500 transition-colors cursor-pointer"
-              >
-                <option value="All nodes">Full Global Context (All Nodes & Topology)</option>
-                <option value="Uncategorized">Only Uncategorized / Fragments</option>
-              </select>
-              <div className="absolute right-3 top-3 pointer-events-none text-gray-500">
-                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </div>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              Note: A highly-optimized, token-efficient system context will be generated for AI ingestion.
+            <input
+              type="text"
+              value={filename}
+              onChange={(e) => {
+                isFilenameEdited.current = true;
+                setFilename(e.target.value);
+              }}
+              className="w-full px-3 py-2 text-[13px] bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[rgb(var(--accent))] transition-colors"
+              placeholder="nazwa_pliku.json"
+            />
+            <p className="text-[11px] text-gray-500">
+              Plik zostanie zapisany jako JSON z rozszerzeniem .json
             </p>
           </div>
+
+          <ExportScopeSelector
+            scope={exportScope}
+            onChange={setExportScope}
+            hasSelection={!!(selectedNodeIds && selectedNodeIds.length > 0)}
+            hasData={hasData}
+          />
         </div>
 
         {/* Footer */}
@@ -85,9 +150,14 @@ export function ExportModal({
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 text-sm font-medium text-white bg-[rgb(var(--accent))] hover:bg-indigo-500 rounded-lg shadow-md transition-colors"
+            disabled={!hasAnySelected}
+            className={`px-5 py-2 text-sm font-medium text-white rounded-lg shadow-md transition-colors ${
+              hasAnySelected
+                ? "bg-[rgb(var(--accent))] hover:bg-indigo-500 cursor-pointer"
+                : "bg-gray-600 cursor-not-allowed opacity-50"
+            }`}
           >
-            Save export
+            Eksportuj
           </button>
         </div>
       </div>

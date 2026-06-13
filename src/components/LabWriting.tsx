@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Settings, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, Download, ChevronDown, ChevronRight, Folder, FolderPlus } from "lucide-react";
+import { Plus, Trash2, Edit3, Download, ChevronDown, ChevronRight, Folder, FolderPlus } from "lucide-react";
 import { WritingDraft, ManuscriptFolder, ManuscriptTab, SourceReference, ManuscriptMeta, ThoughtMarker, NexusAnnotation } from "../types";
-import { generateAIExport, downloadFile } from "../exportEngine";
+import { generateAIExport, downloadFile, generateExportFilename, getExportPreset, DraftExport } from "../exportEngine";
 import { uid } from "../utils/ids";
+import { HistoryButton } from "./HistoryButton";
+import { useDiffStore } from "../renderer/store/diffStore";
 
 export function LabWriting({
   setLabView,
@@ -104,7 +106,7 @@ export function LabWriting({
     const folderId = getManuscriptFolderId(activeManuscript);
 
     setDrafts([{
-      id: `#${drafts.length + 1}`,
+      id: uid(),
       content: newNote,
       words: wordsCount,
       updatedAt: new Date().toISOString(),
@@ -125,6 +127,11 @@ export function LabWriting({
   };
 
   const handleDeleteDraft = (id: string) => {
+    // Snapshot before deleting draft
+    const draft = drafts.find(d => d.id === id);
+    if (draft) {
+      useDiffStore.getState().snapshotBeforeEdit(id, 'manuscript', draft.content, draft.content.slice(0, 80));
+    }
     // Also delete any replies recursively
     const idsToDelete = new Set<string>([id]);
     let checkMore = true;
@@ -235,6 +242,8 @@ export function LabWriting({
             onDelete={() => handleDeleteDraft(draft.id)}
             onEdit={(newContent) => {
               const newWords = newContent.trim().split(/\s+/).length;
+              // Snapshot before editing
+              useDiffStore.getState().snapshotBeforeEdit(draft.id, 'manuscript', draft.content, draft.content.slice(0, 80));
               setDrafts(drafts.map(d => d.id === draft.id ? { ...d, content: newContent, words: newWords, updatedAt: new Date().toISOString() } : d));
             }}
             onReply={() => setReplyingTo(draft.id)}
@@ -451,18 +460,16 @@ export function LabWriting({
             
             <button 
               onClick={() => {
-                const nodesToExport = activeDrafts.map((d, i) => ({
+                const exportDrafts: DraftExport[] = activeDrafts.map(d => ({
                   id: d.id,
-                  title: `Draft ${activeDrafts.length - i}`,
+                  title: `Draft ${d.id.slice(0, 6)}`,
                   content: d.content,
-                  projectId: d.manuscriptId,
-                  x: 0,
-                  y: 0,
-                  annotations: d.annotations,
-                  thoughtMarkers: d.thoughtMarkers
+                  status: 'draft' as const,
+                  folderId: d.folderId,
                 }));
-                const exportData = generateAIExport(nodesToExport.reverse(), [], "");
-                downloadFile(exportData, `nexus_drafts_${new Date().toISOString().split('T')[0]}.json`);
+                const preset = getExportPreset("lab-writing");
+                const exportData = generateAIExport([], [], "", preset.scope, undefined, exportDrafts);
+                downloadFile(exportData, generateExportFilename(preset.label));
               }}
               className="px-4 py-2 shrink-0 rounded-lg bg-[rgb(var(--panel))] hover:bg-[rgb(var(--border))] border border-[rgb(var(--border))] text-[13px] font-medium transition-colors flex items-center gap-2 text-[rgb(var(--text-main))] cursor-pointer shadow-sm"
             >
@@ -920,7 +927,7 @@ const NoteEntry: React.FC<{
                 <div className="absolute right-0 bottom-8 mt-1 w-64 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg shadow-xl p-3 z-30 text-left">
                   <select
                     value={newAnnotationCategory}
-                    onChange={(e) => setNewAnnotationCategory(e.target.value as any)}
+                    onChange={(e) => setNewAnnotationCategory(e.target.value as 'comment' | 'raw-fragment' | 'issue')}
                     className="w-full bg-[rgb(var(--background))] border border-[rgb(var(--border))] text-xs text-[rgb(var(--text-main))] p-1 rounded mb-2 outline-none cursor-pointer"
                   >
                     <option value="comment">Comment</option>
@@ -968,6 +975,15 @@ const NoteEntry: React.FC<{
             >
                <Plus className="w-3.5 h-3.5 rotate-45" />
             </button>
+            
+            {/* #5: History button */}
+            <HistoryButton
+              entityId={draft.id}
+              entityType="manuscript"
+              title={draft.content.slice(0, 80)}
+              content={draft.content}
+            />
+            
             <button 
               onClick={() => { setIsEditing(true); setEditContent(draft.content); }}
               className="p-1.5 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] rounded-md hover:bg-[rgb(var(--border))] transition-colors cursor-pointer"

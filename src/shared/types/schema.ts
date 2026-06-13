@@ -12,6 +12,7 @@ export enum AgentStatus {
   CRASHED = 'CRASHED',     // Agent padł z powodu błędu
   DISABLED = 'DISABLED',   // Agent wyłączony na stałe (limit restartów)
   COOLDOWN = 'COOLDOWN',   // Agent odpoczywa po crashu przed restartem
+  AWAITING_APPROVAL = 'AWAITING_APPROVAL', // Agent czeka na akceptację outputu
 }
 
 // === Trigger Types =========================================================
@@ -163,6 +164,12 @@ export interface Agent {
 
   // Tags
   tags: string[];
+
+  // Context Config (F6.2)
+  contextConfig?: ContextConfig;
+
+  // Permissions (F6.1)
+  permissions?: PermissionSet;
 }
 
 // === Output Routing =======================================================
@@ -174,6 +181,89 @@ export enum OutputDestinationType {
   CLIPBOARD = 'CLIPBOARD',     // Kopiuj do schowka
   KNOWLEDGE = 'KNOWLEDGE',     // Dodaj do bazy wiedzy
 }
+
+// === Context Config (F6.2) ==================================================
+export interface ContextSourceConfig {
+  projectId?: string;           // Dla notes: filtr po projekcie
+  status?: string;              // Dla tasks: filtr po statusie
+  folderId?: string;            // Dla manuscripts: filtr po folderze
+  count?: number;               // Dla history: liczba ostatnich outputów
+  filePath?: string;            // Dla file: ścieżka
+  agentId?: string;             // Dla agent_output: ID agenta źródłowego
+  maxTokens?: number;           // Limit tokenów dla tego źródła
+}
+
+export interface ContextSelection {
+  type: 'all' | 'ids';
+  ids: string[];
+}
+
+export interface ContextSource {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+  config?: ContextSourceConfig;
+  selection?: ContextSelection; // NOWE: konkretne ID
+}
+
+export interface ContextEntityRef {
+  type: 'node' | 'task' | 'draft';
+  entityId: string;
+}
+
+export interface ContextConfig {
+  sources: ContextSource[];
+  maxTokens: number;                // limit kontekstu (dom. 8192)
+  includeSystemPrompt: boolean;     // czy dołączać system prompt
+  customInstructions: string;       // dodatkowe instrukcje dla agenta
+  includedEntities?: ContextEntityRef[]; // F6.8: konkretne encje z workspace
+  includeClipboardImage?: boolean;  // F6.8: dołącz obraz ze schowka
+  includeLastAgentOutput?: boolean; // F6.8: dołącz output ostatniego agenta
+}
+
+export const DEFAULT_CONTEXT_CONFIG: ContextConfig = {
+  sources: [
+    { id: 'notes', label: 'Notatki (NexusNode)', description: 'Wybrane projekty lub wszystkie notatki', enabled: false, config: { projectId: '' } },
+    { id: 'tasks', label: 'Zadania (Task)', description: 'Filtrowane po statusie', enabled: false, config: { status: '' } },
+    { id: 'manuscripts', label: 'Manuskrypty (WritingDraft)', description: 'Wybrany folder lub wszystkie', enabled: false, config: { folderId: '' } },
+    { id: 'history', label: 'Historia outputów agenta', description: 'Ostatnie N outputów', enabled: false, config: { count: 10 } },
+    { id: 'clipboard', label: 'Schowek systemowy', description: 'Zawartość schowka systemowego', enabled: false, config: {} },
+    { id: 'changelog', label: 'Zmiany od ostatniego uruchomienia', description: 'Z changeloga systemowego', enabled: false, config: {} },
+    { id: 'file', label: 'Plik z dysku', description: 'Wczytaj zawartość pliku', enabled: false, config: { filePath: '' } },
+    { id: 'agent_output', label: 'Wynik innego agenta', description: 'Output wybranego agenta', enabled: false, config: { agentId: '' } },
+  ],
+  maxTokens: 8192,
+  includeSystemPrompt: true,
+  customInstructions: '',
+  includeClipboardImage: false,
+  includeLastAgentOutput: false,
+};
+
+// === Permission Set (F6.1) =================================================
+export interface PermissionSet {
+  allowedTriggers: TriggerType[];              // [] = żaden trigger dozwolony
+  allowedDestinations: OutputDestinationType[]; // [] = tylko changelog
+  allowedModels: string[];                      // [] = wszystkie skonfigurowane modele
+  maxTokensPerRun: number;                      // domyślnie 8192
+  maxRunsPerMinute: number;                     // domyślnie 10
+  requireApproval: boolean;                     // domyślnie false
+
+  // Git permissions (#23) — agent ma dostęp do Gita
+  gitAccess: boolean;                           // Czy agent może czytać git status/log/diff
+  gitWrite: boolean;                            // Czy agent może commitować/pushować/merge'ować
+}
+
+export const DEFAULT_PERMISSION_SET: PermissionSet = {
+  allowedTriggers: [],
+  allowedDestinations: [],
+  allowedModels: [],
+  maxTokensPerRun: 8192,
+  maxRunsPerMinute: 10,
+  requireApproval: false,
+  gitAccess: false,
+  gitWrite: false,
+};
 
 export interface OutputDestination {
   type: OutputDestinationType;
@@ -214,7 +304,136 @@ export interface AgentOutput {
   errorStack?: string;
 }
 
+// === Pipeline DAG (F6.12) =================================================
+export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'condition' | 'system-reader' | 'system-writer';
+
+export interface WorkflowNode {
+  id: string;
+  type: NodeType;
+  name: string;
+  agentId?: string;       // ID agenta do wykonania (dla llm-agent)
+  systemPrompt?: string;
+  config: Record<string, any>;
+  position: { x: number; y: number };
+  // #6: Warunki IF/THEN
+  condition?: {
+    /** Wyrażenie warunku: np. "{{prev.output}} contains 'error'" */
+    expression: string;
+    /** Gdy warunek jest true — wykonaj ten node. Gdy false — pomiń */
+    mode: 'skip-when-false' | 'skip-when-true' | 'always';
+  };
+}
+
+export interface PortConnection {
+  id: string;
+  sourceNodeId: string;
+  sourcePort: string;
+  targetNodeId: string;
+  targetPort: string;
+  condition?: string;
+}
+
+export interface Pipeline {
+  id: string;
+  name: string;
+  description: string;
+  nodes: WorkflowNode[];
+  connections: PortConnection[];
+  createdAt: string;
+  updatedAt: string;
+  isHeadless: boolean;
+}
+
+// === Workspace Entity (F6.2) ==============================================
+export interface WorkspaceEntity {
+  id: string;
+  type: 'node' | 'task' | 'draft' | 'wiki';
+  title: string;
+  content: string;
+  projectId?: string;
+  folderId?: string;
+  status?: string;
+  updatedAt: string;
+}
+
 // === Changelog Entry (UI) =================================================
+
+// === KillSwitch (#9) =======================================================
+export interface KillSwitchState {
+  active: boolean;
+  reason?: string;
+  killedAt?: string;
+  activeAgents: number;
+  activePipelines: number;
+  activeWorkflows: number;
+}
+
+export const DEFAULT_KILLSWITCH: KillSwitchState = {
+  active: false,
+  activeAgents: 0,
+  activePipelines: 0,
+  activeWorkflows: 0,
+};
+
+// === Semantic Search (AI) ==================================================
+export interface SearchResult {
+  entityId: string;
+  entityType: 'node' | 'task' | 'draft' | 'wiki';
+  title: string;
+  snippet: string;
+  relevance: number; // 0-1, jakie AI ocenia trafność
+  viewMode: string;  // np. 'nexus', 'lab-todo', 'lab-writing', 'wiki'
+}
+
+export interface SearchConfig {
+  searchPrompt: string;
+  maxResults: number;
+}
+
+export const DEFAULT_SEARCH_CONFIG: SearchConfig = {
+  searchPrompt: `Jesteś asystentem wyszukiwania w systemie Nexus.
+Użytkownik zadaje pytanie lub wpisuje frazę.
+Masz listę encji (notatki, taski, manuskrypty, artykuły wiki) z tytułami i treściami.
+Zwróć tylko encje które są RELEVANT do zapytania użytkownika.
+Dla każdej relevantnej encji podaj: jej ID, krótki snippet (2-3 zdania) dlaczego pasuje, i relevance score (0.0-1.0).
+Odpowiadaj w formacie JSON: [{"entityId":"...","entityType":"...","title":"...","snippet":"...","relevance":0.0}]
+Jeśli żadna encja nie pasuje, zwróć pustą tablicę [].`,
+  maxResults: 10,
+};
+
+// === Dry-Run (#10) ==========================================================
+export interface DryRunResult {
+  pipelineId: string;
+  nodes: DryRunNodeResult[];
+  status: 'success' | 'failed';
+  totalDuration: number; // ms
+}
+
+export interface DryRunNodeResult {
+  nodeId: string;
+  nodeName: string;
+  nodeType: string;
+  condition?: string;
+  conditionResult?: boolean | null;
+  skipped: boolean;
+  /** Symulowany output — opis co by się stało */
+  simulatedOutput: string;
+  estimatedTokens: number;
+  estimatedDuration: number; // ms
+}
+
+export interface DryRunConfig {
+  /** Jeśli true — symuluj output agentów (zamiast "no LLM") */
+  simulateAgentOutput: boolean;
+  /** Jeśli true — przerywaj na pierwszym błędzie */
+  stopOnFirstError: boolean;
+}
+
+export const DEFAULT_DRY_RUN_CONFIG: DryRunConfig = {
+  simulateAgentOutput: true,
+  stopOnFirstError: false,
+};
+
 export interface ChangelogEntry {
   id: string;
   agentId: string;
@@ -249,6 +468,89 @@ export interface TriageItem {
   createdAt: string;
 }
 
+// === Git Integration (#23) =================================================
+export interface GitConfig {
+  remoteUrl: string;
+  accessToken: string;
+  authorName: string;
+  authorEmail: string;
+  autoCommit: boolean;
+  autoCommitMessage: string; // Template, np. "Auto-commit: {{summary}}"
+  aiBranchName: string;      // Branch dla AI, np. "ai-agent"
+  enabled: boolean;
+  // Schedule / cyclic
+  pullIntervalMs: number;    // 0 = wyłączone, np. 300000 = co 5 min
+  pushIntervalMs: number;    // 0 = wyłączone
+  scheduleOnlyOnBranch: string; // "" = wszystkie branche
+}
+
+export interface GitStatusEntry {
+  path: string;
+  status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
+  staged: boolean;
+}
+
+export interface GitStatusResult {
+  branch: string;
+  clean: boolean;
+  entries: GitStatusEntry[];
+  ahead: number;
+  behind: number;
+}
+
+export interface GitLogEntry {
+  hash: string;
+  author: string;
+  message: string;
+  date: string;
+  refs: string; // np. "HEAD -> master, origin/master"
+}
+
+export interface GitBranchInfo {
+  name: string;
+  current: boolean;
+  upstream?: string;
+  ahead: number;
+  behind: number;
+}
+
+export const DEFAULT_GIT_CONFIG: GitConfig = {
+  remoteUrl: '',
+  accessToken: '',
+  authorName: '',
+  authorEmail: '',
+  autoCommit: false,
+  autoCommitMessage: 'Nexus AI: {{summary}}',
+  aiBranchName: 'ai-agent',
+  enabled: false,
+  pullIntervalMs: 0,
+  pushIntervalMs: 0,
+  scheduleOnlyOnBranch: '',
+};
+
+// === Feedback (#26) ========================================================
+export interface FeedbackEntry {
+  id: string;
+  title: string;
+  context?: string;
+  suggestion?: string;
+  timestamp: string;
+  entityType: 'agent' | 'node' | 'task' | 'manuscript' | 'general';
+  entityId?: string;
+  entityLabel?: string;
+  contextSnapshot?: {
+    viewMode: string;
+    selectedAgentId: string | null;
+    selectedNodeId: string | null;
+    selectedTaskId: string | null;
+    selectedManuscriptId: string | null;
+    projectId: string | null;
+    lastAction: string;
+  };
+  rating?: number;
+  status: 'new' | 'read' | 'in-progress' | 'done';
+}
+
 // === IPC Event Names ======================================================
 export const IPC_EVENTS = {
   // Agent commands (Renderer → Main)
@@ -273,4 +575,39 @@ export const IPC_EVENTS = {
   // Storage
   STORAGE_SAVE: 'storage:save',
   STORAGE_LOAD: 'storage:load',
+
+  // Context Builder (F6.2)
+  CONTEXT_GET_OPTIONS: 'context:get-options',
+  CONTEXT_FETCH: 'context:fetch',
+  CONTEXT_SEARCH_NODES: 'context:search-nodes',
+  CONTEXT_SEARCH_TASKS: 'context:search-tasks',
+
+  // Context Builder (F6.8)
+  GET_WORKSPACE_ENTITIES: 'agent:get-workspace-entities',
+
+  // Context Builder (F6.2) — sync
+  WORKSPACE_SYNC: 'workspace:sync',
+  WORKSPACE_GET_ALL: 'workspace:get-all',
+
+  // KillSwitch (#9)
+  KILLSWITCH_STATUS: 'killswitch:status',
+  KILLSWITCH_ACTIVATE: 'killswitch:activate',
+  KILLSWITCH_DEACTIVATE: 'killswitch:deactivate',
+
+  // Git (#23)
+  GIT_GET_CONFIG: 'git:get-config',
+  GIT_SET_CONFIG: 'git:set-config',
+  GIT_TEST_CONNECTION: 'git:test-connection',
+  GIT_STATUS: 'git:status',
+  GIT_LOG: 'git:log',
+  GIT_COMMIT: 'git:commit',
+  GIT_PUSH: 'git:push',
+  GIT_PULL: 'git:pull',
+  GIT_BRANCH_LIST: 'git:branch-list',
+  GIT_BRANCH_SWITCH: 'git:branch-switch',
+  GIT_BRANCH_CREATE: 'git:branch-create',
+  GIT_MERGE: 'git:merge',
+  GIT_DIFF: 'git:diff',
+  GIT_SCHEDULE_STATUS: 'git:schedule-status',
+  GIT_SCHEDULE_TOGGLE: 'git:schedule-toggle',
 } as const;

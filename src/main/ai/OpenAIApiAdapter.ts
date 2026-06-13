@@ -9,11 +9,18 @@ import { IAIProvider, AICompletionRequest, AICompletionResponse, AIStreamChunk }
 interface OpenAIConfig {
   baseUrl: string;
   apiKey: string;
+  model?: string;
 }
 
 export class OpenAIApiAdapter implements IAIProvider {
   readonly name: string;
   private config: OpenAIConfig;
+  protected defaultModel: string = 'gpt-3.5-turbo'; // overridable by subclasses
+
+  // Protected accessor for subclasses that need to read config
+  protected get configData(): OpenAIConfig {
+    return this.config;
+  }
 
   constructor(name: string, baseUrl: string, apiKey: string) {
     this.name = name;
@@ -25,7 +32,7 @@ export class OpenAIApiAdapter implements IAIProvider {
   }
 
   isConfigured(): boolean {
-    return !!this.config.baseUrl;
+    return !!this.config.baseUrl; // subclasses may also check apiKey
   }
 
   async complete(request: AICompletionRequest): Promise<AICompletionResponse> {
@@ -133,8 +140,9 @@ export class OpenAIApiAdapter implements IAIProvider {
 
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
+      const model = this.config.model || this.defaultModel;
       const res = await this.fetchWithTimeout({
-        model: 'gpt-3.5-turbo', // light model for ping
+        model,
         messages: [{ role: 'user', content: 'ping' }],
         max_tokens: 1,
         stream: false,

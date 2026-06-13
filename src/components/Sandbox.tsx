@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Terminal, PackageOpen, Download, Monitor, FileText, ChevronRight, RefreshCcw, SearchX, CloudOff, Plug, ServerCog } from "lucide-react";
+import { Terminal, PackageOpen, Download, Monitor, ChevronRight, RefreshCcw, SearchX, CloudOff, Plug, ServerCog } from "lucide-react";
 
 export function Sandbox() {
   const [activeArticle, setActiveArticle] = useState("electron-setup");

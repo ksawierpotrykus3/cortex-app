@@ -1,101 +1,141 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+
+/* ============================================================================
+   NEXUS — Design System
+   Filozofia: minimalistyczny, akademicki interfejs badawczy.
+   Zero ozdobników, zero AI slop. Czytelność > efekciarstwo.
+   ============================================================================ */
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", "Inter", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   :root {
-    --background: 14 14 16;
-    --panel: 24 24 28;
-    --border: 38 38 44;
-    --text-main: 245 245 245;
-    --text-muted: 156 163 175;
-    --accent: 167 139 250; /* Violet 400 */
+    --bg-canvas: 16 16 18;       /* najciemniejsze tło */
+    --bg-surface: 22 22 26;      /* panele, karty */
+    --bg-elevated: 28 28 33;     /* podniesione elementy */
+    --border: 42 42 48;          /* subtelna ramka */
+    --text: 232 232 235;         /* główny tekst */
+    --text-main: 232 232 235;    /* alias --text */
+    --text-secondary: 148 152 162; /* drugorzędny */
+    --text-tertiary: 108 112 122;  /* Placeholder, hint */
+    --text-muted: 108 112 122;   /* alias --text-tertiary */
+    --background: 16 16 18;      /* alias --bg-canvas */
+    --panel: 22 22 26;           /* alias --bg-surface */
+    --accent: 140 150 255;       /* stonowany indygo */
+    --accent-bg: 140 150 255 / 0.1;
+    --danger: 230 90 90;
+    --success: 80 190 130;
+    --warning: 220 170 70;
+    --surface-raised: 34 34 40;  /* hover, aktywny */
   }
 }
 
+/* ============================================================================
+   Reset & Base
+   ============================================================================ */
+
 body {
-  background-color: rgb(var(--background));
-  color: rgb(var(--text-main));
+  background-color: rgb(var(--bg-canvas));
+  color: rgb(var(--text));
   font-family: var(--font-sans);
-  overflow: hidden; /* Prevent body scrolling, handle in panels */
+  font-size: 13px;
+  line-height: 1.55;
+  overflow: hidden;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  /* smooth font rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Nexus Canvas Grid Background */
-.nexus-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
-  background-position: -16px -16px;
+::selection {
+  background: rgb(var(--accent) / 0.25);
+  color: inherit;
 }
 
-/* Custom Scrollbar */
+/* ============================================================================
+   Typography
+   ============================================================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* ============================================================================
+   Scrollbar — cienki, nie przeszkadza
+   ============================================================================ */
+
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 0px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* Utilities for hiding scrollbar when not hovering if needed */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-.custom-scrollbar:hover {
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
-/* Prettier Select Menus */
+/* ============================================================================
+   Focus — czytelny, nie niebieski outline
+   ============================================================================ */
+
+*:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Select — minimalistyczny chevron
+   ============================================================================ */
+
 select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239498A2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
-  background-size: 1rem;
+  background-size: 0.85rem;
   padding-right: 2rem !important;
-  color: inherit;
-  transition: all 0.2s ease;
 }
 
-select:hover {
-  border-color: rgba(255, 255, 255, 0.3) !important;
+/* ============================================================================
+   Nexus Canvas Grid
+   ============================================================================ */
+
+.nexus-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
-select:focus {
-  outline: none;
-}
-
-/* ================================================================
-   NEXUS V2 — Phase 5.2: LogViewer (Virtual Windowing)
-   ================================================================
-   .log-item { height: 60px; contain: strict; } — twarde granice
-   CSS containment zapobiega Layout Thrashing.
-   ================================================================ */
+/* ============================================================================
+   Log Viewer (Phase 5.2)
+   ============================================================================ */
 
 .log-viewer-container {
   display: flex;
   flex-direction: column;
-  background: rgb(var(--panel));
+  background: rgb(var(--bg-surface));
   border: 1px solid rgb(var(--border));
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -103,27 +143,26 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  padding: 6px 14px;
+  background: rgb(var(--bg-elevated) / 0.5);
   border-bottom: 1px solid rgb(var(--border));
   flex-shrink: 0;
 }
 
 .log-viewer-title {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
-  color: rgb(var(--text-main));
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(var(--text));
 }
 
 .log-viewer-count {
-  font-size: 12px;
-  color: rgb(var(--text-muted));
+  font-size: 11px;
+  color: rgb(var(--text-secondary));
 }
 
 .log-viewer-error {
-  font-size: 12px;
-  color: #ef4444;
+  font-size: 11px;
+  color: rgb(var(--danger));
   margin-left: 8px;
 }
 
@@ -138,8 +177,8 @@ select:focus {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: rgb(var(--text-muted));
-  font-size: 13px;
+  color: rgb(var(--text-secondary));
+  font-size: 12px;
 }
 
 .log-viewer-sentinel {
@@ -147,19 +186,14 @@ select:focus {
   pointer-events: none;
 }
 
-/* ================================================================
-   Log Item — pojedynczy wiersz wirtualnej listy
-   contain: strict — izolacja CSS, brak Layout Thrashing
-   ================================================================ */
-
 .log-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  height: 60px;
+  gap: 10px;
+  padding: 0 14px;
+  height: 52px;
   contain: strict;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgb(var(--border) / 0.5);
   cursor: pointer;
   transition: background 0.1s ease;
   overflow: hidden;
@@ -167,21 +201,21 @@ select:focus {
 }
 
 .log-item:hover {
-  background: rgba(167, 139, 250, 0.06);
+  background: rgb(var(--accent) / 0.04);
 }
 
 .log-item-time {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: rgb(var(--text-muted));
-  width: 80px;
+  color: rgb(var(--text-secondary));
+  width: 72px;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .log-item-payload {
   font-size: 12px;
-  color: rgb(var(--text-main));
+  color: rgb(var(--text));
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -191,25 +225,25 @@ select:focus {
 .log-item-id {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: rgb(var(--text-muted));
-  width: 70px;
+  color: rgb(var(--text-secondary));
+  width: 60px;
   flex-shrink: 0;
   text-align: right;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
-/* ================================================================
-   NEXUS V2 — Phase 5.3: DraftZone (RLHF)
-   ================================================================ */
+/* ============================================================================
+   Draft Zone (Phase 5.3)
+   ============================================================================ */
 
 .draft-zone {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   padding: 16px;
-  background: rgb(var(--panel));
+  background: rgb(var(--bg-surface));
   border: 1px solid rgb(var(--border));
-  border-radius: 8px;
+  border-radius: 6px;
   max-width: 520px;
 }
 
@@ -217,19 +251,17 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
 }
 
 .draft-zone-title {
-  font-family: var(--font-display);
   font-size: 14px;
-  font-weight: 600;
-  color: rgb(var(--text-main));
+  font-weight: 500;
+  color: rgb(var(--text));
 }
 
 .draft-zone-counter {
   font-size: 11px;
-  color: rgb(var(--text-muted));
+  color: rgb(var(--text-secondary));
 }
 
 .draft-zone-field {
@@ -245,52 +277,49 @@ select:focus {
 
 .draft-zone-label {
   font-size: 12px;
-  font-weight: 500;
-  color: rgb(var(--text-muted));
+  font-weight: 450;
+  color: rgb(var(--text-secondary));
 }
 
 .draft-zone-input {
-  padding: 8px 12px;
-  background: rgb(var(--background));
+  padding: 6px 10px;
+  background: rgb(var(--bg-canvas));
   border: 1px solid rgb(var(--border));
-  border-radius: 6px;
-  color: rgb(var(--text-main));
-  font-size: 13px;
+  border-radius: 4px;
+  color: rgb(var(--text));
+  font-size: 12px;
   font-family: var(--font-mono);
   transition: border-color 0.15s ease;
 }
 
 .draft-zone-input:focus {
-  outline: none;
-  border-color: rgb(var(--accent));
+  border-color: rgb(var(--accent) / 0.5);
 }
 
 .draft-zone-textarea {
-  padding: 8px 12px;
-  background: rgb(var(--background));
+  padding: 6px 10px;
+  background: rgb(var(--bg-canvas));
   border: 1px solid rgb(var(--border));
-  border-radius: 6px;
-  color: rgb(var(--text-main));
-  font-size: 13px;
+  border-radius: 4px;
+  color: rgb(var(--text));
+  font-size: 12px;
   font-family: var(--font-sans);
   resize: vertical;
-  min-height: 60px;
+  min-height: 56px;
   transition: border-color 0.15s ease;
 }
 
 .draft-zone-textarea:focus {
-  outline: none;
-  border-color: rgb(var(--accent));
+  border-color: rgb(var(--accent) / 0.5);
 }
 
 .draft-zone-textarea--small {
-  min-height: 40px;
+  min-height: 36px;
 }
 
 .draft-zone-hint {
   font-size: 10px;
-  color: rgb(var(--text-muted));
-  margin-top: 2px;
+  color: rgb(var(--text-secondary));
 }
 
 .draft-zone-tags {
@@ -304,9 +333,9 @@ select:focus {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
-  background: rgba(167, 139, 250, 0.12);
-  border: 1px solid rgba(167, 139, 250, 0.2);
+  padding: 2px 6px;
+  background: rgb(var(--accent) / 0.08);
+  border: 1px solid rgb(var(--accent) / 0.15);
   border-radius: 4px;
   font-size: 11px;
   color: rgb(var(--accent));
@@ -320,7 +349,7 @@ select:focus {
   padding: 0;
   font-size: 14px;
   line-height: 1;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .draft-zone-tag-remove:hover {
@@ -328,28 +357,27 @@ select:focus {
 }
 
 .draft-zone-tag-input {
-  padding: 4px 8px;
+  padding: 3px 6px;
   background: transparent;
   border: 1px dashed rgb(var(--border));
   border-radius: 4px;
-  color: rgb(var(--text-muted));
+  color: rgb(var(--text-secondary));
   font-size: 11px;
   min-width: 120px;
   flex: 1;
 }
 
 .draft-zone-tag-input:focus {
-  outline: none;
-  border-color: rgb(var(--accent));
-  color: rgb(var(--text-main));
+  border-color: rgb(var(--accent) / 0.5);
+  color: rgb(var(--text));
 }
 
 .draft-zone-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
-  color: rgb(var(--text-muted));
+  color: rgb(var(--text-secondary));
   cursor: pointer;
 }
 
@@ -361,15 +389,15 @@ select:focus {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 6px;
+  padding: 6px 10px;
+  background: rgb(var(--danger) / 0.06);
+  border: 1px solid rgb(var(--danger) / 0.15);
+  border-radius: 4px;
 }
 
 .draft-zone-error-item {
   font-size: 11px;
-  color: #ef4444;
+  color: rgb(var(--danger));
 }
 
 .draft-zone-actions {
@@ -379,39 +407,39 @@ select:focus {
 }
 
 .draft-zone-btn {
-  padding: 8px 20px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 450;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.15s ease;
+  transition: all 0.1s ease;
 }
 
 .draft-zone-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .draft-zone-btn--save {
-  background: rgb(var(--accent));
-  color: #fff;
-  border-color: rgb(var(--accent));
+  background: rgb(var(--accent) / 0.15);
+  color: rgb(var(--accent));
+  border-color: rgb(var(--accent) / 0.25);
 }
 
 .draft-zone-btn--save:hover:not(:disabled) {
-  opacity: 0.9;
+  background: rgb(var(--accent) / 0.25);
 }
 
 .draft-zone-btn--clear {
   background: transparent;
-  color: rgb(var(--text-muted));
+  color: rgb(var(--text-secondary));
   border-color: rgb(var(--border));
 }
 
 .draft-zone-btn--clear:hover:not(:disabled) {
-  color: rgb(var(--text-main));
-  border-color: rgba(255, 255, 255, 0.2);
+  color: rgb(var(--text));
+  border-color: rgb(var(--text) / 0.2);
 }
 
 /* Toast notifications */
@@ -427,38 +455,37 @@ select:focus {
 }
 
 .draft-zone-toast {
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
   font-size: 12px;
   cursor: pointer;
   pointer-events: auto;
   animation: toast-in 0.2s ease-out;
   max-width: 360px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .draft-zone-toast--success {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #22c55e;
+  background: rgb(var(--success) / 0.1);
+  border: 1px solid rgb(var(--success) / 0.2);
+  color: rgb(var(--success));
 }
 
 .draft-zone-toast--error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  background: rgb(var(--danger) / 0.1);
+  border: 1px solid rgb(var(--danger) / 0.2);
+  color: rgb(var(--danger));
 }
 
 .draft-zone-toast--info {
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #3b82f6;
+  background: rgb(var(--accent) / 0.1);
+  border: 1px solid rgb(var(--accent) / 0.2);
+  color: rgb(var(--accent));
 }
 
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;

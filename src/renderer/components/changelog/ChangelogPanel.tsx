@@ -4,13 +4,13 @@
 // ============================================================================
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ScrollText, Trash2, Filter, Search, Download } from 'lucide-react';
+import { ScrollText, Trash2, Search } from 'lucide-react';
 import { useChangelogStore } from '../../store/changelogStore';
 import { LogEntry } from './LogEntry';
 
 // === Component =============================================================
 export function ChangelogPanel() {
-  const { entries, clearEntries, removeEntry } = useChangelogStore();
+  const { entries, clearEntries } = useChangelogStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAgent, setFilterAgent] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,12 +41,12 @@ export function ChangelogPanel() {
   const streamingCount = entries.filter(e => e.isStreaming).length;
 
   return (
-    <div className="w-96 border-l border-[rgb(var(--border))] flex flex-col h-full bg-[rgb(var(--background))] overflow-hidden shrink-0">
+    <div className="w-96 border-l border-[rgb(var(--border))] flex flex-col h-full bg-[rgb(var(--bg-surface))] overflow-hidden shrink-0">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--panel))]/30 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--bg-elevated))]/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ScrollText className="w-4 h-4 text-[rgb(var(--text-muted))]" />
-          <h2 className="text-[13px] font-display font-bold tracking-wider text-[rgb(var(--text-muted))] uppercase">
+          <ScrollText className="w-4 h-4 text-[rgb(var(--text-secondary))]" />
+          <h2 className="text-[13px] font-medium tracking-wider text-[rgb(var(--text))] uppercase">
             Changelog
           </h2>
           {streamingCount > 0 && (
@@ -67,22 +67,22 @@ export function ChangelogPanel() {
       </div>
 
       {/* Search & Filter */}
-      <div className="px-4 py-2 border-b border-[rgb(var(--border))]/50 bg-[rgb(var(--panel))]/20">
+      <div className="px-4 py-2 border-b border-[rgb(var(--border))]/50 bg-[rgb(var(--bg-elevated))]/30">
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
-            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-[rgb(var(--text-muted))]" />
+            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-[rgb(var(--text-secondary))]" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Szukaj w changelogu..."
-              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] outline-none focus:border-[rgb(var(--accent))]/50 transition-colors"
+              className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-[rgb(var(--bg-canvas))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text))] placeholder:text-[rgb(var(--text-tertiary))] outline-none focus:border-[rgb(var(--accent))]/50 transition-colors"
             />
           </div>
           {agentNames.length > 1 && (
             <select
               value={filterAgent || ''}
               onChange={(e) => setFilterAgent(e.target.value || null)}
-              className="px-2 py-1.5 text-[11px] bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text-muted))] outline-none"
+              className="px-2 py-1.5 text-[11px] bg-[rgb(var(--bg-canvas))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text-secondary))] outline-none"
             >
               <option value="">Wszyscy</option>
               {agentNames.map((name) => (
@@ -94,12 +94,12 @@ export function ChangelogPanel() {
       </div>
 
       {/* Stats bar */}
-      <div className="px-4 py-1.5 border-b border-[rgb(var(--border))]/30 bg-[rgb(var(--panel))]/10 flex items-center justify-between">
-        <span className="text-[9px] text-[rgb(var(--text-muted))]">
+      <div className="px-4 py-1.5 border-b border-[rgb(var(--border))]/30 bg-[rgb(var(--bg-elevated))]/20 flex items-center justify-between">
+        <span className="text-[9px] text-[rgb(var(--text-secondary))]">
           {filteredEntries.length} wpisów
           {streamingCount > 0 && ` (${streamingCount} streamuje)`}
         </span>
-        <span className="text-[9px] text-[rgb(var(--text-muted))] opacity-50">
+        <span className="text-[9px] text-[rgb(var(--text-secondary))] opacity-50">
           {entries.filter(e => e.output?.approved === true).length} zatwierdzonych
         </span>
       </div>
@@ -111,11 +111,11 @@ export function ChangelogPanel() {
       >
         {filteredEntries.length === 0 ? (
           <div className="p-6 text-center">
-            <ScrollText className="w-8 h-8 mx-auto mb-3 text-[rgb(var(--text-muted))] opacity-30" />
-            <p className="text-[12px] text-[rgb(var(--text-muted))] opacity-50">
+            <ScrollText className="w-8 h-8 mx-auto mb-3 text-[rgb(var(--text-secondary))] opacity-30" />
+            <p className="text-[12px] text-[rgb(var(--text-secondary))] opacity-50">
               {searchQuery ? 'Brak wyników wyszukiwania' : 'Brak wpisów w changelogu'}
             </p>
-            <p className="text-[10px] text-[rgb(var(--text-muted))] opacity-30 mt-1">
+            <p className="text-[10px] text-[rgb(var(--text-secondary))] opacity-30 mt-1">
               Uruchom agenta aby zobaczyć wyniki
             </p>
           </div>
@@ -127,17 +127,10 @@ export function ChangelogPanel() {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-1.5 border-t border-[rgb(var(--border))] bg-[rgb(var(--panel))]/30 flex items-center justify-between">
-        <span className="text-[9px] text-[rgb(var(--text-muted))] opacity-50">
+      <div className="px-4 py-1.5 border-t border-[rgb(var(--border))] bg-[rgb(var(--bg-elevated))]/30 flex items-center justify-between">
+        <span className="text-[9px] text-[rgb(var(--text-secondary))] opacity-50">
           Live streaming
         </span>
-        <button
-          className="text-[9px] text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer flex items-center gap-1"
-          title="Export changelog"
-        >
-          <Download className="w-2.5 h-2.5" />
-          Export
-        </button>
       </div>
     </div>
   );

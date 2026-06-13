@@ -104,10 +104,10 @@ async function bootstrap(): Promise<void> {
       console.error(`[Orchestrator] Error ${agentId}:`, error);
       storage?.appendLog({ level: 'error', agentId, message: error });
     },
-  }, providerRegistry);
+  }, providerRegistry, storage);
 
   // === IPC Bridge ===
-  ipcBridge = new ElectronIpcBridge(ipcMain, orchestrator, storage, providerRegistry);
+  ipcBridge = new ElectronIpcBridge(ipcMain, orchestrator, storage, providerRegistry, ROOT_DIR);
   ipcBridge.registerHandlers();
 
   console.log('[NEXUS] System gotowy — AI Providers:', providerRegistry.getConfigs().length);

@@ -112,6 +112,13 @@ Bez kodu, bez technikaliów. Co jest, co będzie, gdzie to znajdziesz.
 - Dzielisz na fazy
 - To NIE jest lista do odznaczenia — to jest miejsce na planowanie
 
+### Feedback — już działa
+- **Przycisk w prawym dolnym rogu** "Przekaż pomysł" we wszystkich widokach
+- Otwiera modal z **entity pickerem** (Agent AI, Notatka, Task, Manuskrypt, Ogólny pomysł)
+- **Auto-kontekst** — system sam zbiera widok, zaznaczony element, projekt, ostatnią akcję
+- **Rating 1-5 gwiazdkami** — opcjonalna ocena
+- Zapis przez IPC do pliku `data/feedback.jsonl` — łatwo znaleźć i wysłać
+
 ---
 
 ## FAZA 5 — Export

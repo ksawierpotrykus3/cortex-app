@@ -3,8 +3,8 @@
 // Pojedynczy wpis w changelogu: streamowanie, finalny output, approve/reject
 // ============================================================================
 
-import React, { useRef, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, Copy, CheckCircle, AlertCircle, Clock, Bot, X } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { ThumbsUp, ThumbsDown, Copy, CheckCircle, AlertCircle, Bot, X, Check } from 'lucide-react';
 import { ChangelogEntry, AgentStatus } from '../../../shared/types/schema';
 import { useChangelogStore } from '../../store/changelogStore';
 
@@ -24,6 +24,7 @@ interface LogEntryProps {
 export function LogEntry({ entry }: LogEntryProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { approveEntry, rejectEntry, removeEntry } = useChangelogStore();
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   // Auto-scroll podczas streamowania
   useEffect(() => {
@@ -41,6 +42,8 @@ export function LogEntry({ entry }: LogEntryProps) {
   const handleCopy = () => {
     if (displayContent) {
       navigator.clipboard.writeText(displayContent);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 1200);
     }
   };
 
@@ -57,7 +60,7 @@ export function LogEntry({ entry }: LogEntryProps) {
             style={{ backgroundColor: entry.agentColor || '#a78bfa' }}
           />
           {/* Agent name */}
-          <span className="text-[12px] font-medium text-[rgb(var(--text-main))] truncate">
+          <span className="text-[12px] font-medium text-[rgb(var(--text))] truncate">
             {entry.agentName}
           </span>
           {/* Status icon */}
@@ -67,14 +70,18 @@ export function LogEntry({ entry }: LogEntryProps) {
           )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {/* Copy */}
+          {/* Copy with feedback */}
           {displayContent && (
             <button
               onClick={handleCopy}
-              className="p-1 rounded text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
-              title="Kopiuj"
+              className={`p-1 rounded transition-colors cursor-pointer ${
+                copyFeedback
+                  ? 'text-green-400 bg-green-400/10'
+                  : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--border))]/50'
+              }`}
+              title={copyFeedback ? 'Skopiowano!' : 'Kopiuj'}
             >
-              <Copy className="w-3 h-3" />
+              {copyFeedback ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
             </button>
           )}
           {/* Approve */}
@@ -100,7 +107,7 @@ export function LogEntry({ entry }: LogEntryProps) {
           {/* Remove */}
           <button
             onClick={() => removeEntry(entry.id)}
-            className="p-1 rounded text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
+            className="p-1 rounded text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
             title="Usuń"
           >
             <X className="w-3 h-3" />
@@ -110,7 +117,7 @@ export function LogEntry({ entry }: LogEntryProps) {
 
       {/* Timestamp */}
       <div className="px-4 pb-1">
-        <span className="text-[9px] text-[rgb(var(--text-muted))] opacity-50">
+        <span className="text-[9px] text-[rgb(var(--text-secondary))] opacity-50">
           {new Date(entry.createdAt).toLocaleTimeString('pl-PL')}
           {entry.output?.executionMs && ` · ${entry.output.executionMs}ms`}
           {entry.output?.tokensUsed && ` · ${entry.output.tokensUsed} tokenów`}
@@ -120,7 +127,7 @@ export function LogEntry({ entry }: LogEntryProps) {
       {/* Content */}
       {displayContent && (
         <div className="px-4 pb-2">
-          <pre className="text-[11px] leading-relaxed text-[rgb(var(--text-main))] font-mono whitespace-pre-wrap break-words max-h-48 overflow-y-auto custom-scrollbar">
+          <pre className="text-[11px] leading-relaxed text-[rgb(var(--text))] font-mono whitespace-pre-wrap break-words max-h-48 overflow-y-auto custom-scrollbar">
             {displayContent}
             {entry.isStreaming && <span className="animate-pulse text-[rgb(var(--accent))]">▍</span>}
           </pre>

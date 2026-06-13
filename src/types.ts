@@ -1,8 +1,59 @@
-export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'draft' | 'agents';
+export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'draft' | 'agents' | 'changes' | 'wiki' | 'git' | 'pipeline' | 'workflows';
 export type RightPanelState = 'none' | 'axioms' | 'properties';
 export type ModalState = 'none' | 'export' | 'settings';
 
 export type ThoughtMarker = 'certain' | 'hypothesis' | 'question' | 'answer';
+
+export type ChangeType = 'create' | 'update' | 'delete' | 'export' | 'ai_output';
+export type ChangeEntityType = 'node' | 'task' | 'draft' | 'manuscript' | 'agent_output';
+
+export interface ChangeEntry {
+  id: string;
+  type: ChangeType;
+  entityType: ChangeEntityType;
+  entityId: string;
+  summary: string;
+  description?: string;
+  timestamp: string;
+  userId?: 'user' | 'ai';
+  metadata?: Record<string, unknown>;
+}
+
+export interface ContextSnapshot {
+  viewMode: ViewMode;
+  selectedAgentId: string | null;
+  selectedNodeId: string | null;
+  selectedTaskId: string | null;
+  selectedManuscriptId: string | null;
+  projectId: string | null;
+  lastAction: string;
+}
+
+export interface FeedbackEntry {
+  id: string;
+  title: string;
+  context?: string;
+  suggestion?: string;
+  timestamp: string;
+  entityType: 'agent' | 'node' | 'task' | 'manuscript' | 'general';
+  entityId?: string;
+  entityLabel?: string;
+  contextSnapshot?: ContextSnapshot;
+  rating?: number; // 1-5
+  status: 'new' | 'read' | 'in-progress' | 'done';
+}
+
+export interface WikiArticle {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+  sourceRefs?: SourceReference[];
+  aiContext?: string;
+}
 
 export interface ImageAttachment {
   id: string;
@@ -29,6 +80,9 @@ export interface NexusNode {
   x: number;
   y: number;
   width?: number;
+  height?: number;
+  collapsed?: boolean;
+  cleanImageMode?: boolean;
   fontFamily?: 'sans' | 'serif' | 'mono';
   projectId?: string;
   layerId?: string;
@@ -96,10 +150,31 @@ export interface ManuscriptMeta {
   sourceRefs?: SourceReference[];
 }
 
+// --- Export Types (F5.2) ---
+export interface ExportScope {
+  nodes: boolean;
+  links: boolean;
+  tasks: boolean;
+  drafts: boolean;
+  axioms: boolean;
+  images: boolean;
+  onlySelected: boolean;
+}
+
+export const DEFAULT_EXPORT_SCOPE: ExportScope = {
+  nodes: true,
+  links: true,
+  tasks: false,
+  drafts: false,
+  axioms: true,
+  images: true,
+  onlySelected: false,
+};
+
 // --- NXS-ENG-001 (Node-Based AI Engine Types) ---
 
 export type AgentRole = 'writer' | 'researcher' | 'critic' | 'auditor' | 'tool-executor';
-export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'system-reader' | 'system-writer';
+export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'system-reader' | 'system-writer' | 'condition';
 
 export interface PipelinePayload {
   data: any; // Structured JSON object passed between nodes
@@ -120,9 +195,14 @@ export interface WorkflowNode {
   type: NodeType;
   name: string;
   role?: AgentRole;
+  agentId?: string;
   systemPrompt?: string;
   config: Record<string, any>;
-  position: { x: number; y: number }; // For visual DAG in Sandbox
+  position: { x: number; y: number };
+  condition?: {
+    expression: string;
+    mode: 'skip-when-false' | 'skip-when-true' | 'always';
+  };
 }
 
 export interface PortConnection {

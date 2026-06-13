@@ -1,51 +1,43 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from "react";
-import { Plus, ChevronDown, Activity, Settings2, ZoomIn, ZoomOut, Maximize, MoveRight, Download, Trash2, X, Image as ImageIcon, Loader2, Expand } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, MoveRight, Download, Trash2, X, Image as ImageIcon, History } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { NexusNode, NexusLink, ImageAttachment, ThoughtMarker } from "../types";
-import { generateAIExport, downloadFile } from "../exportEngine";
+import { NexusNode, NexusLink, ImageAttachment, ThoughtMarker, NexusAnnotation } from "../types";
+import { generateAIExport, downloadFile, generateExportFilename } from "../exportEngine";
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { analyzeImageWithGemini, GeminiVisionResult } from '../utils/geminiVision';
 import { uid } from '../utils/ids';
 import { compressImage, fileToDataURL } from '../utils/image';
+import { useDiffStore } from '../renderer/store/diffStore';
+import { BatchActionBar } from './BatchActionBar';
 
 import { ImageAttachmentsUI } from "./ImageAttachmentsUI";
 
 export interface NexusCanvasHandle {
   panToProject: (projectId: string) => void;
+  centerOnNode: (nodeId: string) => void;
 }
 
 export const NexusCanvas = forwardRef<NexusCanvasHandle, React.ComponentProps<typeof NexusCanvasInner>>((props, ref) => {
   const panToProjectRef = useRef<(projectId: string) => void>(() => {});
+  const centerOnNodeRef = useRef<(nodeId: string) => void>(() => {});
 
   useImperativeHandle(ref, () => ({
     panToProject: (projectId: string) => {
       panToProjectRef.current(projectId);
+    },
+    centerOnNode: (nodeId: string) => {
+      centerOnNodeRef.current(nodeId);
     }
   }));
 
-  return <NexusCanvasInner {...props} />;
+  return <NexusCanvasInner {...props} panToProjectRef={panToProjectRef} centerOnNodeRef={centerOnNodeRef} />;
 });
 
 NexusCanvas.displayName = 'NexusCanvas';
 
-interface NexusCanvasInnerProps {
-  nodes: NexusNode[];
-  setNodes: React.Dispatch<React.SetStateAction<NexusNode[]>>;
-  links: NexusLink[];
-  setLinks: React.Dispatch<React.SetStateAction<NexusLink[]>>;
-  selectedNodeId: string | null;
-  setSelectedNodeId: (id: string | null) => void;
-  selectedNodeIds?: string[];
-  setSelectedNodeIds?: (ids: string[]) => void;
-  expandedProjects?: Record<string, boolean>;
-  draggedProject?: string | null;
-  onDraggedProjectRelease?: () => void;
-  onProjectCenter?: (projectId: string) => void;
-  panToProjectRef?: React.MutableRefObject<(projectId: string) => void>;
-}
-
 function NexusCanvasInner({ 
   panToProjectRef,
+  centerOnNodeRef,
   nodes, 
   setNodes,
   links,
@@ -57,9 +49,9 @@ function NexusCanvasInner({
   expandedProjects = {},
   draggedProject,
   onDraggedProjectRelease,
-  onProjectCenter
 }: {
   panToProjectRef?: React.MutableRefObject<(projectId: string) => void>;
+  centerOnNodeRef?: React.MutableRefObject<(nodeId: string) => void>;
   nodes: NexusNode[];
   setNodes: React.Dispatch<React.SetStateAction<NexusNode[]>>;
   links: NexusLink[];
@@ -71,7 +63,6 @@ function NexusCanvasInner({
   expandedProjects?: Record<string, boolean>;
   draggedProject?: string | null;
   onDraggedProjectRelease?: () => void;
-  onProjectCenter?: (projectId: string) => void;
 }) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -89,6 +80,10 @@ function NexusCanvasInner({
   const [selectStart, setSelectStart] = useState({ x: 0, y: 0 });
   const [selectEnd, setSelectEnd] = useState({ x: 0, y: 0 });
 
+  // #11: Glob filter
+  const [globFilter, setGlobFilter] = useState('');
+  const [showGlobFilter, setShowGlobFilter] = useState(false);
+
   // --- Teleport to project ---
   const panToProject = useCallback((projectId: string) => {
     const projectNodes = nodes.filter(n => (n.projectId === projectId || (!n.projectId && projectId === 'Uncategorized')));
@@ -104,6 +99,29 @@ function NexusCanvasInner({
       y: rect.height / 2 - cy * newScale,
     });
   }, [nodes, nodeHeights, scale]);
+
+  // --- Teleport to single node ---
+  const centerOnNode = useCallback((nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const newScale = Math.max(scale, 0.5);
+    setScale(newScale);
+    setOffset({
+      x: rect.width / 2 - (node.x + (node.width || 256) / 2) * newScale,
+      y: rect.height / 2 - (node.y + (nodeHeights[node.id] || 100) / 2) * newScale,
+    });
+  }, [nodes, nodeHeights, scale]);
+
+  // Wire up refs
+  useEffect(() => {
+    if (panToProjectRef) panToProjectRef.current = panToProject;
+  }, [panToProject, panToProjectRef]);
+
+  useEffect(() => {
+    if (centerOnNodeRef) centerOnNodeRef.current = centerOnNode;
+  }, [centerOnNode, centerOnNodeRef]);
 
   // --- Clipboard paste handler ---
   const handleImagePaste = useCallback(async (imageData: { dataUrl: string; mimeType: string; name: string }) => {
@@ -152,16 +170,17 @@ function NexusCanvasInner({
           ),
         };
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 4. Error — usuń isProcessing, pokaż błąd
+      const errorMsg = err instanceof Error ? err.message : String(err);
       setNodes(prev => prev.map(n => {
         if (n.id !== tempId) return n;
         return {
           ...n,
-          content: `⚠ Błąd analizy obrazu: ${err.message}\n\nSprawdź czy masz ustawiony klucz Gemini w Settings.`,
+          content: `[BLAD] Analiza obrazu: ${errorMsg}\n\nSprawdz czy masz ustawiony klucz Gemini w Settings.`,
           imageAttachments: (n.imageAttachments || []).map((att, idx) =>
             idx === 0
-              ? { ...att, isProcessing: false, geminiError: err.message }
+              ? { ...att, isProcessing: false, geminiError: errorMsg }
               : att
           ),
         };
@@ -234,25 +253,23 @@ function NexusCanvasInner({
     stateRef.current = { isPanning, draggedNode, linkingFrom, offset, scale, selectedNodeId, nodes, selectedNodeIds, draggedProject, isSelecting, selectStart, selectEnd, shiftIsPressed };
   }, [isPanning, draggedNode, linkingFrom, offset, scale, selectedNodeId, nodes, selectedNodeIds, draggedProject, isSelecting, selectStart, selectEnd, shiftIsPressed]);
 
+  // Block only browser-native drag/select that interferes with Shift+rectangle selection on the canvas
   useEffect(() => {
-    const handleBlockAll = (e: MouseEvent | PointerEvent | Event) => {
-      if ('shiftKey' in e && e.shiftKey) {
-        e.preventDefault(); // TYLKO ZATRZYMAJ DOMYŚLNĄ AKCJĘ, A NIE PROPAGACJĘ!
+    const container = containerRef.current;
+    if (!container) return;
+    const handleBlock = (e: Event) => {
+      if ((e as any).shiftKey) {
+        e.preventDefault();
       }
     };
-    // Zawsze zarejestruj listenery, nie tylko gdy shiftIsPressed!
-    const events = [
-      'mousedown', 'mouseup', 'click', 'auxclick', 'dblclick',
-      'pointerdown', 'pointerup', 'pointerclick',
-      'dragstart', 'drag', 'dragenter', 'dragleave', 'dragover', 'dragend', 'drop',
-      'contextmenu'
-    ];
+    // Only prevent events on the canvas container, not the whole window
+    const events = ['dragstart', 'selectstart', 'contextmenu'];
     events.forEach(evt => {
-      window.addEventListener(evt, handleBlockAll, { capture: true, passive: false });
+      container.addEventListener(evt, handleBlock, { capture: false, passive: false });
     });
     return () => {
       events.forEach(evt => {
-        window.removeEventListener(evt, handleBlockAll, { capture: true });
+        container.removeEventListener(evt, handleBlock, { capture: false } as any);
       });
     };
   }, [shiftIsPressed]);
@@ -532,7 +549,7 @@ function NexusCanvasInner({
       x,
       y,
       accent: "none",
-      projectId: clickedEnvelope ? clickedEnvelope.id : "default_namespace"
+      projectId: clickedEnvelope ? clickedEnvelope.id : ""
     };
     
     setNodes([...nodes, newNode]);
@@ -616,8 +633,8 @@ function NexusCanvasInner({
     const selectedNodes = nodes.filter(n => selectedNodeIds.includes(n.id));
     const selectedEdges = links.filter(l => selectedNodeIds.includes(l.source) || selectedNodeIds.includes(l.target));
     const exportData = generateAIExport(selectedNodes, selectedEdges, "");
-        
-    downloadFile(exportData, `nexus_nodes_export_${new Date().toISOString().split('T')[0]}.json`);
+    const filename = generateExportFilename("nexus-selection");
+    downloadFile(exportData, filename);
     if (setSelectedNodeIds) setSelectedNodeIds([]);
   };
 
@@ -635,7 +652,43 @@ function NexusCanvasInner({
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
       tabIndex={0}
+      onKeyDown={(e) => {
+        // Ctrl+A — select all
+        if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+          e.preventDefault();
+          if (setSelectedNodeIds) {
+            const filtered = globFilter
+              ? nodes.filter(n => n.title.toLowerCase().includes(globFilter.toLowerCase()))
+              : nodes;
+            setSelectedNodeIds(filtered.map(n => n.id));
+          }
+        }
+        // Ctrl+F — toggle glob filter
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+          e.preventDefault();
+          setShowGlobFilter(p => !p);
+        }
+      }}
     >
+      {/* #11: Glob filter bar */}
+      {showGlobFilter && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto" onPointerDown={e => e.stopPropagation()}>
+          <div className="flex items-center gap-2 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-xl shadow-2xl px-3 py-2">
+            <input
+              value={globFilter}
+              onChange={(e) => setGlobFilter(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') setShowGlobFilter(false); }}
+              placeholder="Filtruj notatki po nazwie..."
+              className="w-64 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg px-3 py-1.5 text-[12px] text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] outline-none focus:border-[rgb(var(--accent))]"
+              autoFocus
+            />
+            <button onClick={() => setShowGlobFilter(false)} className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <motion.div 
         className="absolute inset-0 transform-gpu pointer-events-none origin-top-left"
         animate={{ x: offset.x, y: offset.y, scale }}
@@ -845,8 +898,8 @@ function NexusCanvasInner({
             onUpdateFont={(font) => {
                 setNodes(nodes.map(n => n.id === node.id ? { ...n, fontFamily: font } : n));
             }}
-            onResize={(width) => {
-                setNodes(nodes.map(n => n.id === node.id ? { ...n, width } : n));
+            onResize={(width, height) => {
+                setNodes(nodes.map(n => n.id === node.id ? { ...n, width, height } : n));
             }}
             onHeightChange={(height) => {
                 setNodeHeights(prev => prev[node.id] === height ? prev : { ...prev, [node.id]: height });
@@ -909,77 +962,32 @@ function NexusCanvasInner({
         </button>
       </div>
 
+      {/* #11: Batch action bar — replace old selection bar */}
       {selectedNodeIds && selectedNodeIds.length > 0 && (
-        <div 
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-6 z-50 pointer-events-auto"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
-           <div className="flex items-center gap-3 shrink-0">
-             <div className="bg-[rgb(var(--accent))] text-[rgb(var(--background))] px-2.5 py-0.5 rounded-md text-[13px] font-bold">
-               {selectedNodeIds.length}
-             </div>
-             <span className="text-[14px] font-medium text-[rgb(var(--text-main))]">Selected</span>
-           </div>
-           
-           <div className="w-px h-8 bg-[rgb(var(--border))] shrink-0" />
-           
-           <div className="flex items-center gap-3">
-              <div className="relative group/move shrink-0">
-                  <button className="flex items-center gap-2 text-[14px] font-medium text-[rgb(var(--text-main))] bg-[rgb(var(--background))] group-hover/move:border-[rgb(var(--accent))] px-4 py-2 rounded-xl transition-colors border border-[rgb(var(--border))]">
-                     <MoveRight className="w-4 h-4 text-[rgb(var(--text-muted))] group-hover/move:text-[rgb(var(--accent))]" /> Move
-                  </button>
-                  <div className="absolute bottom-full left-0 mb-2 w-48 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] shadow-xl rounded-xl py-2 opacity-0 invisible group-hover/move:opacity-100 group-hover/move:visible transition-all z-50">
-                     <button 
-                         className="w-full text-left px-4 py-2 text-[13px] hover:bg-[rgb(var(--border))] text-[rgb(var(--text-main))]"
-                         onClick={() => {
-                             setNodes(nodes.map(n => selectedNodeIds.includes(n.id) ? { ...n, projectId: "" } : n));
-                             if (setSelectedNodeIds) setSelectedNodeIds([]);
-                         }}
-                     >
-                         None (Uncategorized)
-                     </button>
-                     {allProjects.filter(p => p !== 'Uncategorized').map(p => (
-                         <button 
-                             key={p}
-                             className="w-full text-left px-4 py-2 text-[13px] hover:bg-[rgb(var(--border))] text-[rgb(var(--text-main))]"
-                             onClick={() => {
-                                 setNodes(nodes.map(n => selectedNodeIds.includes(n.id) ? { ...n, projectId: p } : n));
-                                 if (setSelectedNodeIds) setSelectedNodeIds([]);
-                             }}
-                         >
-                             {p}
-                         </button>
-                     ))}
-                  </div>
-              </div>
-
-              <button 
-                 onClick={handleExport}
-                 className="flex items-center gap-2 text-[14px] font-medium text-[rgb(var(--text-main))] hover:border-[rgb(var(--text-muted))] bg-[rgb(var(--background))] px-4 py-2 rounded-xl transition-colors border border-[rgb(var(--border))] shrink-0">
-                 <Download className="w-4 h-4 text-[rgb(var(--text-muted))]" /> Export
-              </button>
-
-              <button 
-                 onClick={() => {
-                    setNodes(nodes.filter(n => !selectedNodeIds.includes(n.id)));
-                    setLinks(links.filter(l => !selectedNodeIds.includes(l.source) && !selectedNodeIds.includes(l.target)));
-                    if (setSelectedNodeIds) setSelectedNodeIds([]);
-                 }}
-                 className="flex items-center gap-2 text-[14px] font-medium text-red-500 hover:text-red-400 hover:bg-red-500/10 bg-[rgb(var(--background))] px-4 py-2 rounded-xl transition-colors border border-red-500/30 shrink-0">
-                 <Trash2 className="w-4 h-4" /> Delete
-              </button>
-              
-              <button 
-                 onClick={() => {
-                     if (setSelectedNodeIds) setSelectedNodeIds([]);
-                 }}
-                 className="ml-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] p-2 rounded-lg hover:bg-[rgb(var(--border))] transition-colors shrink-0"
-              >
-                 <X className="w-4 h-4" />
-              </button>
-           </div>
-        </div>
+      <BatchActionBar
+        selectedIds={selectedNodeIds}
+        nodes={nodes}
+        onDelete={(ids) => {
+          setNodes(prev => prev.filter(n => !ids.includes(n.id)));
+          setLinks(prev => prev.filter(l => !ids.includes(l.source) && !ids.includes(l.target)));
+          if (setSelectedNodeIds) setSelectedNodeIds([]);
+        }}
+        onExport={(selectedNodes) => {
+          const selectedEdges = links.filter(l => selectedNodeIds.includes(l.source) || selectedNodeIds.includes(l.target));
+          const exportData = generateAIExport(selectedNodes, selectedEdges, "");
+          const filename = generateExportFilename("nexus-selection");
+          downloadFile(exportData, filename);
+          if (setSelectedNodeIds) setSelectedNodeIds([]);
+        }}
+        onAssignProject={(ids, projectId) => {
+          setNodes(prev => prev.map(n => ids.includes(n.id) ? { ...n, projectId: projectId || undefined } : n));
+          if (setSelectedNodeIds) setSelectedNodeIds([]);
+        }}
+        onClear={() => {
+          if (setSelectedNodeIds) setSelectedNodeIds([]);
+        }}
+        projects={allProjects.map(p => ({ id: p === 'Uncategorized' ? '' : p, name: p }))}
+       />
       )}
     </div>
   );
@@ -995,9 +1003,9 @@ interface NodeProps {
   onLinkStart: (e: React.PointerEvent) => void;
   onLinkComplete: (e: React.PointerEvent) => void;
   onUpdateTitle: (newTitle: string) => void;
-  onAddAnnotation: (ann: any) => void;
+  onAddAnnotation: (ann: NexusAnnotation) => void;
   onUpdateFont: (font: 'sans' | 'serif' | 'mono') => void;
-  onResize: (width: number) => void;
+  onResize: (width: number, height: number) => void;
   onHeightChange: (height: number) => void;
   onUpdateNode?: (id: string, updates: Partial<NexusNode>) => void;
 }
@@ -1032,12 +1040,16 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
       e.stopPropagation();
       e.preventDefault();
       const startX = e.clientX;
+      const startY = e.clientY;
       const initialWidth = cardWidth;
+      const initialHeight = node.height || (cardRef.current?.offsetHeight || 200);
       
       const handleMove = (ev: PointerEvent) => {
           const dx = (ev.clientX - startX) / scale;
+          const dy = (ev.clientY - startY) / scale;
           const newWidth = Math.max(200, Math.min(1000, initialWidth + dx));
-          onResize(newWidth);
+          const newHeight = Math.max(60, Math.min(1200, initialHeight + dy));
+          onResize(newWidth, newHeight);
       };
       
       const handleUp = () => {
@@ -1049,6 +1061,41 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
       window.addEventListener('pointerup', handleUp);
   };
 
+  const isCollapsed = node.collapsed === true;
+  const nodeHeight = node.height ?? undefined;
+
+  // Clean image mode: render only the image, no chrome
+  if (node.cleanImageMode && node.imageAttachments && node.imageAttachments.length > 0) {
+    const imgAtt = node.imageAttachments[0];
+    return (
+      <motion.div
+        ref={cardRef}
+        data-node-id={node.id}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
+        transition={isDragging ? { type: "tween", duration: 0 } : { type: "spring", bounce: 0.1, duration: 0.2 }}
+        style={{ width: cardWidth, height: nodeHeight || 300 }}
+        className="absolute top-0 left-0 z-10 overflow-hidden rounded-xl shadow-lg border border-[rgb(var(--border))] group/img cursor-pointer"
+        onPointerDown={onSelect}
+      >
+        <img
+          src={imgAtt.dataUrl}
+          alt={node.title}
+          className="w-full h-full object-contain bg-black/20"
+          draggable={false}
+        />
+        {/* Title overlay at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none">
+          <span className="text-[13px] font-semibold text-white truncate block">{node.title}</span>
+        </div>
+        {/* Double-click to open details */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none">
+          Double-click for details
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       ref={cardRef}
@@ -1056,7 +1103,7 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
       transition={isDragging ? { type: "tween", duration: 0 } : { type: "spring", bounce: 0.1, duration: 0.2 }}
-      style={{ width: cardWidth }}
+      style={{ width: cardWidth, height: nodeHeight }}
       className={`absolute top-0 left-0 bg-[rgb(var(--panel))] text-[13px] flex flex-col z-10 pointer-events-auto group shadow-lg rounded-xl overflow-visible touch-none
         border ${isSpecial ? (node.accent === 'blue' ? 'border-[rgb(var(--accent))] shadow-[0_0_15px_rgba(45,212,191,0.1)]' : 'border-purple-400/50') : 'border-[rgb(var(--border))]'}
         ${isSelected ? 'ring-2 ring-[rgb(var(--accent))] shadow-xl' : 'hover:border-[rgb(var(--text-muted))] transition-colors'}
@@ -1095,6 +1142,19 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
             setEditTitle(node.title);
         }}
       >
+        {/* Collapse toggle button */}
+        <div 
+          className="flex items-center gap-1 cursor-pointer shrink-0 mr-1"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onUpdateNode?.(node.id, { collapsed: !isCollapsed });
+          }}
+          title={isCollapsed ? "Expand node" : "Collapse node"}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" className={`transition-transform ${isCollapsed ? '' : 'rotate-90'}`}>
+            <path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </div>
         {isEditingTitle ? (
             <input 
                 autoFocus
@@ -1141,6 +1201,21 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
              title="Add inline annotation"
           >+</span>
           <span
+             className="w-4 h-4 text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
+             onPointerDown={(e) => {
+               e.stopPropagation();
+               useDiffStore.getState().openDiff({
+                 entityId: node.id,
+                 entityType: 'node',
+                 title: node.title,
+                 currentContent: node.content,
+               });
+             }}
+             title="Pokaż historię zmian"
+          >
+             <History size={12} />
+          </span>
+          <span
              className={`w-4 h-4 transition-colors cursor-pointer flex items-center justify-center ${showSettings ? 'text-[rgb(var(--text-main))] opacity-100' : 'text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))]'}`}
              onPointerDown={(e) => { e.stopPropagation(); setShowSettings(!showSettings); setIsAddingAnnotation(false); }}
              title="Settings"
@@ -1159,6 +1234,17 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
                        </button>
                    ))}
                 </div>
+                {node.imageAttachments && node.imageAttachments.length > 0 && (
+                   <div className="mb-2">
+                      <div className="text-[10px] font-bold text-[rgb(var(--text-muted))] uppercase mb-1">Image Mode</div>
+                      <button
+                         onClick={() => onUpdateNode?.(node.id, { cleanImageMode: !node.cleanImageMode })}
+                         className={`text-left w-full px-2 py-1 text-[12px] capitalize rounded flex items-center gap-1.5 ${node.cleanImageMode ? 'bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))]' : 'hover:bg-[rgb(var(--border))] text-[rgb(var(--text-main))]'}`}
+                      >
+                         <span>{node.cleanImageMode ? '✓ ' : ''}Clean image mode</span>
+                      </button>
+                   </div>
+                )}
                 <div className="text-[10px] font-bold text-[rgb(var(--text-muted))] uppercase mb-1">Thought Status</div>
                 <div className="flex flex-col gap-1">
                    {(['certain', 'hypothesis', 'question', 'answer'] as ThoughtMarker[]).map(marker => {
@@ -1169,7 +1255,7 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
                               onClick={() => {
                                  const current = node.thoughtMarkers || [];
                                  const next = current.includes(marker) ? current.filter(m => m !== marker) : [...current, marker];
-                                 onUpdateNode(node.id, { thoughtMarkers: next });
+                                 onUpdateNode?.(node.id, { thoughtMarkers: next });
                               }}
                               className={`text-left px-2 py-1 text-[12px] capitalize rounded flex items-center gap-1.5 hover:bg-[rgb(var(--border))] text-[rgb(var(--text-main))] ${hasMarker ? 'bg-[rgb(var(--border))] font-semibold' : ''}`}
                            >
@@ -1231,7 +1317,7 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
          </div>
       )}
 
-      {node.imageAttachments && node.imageAttachments.length > 0 && (
+      {!isCollapsed && node.imageAttachments && node.imageAttachments.length > 0 && (
         <ImageAttachmentsUI 
           attachments={node.imageAttachments} 
           onRemove={(attId) => {
@@ -1243,12 +1329,14 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
         />
       )}
 
-      <div className={`p-4 text-[rgb(var(--text-muted))] whitespace-pre-wrap break-words font-medium leading-relaxed min-h-[50px] ${
-        node.imageAttachments && node.imageAttachments.length > 0 ? 'border-t border-[rgb(var(--border))]' : ''
-      }`}>
-        {node.content || (node.imageAttachments?.length ? '' : 'Empty parameters...')}
-      </div>
-      {(node.annotations && node.annotations.length > 0) ? (
+      {!isCollapsed && (
+        <div className={`p-4 text-[rgb(var(--text-muted))] whitespace-pre-wrap break-words font-medium leading-relaxed min-h-[50px] ${
+          node.imageAttachments && node.imageAttachments.length > 0 ? 'border-t border-[rgb(var(--border))]' : ''
+        }`}>
+          {node.content || (node.imageAttachments?.length ? '' : 'Empty parameters...')}
+        </div>
+      )}
+      {!isCollapsed && (node.annotations && node.annotations.length > 0) ? (
         <div className="px-4 pb-3 flex flex-wrap gap-1.5 opacity-80 mt-[-4px]">
            {(node.annotations.filter(a => a.category === 'comment').length > 0) && (
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[rgb(var(--border))] text-[rgb(var(--text-muted))]">
@@ -1269,12 +1357,14 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
       ) : null}
       
       {/* Resizer Handle */}
-      <div 
-         className="absolute right-0 bottom-0 w-4 h-4 cursor-ew-resize flex items-end justify-end p-1 opacity-0 group-hover:opacity-100 z-20"
-         onPointerDown={handleResizeStart}
-      >
-         <div className="w-2.5 h-2.5 bg-transparent border-r-2 border-b-2 border-[rgb(var(--text-muted))]/50 rounded-br-sm pointer-events-none" />
-      </div>
+      {!isCollapsed && (
+        <div 
+           className="absolute right-0 bottom-0 w-4 h-4 cursor-ew-resize flex items-end justify-end p-1 opacity-0 group-hover:opacity-100 z-20"
+           onPointerDown={handleResizeStart}
+        >
+           <div className="w-2.5 h-2.5 bg-transparent border-r-2 border-b-2 border-[rgb(var(--text-muted))]/50 rounded-br-sm pointer-events-none" />
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -248,15 +248,24 @@ export function DraftZone({
   // ============================================================
   async function sendViaIPC(channel: string, data: unknown): Promise<boolean> {
     try {
+      // Prefer: nexusBridge (contextBridge API)
+      const bridge = (window as any).nexusBridge;
+      if (bridge?.sendMutation) {
+        bridge.sendMutation(data);
+        return true;
+      }
+      // Legacy: window.electron (preload contextIsolation fallback)
       if (typeof window !== 'undefined' && (window as any).electron?.ipcRenderer?.send) {
         (window as any).electron.ipcRenderer.send(channel, data);
         return true;
-      } else if (typeof window !== 'undefined' && (window as any).require) {
+      }
+      // Legacy: nodeIntegration fallback
+      if (typeof window !== 'undefined' && (window as any).require) {
         const { ipcRenderer } = (window as any).require('electron');
         ipcRenderer.send(channel, data);
         return true;
       }
-      // Fallback: symulacja (development)
+      // Fallback: symulacja (development / test)
       console.log(`[DraftZone] IPC send (simulated): ${channel}`, data);
       return true;
     } catch (err) {
@@ -283,7 +292,10 @@ export function DraftZone({
       });
 
       // Wyślij do IPC Log Channel
-      if (typeof window !== 'undefined' && (window as any).electron?.ipcRenderer?.send) {
+      const bridge = (window as any).nexusBridge;
+      if (bridge?.sendLog) {
+        bridge.sendLog(logLine);
+      } else if (typeof window !== 'undefined' && (window as any).electron?.ipcRenderer?.send) {
         (window as any).electron.ipcRenderer.send(IPC_LOG_CHANNEL, logLine);
       } else if (typeof window !== 'undefined' && (window as any).require) {
         try {

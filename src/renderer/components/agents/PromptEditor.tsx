@@ -47,12 +47,12 @@ export function PromptEditor({ value, onChange }: PromptEditorProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="block text-[11px] font-medium text-[rgb(var(--text-muted))] uppercase tracking-wider">
+        <label className="block text-[11px] font-medium text-[rgb(var(--text-secondary))] uppercase tracking-wider">
           Prompt
         </label>
         <button
           onClick={() => setShowHelp(!showHelp)}
-          className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer"
+          className="text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))] transition-colors cursor-pointer"
         >
           <HelpCircle className="w-3.5 h-3.5" />
         </button>
@@ -60,8 +60,8 @@ export function PromptEditor({ value, onChange }: PromptEditorProps) {
 
       {/* Help tooltip */}
       {showHelp && (
-        <div className="mb-2 p-3 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg text-[11px] text-[rgb(var(--text-muted))] space-y-1">
-          <p className="font-medium text-[rgb(var(--text-main))] mb-1">Zmienne w promptach:</p>
+        <div className="mb-2 p-3 bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--border))] rounded-lg text-[11px] text-[rgb(var(--text-secondary))] space-y-1">
+          <p className="font-medium text-[rgb(var(--text))] mb-1">Zmienne w promptach:</p>
           {VARIABLE_BUTTONS.map((v) => (
             <p key={v.label}>
               <code className="text-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10 px-1 rounded text-[10px]">{v.value}</code>
@@ -80,7 +80,7 @@ export function PromptEditor({ value, onChange }: PromptEditorProps) {
           <button
             key={v.label}
             onClick={() => insertVariable(v.value)}
-            className="px-2 py-1 rounded-lg text-[10px] font-medium bg-[rgb(var(--panel))] border border-[rgb(var(--border))] text-[rgb(var(--text-muted))] hover:border-[rgb(var(--accent))]/30 hover:text-[rgb(var(--accent))] transition-colors flex items-center gap-1 cursor-pointer"
+            className="px-2 py-1 rounded-lg text-[10px] font-medium bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--border))] text-[rgb(var(--text-secondary))] hover:border-[rgb(var(--accent))]/30 hover:text-[rgb(var(--accent))] transition-colors flex items-center gap-1 cursor-pointer"
             title={v.tooltip}
           >
             <v.icon className="w-3 h-3" />
@@ -94,7 +94,7 @@ export function PromptEditor({ value, onChange }: PromptEditorProps) {
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-40 px-3 py-2.5 text-[13px] leading-relaxed bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] outline-none focus:border-[rgb(var(--accent))]/50 transition-colors resize-y font-mono custom-scrollbar"
+        className="w-full h-40 px-3 py-2.5 text-[13px] leading-relaxed bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text))] placeholder:text-[rgb(var(--text-secondary))] outline-none focus:border-[rgb(var(--accent))]/50 transition-colors resize-y font-mono custom-scrollbar"
         placeholder="Napisz prompt dla agenta...
 Użyj {{SCHOWEK}} aby wstawić zawartość schowka."
         spellCheck={false}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NexusNode } from '../types';
 import { ArrowUpRight, MessageSquareDashed, CheckSquare, Square, Trash2, MoveRight, Download, X } from 'lucide-react';
-import { generateAIExport, downloadFile } from '../exportEngine';
+import { generateAIExport, downloadFile, generateExportFilename, getExportPreset } from '../exportEngine';
 
 export function RawFragmentsView({ 
   nodes, 
@@ -34,8 +34,9 @@ export function RawFragmentsView({
 
   const handleExport = () => {
     const selectedNodes = nodes.filter(n => selectedIds.includes(n.id));
-    const exportText = generateAIExport(selectedNodes, [], "");
-    downloadFile(exportText, `nexus_fragments_export_${new Date().toISOString().split('T')[0]}.json`);
+    const preset = getExportPreset("raw-fragments");
+    const exportText = generateAIExport(selectedNodes, [], "", preset.scope);
+    downloadFile(exportText, generateExportFilename(preset.label));
     setSelectedIds([]); // Clear selection after export
   };
 
@@ -68,6 +69,10 @@ export function RawFragmentsView({
               <div 
                 key={annotation.id} 
                 onClick={() => toggleSelection(node.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelection(node.id); } }}
+                role="checkbox"
+                aria-checked={isSelected}
+                tabIndex={0}
                 className={`group flex flex-col bg-[rgb(var(--panel))] rounded-2xl p-6 shadow-sm border transition-all duration-300 relative overflow-hidden cursor-pointer
                   ${isSelected ? 'border-[rgb(var(--accent))] ring-1 ring-[rgb(var(--accent))] shadow-md' : 'border-[rgb(var(--border))] hover:border-[rgb(var(--text-muted))]/40'}
                 `}

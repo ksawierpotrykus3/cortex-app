@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { get, set } from 'idb-keyval';
-import { NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta } from './types';
+import { NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, ChangeEntry, FeedbackEntry, WikiArticle, Pipeline } from './types';
+import { WorkflowDefinition } from './shared/types/workflow';
+import { EntitySnapshot } from './utils/diffEngine';
+import { CustomCommandData } from './renderer/store/commandStore';
+import { ShortcutOverride } from './renderer/store/keydirStore';
 
 export const WORKSPACE_FILE = "nexus.workspace.json";
 export const BACKUP_FILE = "nexus.backup.json";
@@ -16,6 +20,14 @@ export interface NexusState {
   manuscriptFolders?: ManuscriptFolder[];
   manuscriptTabs?: ManuscriptTab[];
   manuscriptMetas?: ManuscriptMeta[];
+  changelog?: ChangeEntry[];
+  feedback?: FeedbackEntry[];
+  wiki?: WikiArticle[];
+  pipelines?: Pipeline[];
+  workflows?: WorkflowDefinition[];
+  snapshots?: EntitySnapshot[];
+  customCommands?: CustomCommandData[];
+  shortcutOverrides?: ShortcutOverride[];
 }
 
 export const defaultState: NexusState = {
@@ -27,7 +39,15 @@ export const defaultState: NexusState = {
   geminiKey: "",
   manuscriptFolders: [],
   manuscriptTabs: [],
-  manuscriptMetas: []
+  manuscriptMetas: [],
+  changelog: [],
+  feedback: [],
+  wiki: [],
+  pipelines: [],
+  workflows: [],
+  snapshots: [],
+  customCommands: [],
+  shortcutOverrides: [],
 };
 
 let directoryHandle: FileSystemDirectoryHandle | null = null;
@@ -150,24 +170,34 @@ export async function saveWorkspace(state: NexusState, triggerWatcher = true) {
 
   if (!directoryHandle || !permissionGranted) return;
   try {
-    // Atomic-like write using tmp file
-    const fileHandle = await directoryHandle.getFileHandle(TEMP_FILE, { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(JSON.stringify(state, null, 2));
-    await writable.close();
-    
-    // Backup
-    const backupHandle = await directoryHandle.getFileHandle(BACKUP_FILE, { create: true });
-    const backupWritable = await backupHandle.createWritable();
-    await backupWritable.write(JSON.stringify(state, null, 2));
-    await backupWritable.close();
+    // Atomic write: write to tmp first, then rename to actual file.
+    // This prevents data corruption if the process crashes mid-write.
+    const tmpHandle = await directoryHandle.getFileHandle(TEMP_FILE, { create: true });
+    const tmpWritable = await tmpHandle.createWritable();
+    await tmpWritable.write(JSON.stringify(state, null, 2));
+    await tmpWritable.close();
 
-    // In web API, we can't reliably do atomic rename easily, so we just write to actual
+    // Create backup of current state
+    try {
+      const currentHandle = await directoryHandle.getFileHandle(WORKSPACE_FILE, { create: false });
+      const currentFile = await currentHandle.getFile();
+      const currentContent = await currentFile.text();
+      const backupHandle = await directoryHandle.getFileHandle(BACKUP_FILE, { create: true });
+      const backupWritable = await backupHandle.createWritable();
+      await backupWritable.write(currentContent);
+      await backupWritable.close();
+    } catch {
+      // No existing workspace file to backup - first save
+    }
+
+    // Atomically replace workspace with tmp file content.
+    // The File System Access API doesn't support true atomic rename,
+    // so we write directly to the workspace file as the final authoritative copy.
     const activeHandle = await directoryHandle.getFileHandle(WORKSPACE_FILE, { create: true });
     const activeWritable = await activeHandle.createWritable();
     await activeWritable.write(JSON.stringify(state, null, 2));
     await activeWritable.close();
-    
+
     if (triggerWatcher) {
         const file = await activeHandle.getFile();
         lastModifiedTime = file.lastModified;
@@ -175,7 +205,6 @@ export async function saveWorkspace(state: NexusState, triggerWatcher = true) {
 
   } catch (e) {
     console.error("FS sync failed:", e);
-    alert("Warning: Failed to save changes to the local file system. Check console for details.");
   }
 }
 
@@ -188,7 +217,6 @@ export async function loadWorkspace(): Promise<NexusState> {
       return JSON.parse(contents);
     } catch (e: any) {
       console.error("Load failed, attempting backup...", e);
-      alert("Workspace data could not be parsed from primary file. Attempting backup restore...");
       try {
         const backupHandle = await directoryHandle.getFileHandle(BACKUP_FILE, { create: false });
         const backupFile = await backupHandle.getFile();

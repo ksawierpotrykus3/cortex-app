@@ -1,5 +1,5 @@
 // ================================================================
-// NEXUS V2 — LogViewer: Virtual Windowing (Phase 5.2)
+// NEXUS V2 — LogViewer: Virtual Windowing
 // ================================================================
 // Komponent renderujący logi agentów AI z użyciem react-window
 // (FixedSizeList) do wirtualizacji. Renderuje WYŁĄCZNIE widoczne
@@ -14,7 +14,7 @@
 // - IntersectionObserver + usePaginatedIPC do nieskończonego scrolla
 // ================================================================
 
-import React, { useRef, useCallback, useEffect, useMemo, useReducer } from 'react';
+import React, { useRef, useCallback, useEffect, useMemo } from 'react';
 import { FixedSizeList, type ListOnItemsRenderedProps, type ListChildComponentProps } from 'react-window';
 import { usePaginatedIPC, type LogEntry } from '../hooks/usePaginatedIPC';
 
@@ -24,7 +24,6 @@ import { usePaginatedIPC, type LogEntry } from '../hooks/usePaginatedIPC';
 const LOG_ITEM_HEIGHT = 60; // .log-item { height: 60px; }
 const OVERSCAN_COUNT = 5;   // elementy poza viewportem dla płynności
 const DEFAULT_LIST_HEIGHT = 600;
-const THROTTLE_MS = 100;    // throttle batch co 100ms
 
 // ==============================================================
 // Props
@@ -52,6 +51,9 @@ const LogItemRow = React.memo<{ entry: LogEntry; style: React.CSSProperties; onC
         className="log-item"
         style={style}
         onClick={() => onClick?.(entry)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(entry); } }}
+        role="button"
+        tabIndex={0}
         title={`ID: ${entry.id}\nTime: ${new Date(entry.timestamp).toISOString()}\nSize: ${entry.size}B`}
       >
         <span className="log-item-time">{timestamp}</span>
