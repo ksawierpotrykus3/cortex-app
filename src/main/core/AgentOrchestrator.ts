@@ -7,6 +7,7 @@ import { Agent, AgentStatus, AgentOutput, TriggerType, ContextConfig, ContextSou
 import { TelemetryMessage, FirehoseMessage } from '../../shared/types/ipc';
 import { ProviderRegistry } from '../ai/ProviderRegistry';
 import { StorageEngine } from '../storage/StorageEngine';
+import { SandboxRunner } from '../sandbox/SandboxRunner';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -38,6 +39,7 @@ export class AgentOrchestrator {
   private events: AgentOrchestratorEvents;
   private providerRegistry: ProviderRegistry;
   private storage?: StorageEngine;
+  private sandboxRunner?: SandboxRunner;
 
   // Config
   private readonly DEFAULT_MAX_RETRIES = 3;
@@ -48,6 +50,7 @@ export class AgentOrchestrator {
     this.events = events;
     this.providerRegistry = providerRegistry;
     this.storage = storage;
+    this.sandboxRunner = new SandboxRunner();
   }
 
   // =========================================================================
@@ -252,7 +255,27 @@ export class AgentOrchestrator {
       }
 
       // === AI Call with streaming ==========================================
-      const content = await this.callAIStreaming(state.agent, finalContext, agentId);
+      let content: string;
+      if (state.agent.executionMode === 'sandbox' && this.sandboxRunner) {
+        // === Sandbox Execution (#7 MicroVM) ================================
+        const providerConfig = this.providerRegistry.getConfig(state.agent.model.providerLabel);
+        const sandboxResult = await this.sandboxRunner.runInSandbox({
+          agent: state.agent,
+          context: finalContext,
+          triggerType: triggerType,
+          providerApiKey: providerConfig?.apiKey || '',
+          providerBaseUrl: providerConfig?.baseUrl || '',
+          timeoutMs: 120_000,
+          memoryLimitMb: 256,
+        });
+        if (!sandboxResult.success) {
+          throw new Error(`[Sandbox] ${sandboxResult.error}`);
+        }
+        content = sandboxResult.output?.content || '';
+      } else {
+        // === Standard Execution (live) ======================================
+        content = await this.callAIStreaming(state.agent, finalContext, agentId);
+      }
 
       // === Output ==========================================================
       const executionMs = Date.now() - startTime;

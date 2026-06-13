@@ -170,6 +170,9 @@ export interface Agent {
 
   // Permissions (F6.1)
   permissions?: PermissionSet;
+
+  // Execution Mode (#7 MicroVM)
+  executionMode?: 'live' | 'sandbox';  // Domyślnie 'live'
 }
 
 // === Output Routing =======================================================
