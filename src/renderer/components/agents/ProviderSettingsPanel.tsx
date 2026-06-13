@@ -4,7 +4,7 @@
 // Load/save z Main Process przez IPC bridge
 // ============================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Key, Check, AlertCircle, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { ProviderAuthConfig, AIProvider } from '../../../shared/types/schema';
 
@@ -22,6 +22,11 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
   const [editingKeys, setEditingKeys] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveResult, setSaveResult] = useState<Record<string, { success: boolean; error?: string }>>({});
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
   const [newCustomUrl, setNewCustomUrl] = useState('');
   const [newCustomKey, setNewCustomKey] = useState('');
 
@@ -53,6 +58,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
     if (result.success) {
       setEditingKeys(prev => ({ ...prev, [label]: '' }));
       setTimeout(() => {
+        if (!mountedRef.current) return;
         setSaveResult(prev => {
           const next = { ...prev };
           delete next[label];

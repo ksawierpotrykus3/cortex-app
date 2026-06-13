@@ -53,6 +53,21 @@ Algebra: 2+3=5 działa w każdej dziedzinie. Nie ma wyjątków.
 
 **W Nexusie:** jeśli coś działa jako źródło "schowek" dla agenta, działa tak samo dla workflow, eksportu, notatki i webhooka. Bez wyjątku.
 
+### Zasada Zamrożonego Kontekstu (audytowalność)
+Każda operacja agenta, pipeline'u lub workflowu musi zachować **kopię wszystkich plików i danych wejściowych** w takiej postaci w jakiej były w momencie wykonania. Żaden plik do którego agent miał dostęp nie może być później podmieniony, usunięty, ani zmodyfikowany — wszystko zostaje zamrożone w **snapshocie kontekstu**.
+
+**Po co:**
+- Możliwość odtworzenia dlaczego agent podjął konkretną decyzję za 6 miesięcy
+- Debugowanie: "pokaż mi co dokładnie agent widział gdy to robił"
+- Audit: każda decyzja → zamrożony kontekst → weryfikowalny
+
+**W praktyce:**
+- Każde wykonanie agenta/pipeline'u/workflowu dostaje unikalny snapshot ID (uuid)
+- Wszystkie pliki wejściowe (schowek, screenshot, pliki, outputy poprzednich agentów) są kopiowane do katalogu `data/snapshots/{snapshotId}/`
+- Snapshot zawiera też metadane: timestamp, wersja Nexusa, konfiguracja agenta, trigger
+- Snapshoty są czyszczone dopiero po ręcznym potwierdzeniu (lub konfigurowalnym TTL)
+- UI: przy każdym logu/outpućie agenta link "Zobacz kontekst" → otwiera zamrożony snapshot
+
 ### 8 uniwersalnych klocków (przyszłość)
 Docelowo wszystko w Nexusie ma być złożone z tych 8 klocków:
 
@@ -271,33 +286,29 @@ Render (React) ──IPC (contextBridge)──> Main (Electron)
 | 5.2 | Multi-scope + checkboxy | [ExportScopeSelector.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ExportScopeSelector.tsx) |
 | 5.3 | Export kontekstowy z każdego widoku | [ExportModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ExportModal.tsx#L29-L37) |
 
-### FAZA 6 — Warsztat AI (11/12 ✅ ~92%)
+### FAZA 6 — Warsztat AI (13/13 ✅ 100%) 🎉
 
-**Zrobione:**
 | # | Zadanie | Dowód |
 |---|---------|--------|
 | 6.0 | System agentów (CRUD + execute) | [AgentOrchestrator](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/AgentOrchestrator.ts) |
 | 6.0b | Multi-provider (Gemini/OpenRouter/Ollama) | [ProviderRegistry](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ai/ProviderRegistry.ts) |
 | 6.0c | Streaming outputów na żywo | [ChangelogPanel](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/changelog/ChangelogPanel.tsx) |
+| 6.2 | Context Builder (checkboxy, źródła, limit tokenów) | [ContextBuilder.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/ContextBuilder.tsx) + [ContextConfigPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/ContextConfigPanel.tsx) |
+| 6.3 | Magazyny outputów (historia + paginacja) | [AgentHistoryPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/AgentHistoryPanel.tsx) |
 | 6.4 | DraftZone (RLHF feedback) | [DraftZone.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/DraftZone.tsx) |
 | 6.5 | LogViewer (virtual scrolling) | [LogViewer.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/LogViewer.tsx) |
 | 6.6 | Approve/reject outputów | [changelogStore.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/store/changelogStore.ts) |
 | 6.7 | Permisje agentów (schema) | [schema.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/shared/types/schema.ts) |
+| 6.8 | Pipeline DAG (wizualny edytor + executor) | [PipelineEditor.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/PipelineEditor.tsx) + [PipelineExecutor.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/PipelineExecutor.ts) |
 | 6.10 | Wiki / Baza wiedzy | [WikiPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/WikiPanel.tsx) |
-| 6.11 | System feedbacku "Brakuje mi..." | [FeedbackModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/FeedbackModal.tsx) — #26 Universal Feedback z kontekstem |
+| 6.11 | System feedbacku "Brakuje mi..." | [FeedbackModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/FeedbackModal.tsx) |
 | 6.12 | Presety agentów (4 szablony) | [AgentPresets.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/AgentPresets.ts) |
-| 6.3 | Magazyny outputów (historia + paginacja) | [AgentHistoryPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/AgentHistoryPanel.tsx) |
-
-**Brakuje:**
-| # | Zadanie | Szac. | Opis |
-|---|---------|-------|------|
-| **6.6** | **Pipeline DAG** | ~30h | Wizualny edytor pipeline'ów — łączenie agentów w łańcuchy |
 
 ### Stan techniczny
 | Metryka | Wartość |
 |---------|---------|
 | **Lint (tsc --noEmit)** | **0 błędów** |
-| **Testy** | **142/142** (wszystkie komponenty) |
+| **Testy** | **196/196** (wszystkie komponenty) |
 | **Build (electron-vite)** | **exit 0** |
 | **Stabilność** | Produkcyjna — instalator istnieje |
 
@@ -305,69 +316,38 @@ Render (React) ──IPC (contextBridge)──> Main (Electron)
 
 ## 6. Co zostało do zrobienia
 
-### Priorytet 1 — Wysoki (wkrótce)
+**Wszystkie fazy F1-F6 są w 100% zrobione.** Wszystkie funkcje z wishlisty #1-#26 są zrobione oprócz refaktoryzacji (#2, #25).
 
-#### F6.2 Context Builder (~20h)
-**Dziś:** agent dostaje tylko to co napiszesz w prompcie.
-**Context Builder:** UI z checkboxami gdzie zaznaczasz co agent ma dostać:
-- [x] Notatki z mapy (które? — lista z ptaszkami)
-- [x] Taski (jakie? — filtr po projekcie)
-- [x] Manuskrypty (które? — lista ostatnich)
-- [x] Obrazy z schowka
-- [x] Outputy innych agentów
+Zostały 2 kategorie:
 
-Agent widzi tylko to co zaznaczysz. Nowy komponent + IPC + integracja z AgentOrchestrator.
-
-#### F6.6 Pipeline DAG (~30h)
-Wizualny edytor gdzie przeciągasz agentów i łączysz ich w łańcuchy.
-```
-[Screenshot] → [Agent OCR] → [Agent Streszczacz] → [Zapisz do Wiki]
-```
-- Przeciąganie agentów na płótno
-- Łączenie output → input
-- Każdy pipeline działa jako osobny "super-agent"
-- Monitorowanie postępu w czasie rzeczywistym
-
-### Priorytet 2 — Średni
-
-#### #23 Integracja z Gitem (~40h)
-GUI Gita w Nexusie — commit, push, branch, merge jednym klikiem. Bez terminala.
-- **Auto-changelog:** "Ksawier dodał workflow, Brat poprawił błąd w zapisie"
-- **Analiza diffa dla AI:** każdy agent widzi co się zmieniło od ostatniego pusha
-- **Auto-merge AI brancha:** AI działa na osobnym branchu, po skończeniu sam merguje
-- **README auto-update:** główny plik architektury aktualizuje się sam
-
-#### #12 Command Palette (~15h)
-Ctrl+K → wyszukujesz akcję, widok, ustawienie. Jak w VS Code.
-- Szukanie po nazwie: "eksport", "agent", "ustawienia"
-- Skróty klawiszowe przy każdej akcji
-- Historia ostatnio używanych
-
-#### #5 Diff Viewer (~15h)
-Podgląd różnic między wersjami notatek i manuskryptów.
-- Kto zmienił, co zmienił, kiedy
-- Side-by-side lub inline
-- Cofanie zmian do konkretnej wersji
-
-### Priorytet 3 — Niższy
+### Priorytet 1 — Pozostałe funkcje
 
 | # | Funkcja | Szac. | Opis |
 |---|---------|-------|------|
-| **#1** | **Workflows** | ~25h | Sekwencje operacji: jedno kliknięcie → seria akcji |
-| **#6** | **Bramki IF/THEN** | ~20h | Warunki w panelu agenta: jeśli schowek zawiera X → odpal agenta Y |
-| **#8** | **KeyDir** | ~10h | Szybki dostęp do najważniejszych notatek |
-| **#10** | **Dry-Run** | ~8h | Podgląd co agent zrobi bez faktycznego wykonania |
-| **#11** | **Bulk Select / Glob** | ~12h | Zaznaczanie wielu nodów + operacje masowe |
-| **#7** | **MicroVM** | ~40h | Izolowany sandbox dla agentów (bezpieczeństwo) |
-| **#9** | **Global Kill Switch** | ~5h | Jeden przycisk który zabija wszystkie agenty naraz |
+| **#7** | **MicroVM** | ~40h | Izolowany sandbox dla agentów (bezpieczeństwo) — obecny Sandbox to panel pomocy, nie MicroVM |
+| **#23** | **Integracja z Gitem** | ~40h | GUI Gita (commit, push, branch, merge) — kod istnieje, ale wymaga testów i dopieszczenia |
+| **#24** | **Agent Template** | ~30h | Zaawansowane szablony agentów — rozszerzyć obecne 4 presety o zmienne, źródła, hotkeye |
+
+### Priorytet 2 — Refaktoryzacja (po wszystkim)
+
+| # | Funkcja | Szac. | Opis |
+|---|---------|-------|------|
+| **#2** | **NEXUS jak LEGO** | ~60h | 0% hardcodowania — wszystko z uniwersalnych klocków |
+| **#25** | **Zasada Algebry (8 klocków)** | ~80h | Przepisanie całego systemu na 8 uniwersalnych komponentów |
 
 ### Zadania techniczne
 
 | # | Zadanie | Priorytet | Opis |
 |---|---------|-----------|------|
 | **T1** | **Podpiąć Git remote** | HIGH | Repo istnieje tylko lokalnie. Dodać GitHub i push |
-| **T2** | **Testy komponentów** | MEDIUM | Rozszerzyć testy na NexusCanvas, LabTodo, LabWriting, ExportModal |
-| **T3** | **Czyścić package.json** | LOW | `express`, `idb-keyval` — w dependencies ale nieużywane |
+| **T2** | **Testy komponentów** | MEDIUM | Rozszerzyć testy na NexusCanvas, LabTodo, LabWriting, ExportModal (obecnie 196) |
+
+### Łącznie
+- **Funkcje do zrobienia:** ~110h (MicroVM + Git + Agent Template)
+- **Refaktoryzacja:** ~140h (LEGO + Algebra)
+- **Tech debt:** ~10h (testy)
+- **Git remote:** 15 min
+- **Razem:** ~260h
 
 ---
 
@@ -390,23 +370,33 @@ Pełna lista 25 funkcji które kiedykolwiek padły w rozmowach o Nexusie. Nie ws
 | #22 | Baza danych outputów AI | ✅ StorageEngine (SQLite + JSONL) |
 | #3 | Auto-Resume + Foldery + Zakładki | ✅ LabWriting |
 | #4 | Warsztat AI (3 kolumny) | ✅ agents view |
-| **#26** | **Universal Feedback z kontekstem** | **✅ FeedbackModal** |
+| #1 | Workflows | ✅ WorkflowEditor + WorkflowEngine |
+| #5 | Diff Viewer | ✅ DiffViewer + DiffModal + diffEngine |
+| #6 | Bramki IF/THEN | ✅ ConditionEval + UI w Pipeline/Workflow |
+| #8 | KeyDir (szybki dostęp) | ✅ KeyDirPanel + keydirStore |
+| #9 | Global Kill Switch | ✅ KillSwitch + banner + IPC |
+| #10 | Dry-Run (podgląd) | ✅ DryRunResultModal + PipelineExecutor.dryRun() |
+| #11 | Bulk Select / Glob | ✅ BatchActionBar + selectedNodeIds |
+| #12 | Command Palette (Ctrl+K) | ✅ CommandPalette + 30+ komend |
+| #13 | Baza Wiedzy / Wiki | ✅ WikiPanel |
+| #14 | "Brakuje mi..." | ✅ FeedbackButton |
+| #15 | Łuki odpowiedzi | ✅ LabWriting.replyTo |
+| #16 | Branchowanie / Gablota | ✅ SourceReference |
+| #17 | Wiadomość dla AI | ✅ aiContext |
+| #18 | Kolorowe kropki | ✅ ThoughtMarker |
+| #19 | Tablica Zmian | ✅ ChangesPanel |
+| #20 | Export 3 tryby | ✅ ExportModal + ExportScopeSelector |
+| #21 | Agent ogólny (Meta-Agent) | ✅ AgentOrchestrator |
+| #22 | Baza danych outputów AI | ✅ StorageEngine (SQLite + JSONL) |
+| #26 | Universal Feedback z kontekstem | ✅ FeedbackModal z IPC + JSONL |
 
 ### Do zrobienia
 | # | Funkcja | Szac. | Priorytet |
 |---|---------|-------|-----------|
-| #1 | Workflows (kciuki + akcje) | ~25h | P3 |
+| #7 | MicroVM (izolacja) | ~40h | P1 |
+| #23 | Integracja z Gitem | ~40h | P1 |
+| #24 | Agent Template (zmienne, źródła, hotkeye) | ~30h | P1 |
 | #2 | NEXUS jak LEGO (0% hardcodowania) | ~60h | P4 |
-| #5 | Diff Viewer | ~15h | P2 |
-| #6 | Bramki Logiczne (IF/THEN) | ~20h | P3 |
-| #7 | MicroVM (izolacja) | ~40h | P3 |
-| #8 | KeyDir (szybki dostęp) | ~10h | P3 |
-| #9 | Global Kill Switch | ~5h | P3 |
-| #10 | Dry-Run (podgląd) | ~8h | P3 |
-| #11 | Bulk Select / Glob | ~12h | P3 |
-| #12 | Command Palette (Ctrl+K) | ~15h | P2 |
-| #23 | Integracja z Gitem | ~40h | P2 |
-| #24 | Agent Template (zmienne, źródła, hotkeye) | ~30h | P3 |
 | #25 | Zasada Algebry (8 klocków) | ~80h | P4 |
 
 ### #26 — Universal Feedback z kontekstem (✅ ZROBIONE)
@@ -476,32 +466,13 @@ Bo to nie są nowe funkcje — to **przepisanie całego systemu** na nowo. Obecn
 ## 8. Mapa zależności i priorytety
 
 ```
-                  T1 (Git remote)
-                       │
-                       ▼
-              #23 Integracja z Gitem
-                       │
-              ┌────────┴────────┐
-              │                 │
-              ▼                 ▼
-      F6.2 Context B.    F6.6 Pipeline DAG
-              │                 │
-              │                 ▼
-              │           #1 Workflows
-              │                 
-              ▼                 
-      #6 Bramki IF/THEN         
-                                
+                  #23 Git
+                      │
+                      ▼
+              #24 Agent Template
+                      
 Niezależne (mogą iść równolegle):
-  #5 Diff Viewer
-  #8 KeyDir
-  #9 Kill Switch
-  #10 Dry-Run
-  #11 Bulk Select
-  #12 Command Palette
-  #26 Universal Feedback
-  T2 Testy
-  T3 package.json
+  #7 MicroVM
 
 Po wszystkim:
   #2 LEGO + #25 Algebra (refaktoryzacja)
@@ -515,36 +486,17 @@ Po wszystkim:
 ETAP 1 — Zabezpieczenie (15 min)
   ├── T1: Podpiąć Git remote → kod na GitHub
 
-ETAP 2 — Agent AI pełna moc (~50h)
-  ├── F6.2: Context Builder (~20h)
-  └── F6.6: Pipeline DAG (~30h)
+ETAP 2 — Ostatnie funkcje (~110h)
+  ├── #7: MicroVM (~40h)
+  ├── #23: Integracja z Gitem (~40h)
+  └── #24: Agent Template (~30h)
 
-ETAP 3 — Jakość życia (~30h)
-  ├── T2: Testy komponentów
-  ├── #12: Command Palette (~15h)
-  └── #5: Diff Viewer (~15h)
-
-ETAP 4 — Git w Nexusie (~40h)
-  └── #23: Integracja z Gitem
-
-ETAP 5 — Rozszerzenia (~90h)
-  ├── #1: Workflows (~25h)
-  ├── #6: Bramki IF/THEN (~20h)
-  ├── #8: KeyDir (~10h)
-  ├── #9: Kill Switch (~5h)
-  ├── #10: Dry-Run (~8h)
-  ├── #11: Bulk Select (~12h)
-  └── #26: Universal Feedback z kontekstem (~10h)
-
-ETAP 6 — Bezpieczeństwo (~40h)
-  └── #7: MicroVM (~40h)
-
-ETAP 7 — Refaktoryzacja (~140h)
+ETAP 3 — Refaktoryzacja (~140h)
   ├── #2: LEGO (~60h)
   └── #25: Algebra (~80h)
 ```
 
-**Łącznie:** ~390h (około 3-4 miesiące pełnego etatu)
+**Łącznie:** ~250h (około 2-3 miesiące pół etatu)
 
 ---
 
@@ -553,10 +505,10 @@ ETAP 7 — Refaktoryzacja (~140h)
 | Metryka | Obecnie | Cel |
 |---------|---------|-----|
 | Lint (tsc --noEmit) | **0 błędów** | 0 błędów (zawsze) |
-| Testy jednostkowe | **142/142** | >50 testów |
+| Testy jednostkowe | **196/196** | >200 testów |
 | Pokrycie testów | ~15% | >40% |
-| Funkcje wdrożone (F1-F6) | 19/21 | 21/21 |
-| Funkcje z wishlisty (#1-#26) | 12/26 | 26/26 (docelowo) |
+| Funkcje wdrożone (F1-F6) | 41/41 | 41/41 |
+| Funkcje z wishlisty (#1-#26) | 21/26 | 26/26 (docelowo) |
 | Git remote | brak | GitHub |
 | Instalator | Windows (.exe) | Windows + macOS + Linux |
 

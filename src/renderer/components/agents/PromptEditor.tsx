@@ -1,19 +1,27 @@
 // ============================================================================
-// NEXUS — Prompt Editor (Phase 1)
+// NEXUS — Prompt Editor (#24)
 // Edytor prompta z miejscami na zmienne: {{SCHOWEK}}, {{INPUT}}, {{DATA}} itp.
 // ============================================================================
 
 import React, { useRef } from 'react';
-import { Clipboard, Calendar, Clock, FileText, Image, Variable, HelpCircle } from 'lucide-react';
+import { Clipboard, Calendar, Clock, FileText, Image, Variable, HelpCircle, User, Code2, Globe, GitBranch, Layers, Zap, BookOpen } from 'lucide-react';
 
-// === Variables list ========================================================
+// === Variables list (#24 — rozszerzona) =====================================
 const VARIABLE_BUTTONS = [
   { label: 'SCHOWEK', icon: Clipboard, value: '{{SCHOWEK}}', tooltip: 'Zawartość schowka' },
-  { label: 'DATA', icon: Calendar, value: '{{DATA}}', tooltip: 'Dzisiejsza data' },
-  { label: 'CZAS', icon: Clock, value: '{{CZAS}}', tooltip: 'Aktualny czas' },
-  { label: 'INPUT:plik', icon: FileText, value: '{{INPUT:ścieżka/do/pliku}}', tooltip: 'Zawartość pliku' },
+  { label: 'DATA', icon: Calendar, value: '{{DATA}}', tooltip: 'Dzisiejsza data (RRRR-MM-DD)' },
+  { label: 'CZAS', icon: Clock, value: '{{CZAS}}', tooltip: 'Aktualny czas (HH:MM)' },
+  { label: 'NOW', icon: Clock, value: '{{NOW}}', tooltip: 'Data i czas ISO: RRRR-MM-DD HH:MM:SS' },
+  { label: 'INPUT:plik', icon: FileText, value: '{{INPUT:ścieżka/do/pliku}}', tooltip: 'Zawartość pliku z dysku' },
   { label: 'SCREENSHOT', icon: Image, value: '{{SCREENSHOT}}', tooltip: 'Ostatni zrzut ekranu' },
-  { label: 'TEXT:nazwa', icon: Variable, value: '{{TEXT:}}', tooltip: 'Pole tekstowe' },
+  { label: 'TEXT:nazwa', icon: Variable, value: '{{TEXT:}}', tooltip: 'Pole tekstowe do wypełnienia' },
+  { label: 'NODE', icon: BookOpen, value: '{{NODE:tytuł}}', tooltip: 'Zawartość notatki (NexusNode) po tytule' },
+  { label: 'OUTPUT', icon: Zap, value: '{{OUTPUT:agent_id}}', tooltip: 'Ostatni output innego agenta' },
+  { label: 'BRANCH', icon: GitBranch, value: '{{BRANCH}}', tooltip: 'Nazwa bieżącej gałęzi git' },
+  { label: 'KOD', icon: Code2, value: '{{KOD:ścieżka}}', tooltip: 'Kod z pliku (z formatowaniem)' },
+  { label: 'WEB', icon: Globe, value: '{{WEB:URL}}', tooltip: 'Pobierz treść ze strony WWW' },
+  { label: 'AGENT_NAME', icon: User, value: '{{AGENT_NAME}}', tooltip: 'Nazwa bieżącego agenta' },
+  { label: 'CONTEXT', icon: Layers, value: '{{CONTEXT}}', tooltip: 'Kontekst z aktywnych źródeł (notes, tasks, history)' },
 ];
 
 // === Props =================================================================

@@ -107,7 +107,8 @@ export function CommandPalette() {
       setQuery('');
       setSelectedIndex(0);
       setDangerCmd(null);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const timer = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
     }
   }, [paletteOpen]);
 

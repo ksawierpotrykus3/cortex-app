@@ -1,5 +1,5 @@
 import React from "react";
-import { Download, Settings, FileText, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Sparkles } from "lucide-react";
+import { Download, Settings, FileText, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Sparkles, Tags } from "lucide-react";
 import { ViewMode, RightPanelState, ModalState } from "../types";
 
 export function TopNavigation({
@@ -10,6 +10,7 @@ export function TopNavigation({
   setModal,
   isSidebarOpen,
   setIsSidebarOpen,
+  onOpenTagDialog,
 }: {
   activeView: ViewMode;
   setActiveView: (view: ViewMode) => void;
@@ -18,6 +19,7 @@ export function TopNavigation({
   setModal: (modal: ModalState) => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (v: boolean) => void;
+  onOpenTagDialog?: () => void;
 }) {
   return (
     <div className="h-14 border-b border-[rgb(var(--border))] bg-[rgb(var(--panel))] flex items-center justify-between px-6 shrink-0 z-50 shadow-sm">
@@ -173,11 +175,18 @@ export function TopNavigation({
         </div>
       </div>
 
-      <div className="flex-1" />
-
       <div className="flex items-center gap-3">
 
         <div className="flex items-center gap-1">
+            {onOpenTagDialog && (
+              <button
+                onClick={onOpenTagDialog}
+                className="p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--background))] transition-colors cursor-pointer rounded-lg"
+                title="Taguj notatki"
+              >
+                <Tags className="w-4 h-4" />
+              </button>
+            )}
             <button 
               onClick={() => setModal("settings")}
               className="p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--background))] transition-colors cursor-pointer rounded-lg"

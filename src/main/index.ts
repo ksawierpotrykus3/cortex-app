@@ -123,13 +123,19 @@ app.whenReady().then(async () => {
   }
 
   mainWindow = createMainWindow();
-  await bootstrap();
+  try {
+    await bootstrap();
+  } catch (err) {
+    console.error('[NEXUS] Bootstrap failed:', err);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createMainWindow();
     }
   });
+}).catch(err => {
+  console.error('[NEXUS] App ready failed:', err);
 });
 
 app.on('window-all-closed', () => {

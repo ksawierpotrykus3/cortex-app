@@ -1,7 +1,6 @@
-// @vitest-environment node
-// ================================================================
-// NEXUS — AgentPresets: Tests
-// ================================================================
+// ============================================================================
+// NEXUS — AgentPresets: Tests (#24 — 12 presetów)
+// ============================================================================
 
 import { describe, it, expect } from 'vitest';
 import { AGENT_PRESETS, AgentPreset } from './AgentPresets';
@@ -14,10 +13,10 @@ vi.stubGlobal('crypto', {
 
 describe('AGENT_PRESETS', () => {
   // ------------------------------------------------------------------
-  // Test 1: Eksportuje dokładnie 4 presety
+  // Test 1: Eksportuje dokładnie 12 presetów (#24)
   // ------------------------------------------------------------------
-  it('eksportuje dokładnie 4 presety', () => {
-    expect(AGENT_PRESETS).toHaveLength(4);
+  it('eksportuje dokładnie 12 presetów', () => {
+    expect(AGENT_PRESETS).toHaveLength(12);
   });
 
   // ------------------------------------------------------------------
@@ -56,38 +55,97 @@ describe('AGENT_PRESETS', () => {
   });
 
   // ------------------------------------------------------------------
-  // Test 4: Streszczacz ma trigger.hotkey = 'Ctrl+Shift+S'
+  // Test 4: Każdy preset ma unikalny hotkey
   // ------------------------------------------------------------------
-  it('Streszczacz ma hotkey Ctrl+Shift+S', () => {
+  it('każdy preset ma unikalny hotkey (#24)', () => {
+    const hotkeys = AGENT_PRESETS.map((p) => p.create().trigger.hotkey);
+    const uniqueHotkeys = new Set(hotkeys);
+    expect(uniqueHotkeys.size).toBe(hotkeys.length);
+  });
+
+  // ------------------------------------------------------------------
+  // Test 5: Nowe presety mają poprawne hotkeye (#24)
+  // ------------------------------------------------------------------
+  it('Translator ma hotkey Ctrl+Shift+T', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'translator')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+T');
+  });
+
+  it('Researcher ma hotkey Ctrl+Shift+R', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'researcher')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+R');
+  });
+
+  it('Code Reviewer ma hotkey Ctrl+Shift+Q', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'code-reviewer')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+Q');
+  });
+
+  it('Code Generator ma hotkey Ctrl+Shift+G', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'code-generator')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+G');
+  });
+
+  it('Debugger ma hotkey Ctrl+Shift+D', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'debugger')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+D');
+  });
+
+  it('Redaktor ma hotkey Ctrl+Shift+E', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'editor')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+E');
+  });
+
+  it('Formatter ma hotkey Ctrl+Shift+F', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'formatter')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+F');
+  });
+
+  it('Nauczyciel ma hotkey Ctrl+Shift+H', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'teacher')!;
+    expect(preset.create().trigger.hotkey).toBe('Ctrl+Shift+H');
+  });
+
+  // ------------------------------------------------------------------
+  // Test 6: Istniejące presety — szczegółowe wartości
+  // ------------------------------------------------------------------
+  it('Streszczacz ma temperature = 0.3', () => {
     const preset = AGENT_PRESETS.find((p) => p.id === 'summarizer')!;
     const agent = preset.create();
-    expect(agent.trigger.hotkey).toBe('Ctrl+Shift+S');
+    expect(agent.model.temperature).toBe(0.3);
   });
 
-  // ------------------------------------------------------------------
-  // Test 5: Korektor ma trigger.hotkey = 'Ctrl+Shift+K'
-  // ------------------------------------------------------------------
-  it('Korektor ma hotkey Ctrl+Shift+K', () => {
-    const preset = AGENT_PRESETS.find((p) => p.id === 'proofreader')!;
-    const agent = preset.create();
-    expect(agent.trigger.hotkey).toBe('Ctrl+Shift+K');
-  });
-
-  // ------------------------------------------------------------------
-  // Test 6: Brainstormer ma temperature = 0.9
-  // ------------------------------------------------------------------
   it('Brainstormer ma temperature = 0.9', () => {
     const preset = AGENT_PRESETS.find((p) => p.id === 'brainstormer')!;
     const agent = preset.create();
     expect(agent.model.temperature).toBe(0.9);
   });
 
-  // ------------------------------------------------------------------
-  // Test 7: Analityk ma maxTokens = 8192
-  // ------------------------------------------------------------------
   it('Analityk ma maxTokens = 8192', () => {
     const preset = AGENT_PRESETS.find((p) => p.id === 'analyst')!;
     const agent = preset.create();
     expect(agent.model.maxTokens).toBe(8192);
+  });
+
+  // ------------------------------------------------------------------
+  // Test 7: Presety z contextConfig mają prekonfigurowane źródła (#24)
+  // ------------------------------------------------------------------
+  it('Researcher ma włączone źródła: notes, history', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'researcher')!;
+    const agent = preset.create();
+    expect(agent.contextConfig).toBeDefined();
+    const enabledSources = agent.contextConfig!.sources.filter(s => s.enabled).map(s => s.id);
+    expect(enabledSources).toContain('notes');
+    expect(enabledSources).toContain('history');
+  });
+
+  it('Nauczyciel ma włączone źródła: notes, history, changelog', () => {
+    const preset = AGENT_PRESETS.find((p) => p.id === 'teacher')!;
+    const agent = preset.create();
+    expect(agent.contextConfig).toBeDefined();
+    const enabledSources = agent.contextConfig!.sources.filter(s => s.enabled).map(s => s.id);
+    expect(enabledSources).toContain('notes');
+    expect(enabledSources).toContain('history');
+    expect(enabledSources).toContain('changelog');
   });
 });

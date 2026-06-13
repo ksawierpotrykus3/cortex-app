@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from "react";
-import { ZoomIn, ZoomOut, Maximize, MoveRight, Download, Trash2, X, Image as ImageIcon, History } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Trash2, X, History } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { NexusNode, NexusLink, ImageAttachment, ThoughtMarker, NexusAnnotation } from "../types";
+import { NexusNode, NexusLink, ThoughtMarker, NexusAnnotation } from "../types";
 import { generateAIExport, downloadFile, generateExportFilename } from "../exportEngine";
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { analyzeImageWithGemini, GeminiVisionResult } from '../utils/geminiVision';
@@ -73,6 +73,7 @@ function NexusCanvasInner({
 
   const [linkingFrom, setLinkingFrom] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [tagFilter, setTagFilter] = useState('');
   const [hoveredLink, setHoveredLink] = useState<number | null>(null);
 
   // --- Rectangle select state
@@ -582,8 +583,13 @@ function NexusCanvasInner({
   };
 
   const visibleNodes = useMemo(() => {
-    return nodes.filter(n => expandedProjects[n.projectId || 'Uncategorized'] !== false);
-  }, [nodes, expandedProjects]);
+    let filtered = nodes.filter(n => expandedProjects[n.projectId || 'Uncategorized'] !== false);
+    if (tagFilter) {
+      const q = tagFilter.toLowerCase();
+      filtered = filtered.filter(n => n.tags?.some(t => t.includes(q)));
+    }
+    return filtered;
+  }, [nodes, expandedProjects, tagFilter]);
 
   const selectionRect = useMemo(() => {
     if (!isSelecting) return null;
@@ -679,10 +685,16 @@ function NexusCanvasInner({
               onChange={(e) => setGlobFilter(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Escape') setShowGlobFilter(false); }}
               placeholder="Filtruj notatki po nazwie..."
-              className="w-64 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg px-3 py-1.5 text-[12px] text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] outline-none focus:border-[rgb(var(--accent))]"
+              className="w-48 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg px-3 py-1.5 text-[12px] text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] outline-none focus:border-[rgb(var(--accent))]"
               autoFocus
             />
-            <button onClick={() => setShowGlobFilter(false)} className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer">
+            <input
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              placeholder="Filtruj po tagu..."
+              className="w-40 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg px-3 py-1.5 text-[12px] text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] outline-none focus:border-[rgb(var(--accent))]"
+            />
+            <button onClick={() => { setShowGlobFilter(false); setTagFilter(''); }} className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer">
               <X size={14} />
             </button>
           </div>
@@ -1189,6 +1201,38 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
                      ))}
                    </div>
                  )}
+               {node.tags && node.tags.length > 0 && (
+                 <div className="flex flex-wrap gap-1 ml-2">
+                   {node.tags.slice(0, 3).map(tag => {
+                     const colors: Record<string, string> = {
+                       programming: 'bg-blue-500/20 text-blue-300',
+                       'ai-ml': 'bg-purple-500/20 text-purple-300',
+                       project: 'bg-amber-500/20 text-amber-300',
+                       idea: 'bg-pink-500/20 text-pink-300',
+                       note: 'bg-gray-500/20 text-gray-300',
+                       research: 'bg-emerald-500/20 text-emerald-300',
+                       writing: 'bg-teal-500/20 text-teal-300',
+                       bug: 'bg-red-500/20 text-red-300',
+                       question: 'bg-orange-500/20 text-orange-300',
+                       tutorial: 'bg-cyan-500/20 text-cyan-300',
+                       meeting: 'bg-indigo-500/20 text-indigo-300',
+                       design: 'bg-fuchsia-500/20 text-fuchsia-300',
+                       reference: 'bg-sky-500/20 text-sky-300',
+                       personal: 'bg-rose-500/20 text-rose-300',
+                       todo: 'bg-lime-500/20 text-lime-300',
+                     };
+                     const colorClass = colors[tag] || 'bg-gray-500/20 text-gray-300';
+                     return (
+                       <span key={tag} className={`${colorClass} text-[9px] px-1.5 py-0.5 rounded-full font-medium`}>
+                         {tag}
+                       </span>
+                     );
+                   })}
+                   {node.tags.length > 3 && (
+                     <span className="text-[9px] text-[rgb(var(--text-muted))]">+{node.tags.length - 3}</span>
+                   )}
+                 </div>
+               )}
              </div>
         )}
         <div className="flex items-center gap-1.5 shrink-0 transition-opacity relative">

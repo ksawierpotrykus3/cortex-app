@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Save, HardDrive, Unplug, GitBranch } from "lucide-react";
 import { ModalState } from "../types";
 import { del } from "idb-keyval";
@@ -19,10 +19,18 @@ export function SettingsModal({
 
   const [activeTab, setActiveTab] = useState<'general' | 'git'>('general');
   const [saved, setSaved] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timer na wypadek odmontowania
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleSaveClick = () => {
     setSaved(true);
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       onClose();
     }, 800);
   };

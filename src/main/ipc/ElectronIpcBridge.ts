@@ -58,14 +58,19 @@ export class ElectronIpcBridge {
   private storage: StorageEngine;
   private providerRegistry: ProviderRegistry;
 
-  /** Zwraca pierwszy skonfigurowany provider AI lub rzuca błąd */
-  private getPrimaryAIProvider(): IAIProvider {
-    // Try Gemini first, then any other
-    const gemini = this.providerRegistry['providers']?.get('Gemini');
+  /** Zwraca pierwszy skonfigurowany provider AI lub null */
+  private getPrimaryAIProvider(): IAIProvider | null {
+    // Try Google Gemini first (najpopularniejszy)
+    const gemini = this.providerRegistry['providers']?.get('Google Gemini');
     if (gemini) return gemini;
+    // Fallback: pierwszy lepszy skonfigurowany
+    for (const [, adapter] of this.providerRegistry['providers'] ?? []) {
+      if (adapter.isConfigured()) return adapter;
+    }
+    // Ostateczność: pierwszy z listy (nawet bez klucza)
     const first = this.providerRegistry['providers']?.values().next().value;
     if (first) return first;
-    throw new Error('[ElectronIpcBridge] No AI provider configured');
+    return null;
   }
   private pipelineExecutor: PipelineExecutor;
   private workflowEngine: WorkflowEngine;
@@ -95,7 +100,7 @@ export class ElectronIpcBridge {
     this.pipelineExecutor = new PipelineExecutor(orchestrator);
     this.workflowEngine = new WorkflowEngine(orchestrator);
     this.killSwitch = new KillSwitch();
-    this.searchEngine = new SearchEngine(this.getPrimaryAIProvider());
+    this.searchEngine = new SearchEngine(this.getPrimaryAIProvider() ?? undefined);
     if (repoPath) { this.repoPath = repoPath; }
   }
 
@@ -155,7 +160,7 @@ export class ElectronIpcBridge {
       if (fs.existsSync(configPath)) {
         const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         this.gitConfig = { ...DEFAULT_GIT_CONFIG, ...data };
-        console.log('[GitConfig] Loaded from disk');
+        console.debug('[GitConfig] Loaded from disk');
       }
     } catch { /* ignore if not found */ }
   }
@@ -187,7 +192,7 @@ export class ElectronIpcBridge {
         JSON.stringify(this.gitConfig, null, 2),
         'utf8'
       );
-      console.log('[GitConfig] Persisted to disk');
+      console.debug('[GitConfig] Persisted to disk');
     } catch { /* ignore */ }
   }
 
@@ -210,7 +215,7 @@ export class ElectronIpcBridge {
           timestamp: payload.feedback.timestamp || new Date().toISOString(),
         };
         fs.appendFileSync(feedbackFile, JSON.stringify(entry) + '\n', 'utf8');
-        console.log('[Feedback] Saved:', entry.id);
+        console.debug('[Feedback] Saved:', entry.id);
         return { success: true };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
@@ -399,7 +404,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.log('[ElectronIpcBridge] Registered all IPC handlers');
+    console.debug('[ElectronIpcBridge] Registered all IPC handlers');
 
     // Register pipeline handlers
     this.registerPipelineHandlers();
@@ -468,7 +473,7 @@ export class ElectronIpcBridge {
       return this.pipelineExecutor.getStatus(payload.id);
     });
 
-    console.log('[ElectronIpcBridge] Registered Pipeline DAG handlers (F6.12)');
+    console.debug('[ElectronIpcBridge] Registered Pipeline DAG handlers (F6.12)');
   }
 
   // =========================================================================
@@ -538,7 +543,7 @@ export class ElectronIpcBridge {
       return logs;
     });
 
-    console.log('[ElectronIpcBridge] Registered Workflow handlers (#1)');
+    console.debug('[ElectronIpcBridge] Registered Workflow handlers (#1)');
   }
 
   // =========================================================================
@@ -594,7 +599,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.log('[ElectronIpcBridge] Registered Context Builder handlers');
+    console.debug('[ElectronIpcBridge] Registered Context Builder handlers');
 
     // Register workspace entities handler (F6.8)
     this.registerWorkspaceEntitiesHandler();
@@ -619,7 +624,7 @@ export class ElectronIpcBridge {
       return this.storage.getWorkspaceEntities();
     });
 
-    console.log('[ElectronIpcBridge] Registered Workspace handlers (F6.2)');
+    console.debug('[ElectronIpcBridge] Registered Workspace handlers (F6.2)');
   }
 
   // =========================================================================
@@ -673,7 +678,7 @@ export class ElectronIpcBridge {
       return this.killSwitch.deactivate();
     });
 
-    console.log('[ElectronIpcBridge] Registered KillSwitch handlers (#9)');
+    console.debug('[ElectronIpcBridge] Registered KillSwitch handlers (#9)');
   }
 
   // =========================================================================
@@ -700,7 +705,7 @@ export class ElectronIpcBridge {
       return this.searchEngine.getConfig();
     });
 
-    console.log('[ElectronIpcBridge] Registered Semantic Search handlers (AI)');
+    console.debug('[ElectronIpcBridge] Registered Semantic Search handlers (AI)');
   }
 
   // =========================================================================
@@ -744,7 +749,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.log('[ElectronIpcBridge] Registered Dry-Run handlers (#10)');
+    console.debug('[ElectronIpcBridge] Registered Dry-Run handlers (#10)');
   }
 
   // =========================================================================
@@ -804,7 +809,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.log('[ElectronIpcBridge] Registered Workspace Entities handler (F6.8)');
+    console.debug('[ElectronIpcBridge] Registered Workspace Entities handler (F6.8)');
   }
 
   // =========================================================================
@@ -1037,7 +1042,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.log('[ElectronIpcBridge] Registered Git IPC handlers');
+    console.debug('[ElectronIpcBridge] Registered Git IPC handlers');
   }
 
   // =========================================================================
@@ -1062,12 +1067,12 @@ export class ElectronIpcBridge {
           : remoteUrl;
         const args = ['pull', url, this.scheduleOnlyBranch].filter(Boolean);
         await this.gitExec(args);
-        console.log('[GitScheduler] Pull wykonany');
+        console.debug('[GitScheduler] Pull wykonany');
       } catch (err: any) {
         console.warn('[GitScheduler] Pull failed:', sanitizeUrl(err.message || 'unknown error', this.gitConfig.accessToken));
       }
     }, ms);
-    console.log(`[GitScheduler] Pull schedule started: every ${ms}ms`);
+    console.debug(`[GitScheduler] Pull schedule started: every ${ms}ms`);
   }
 
   private stopPullSchedule(): void {
@@ -1101,12 +1106,12 @@ export class ElectronIpcBridge {
         }
         const args = ['push', url, this.scheduleOnlyBranch].filter(Boolean);
         await this.gitExec(args);
-        console.log('[GitScheduler] Push wykonany');
+        console.debug('[GitScheduler] Push wykonany');
       } catch (err: any) {
         console.warn('[GitScheduler] Push failed:', sanitizeUrl(err.message || 'unknown error', this.gitConfig.accessToken));
       }
     }, ms);
-    console.log(`[GitScheduler] Push schedule started: every ${ms}ms`);
+    console.debug(`[GitScheduler] Push schedule started: every ${ms}ms`);
   }
 
   private stopPushSchedule(): void {
@@ -1152,7 +1157,7 @@ export class ElectronIpcBridge {
       return { success: true };
     });
 
-    console.log('[ElectronIpcBridge] Registered Git Scheduler handlers');
+    console.debug('[ElectronIpcBridge] Registered Git Scheduler handlers');
   }
 
   destroy(): void {
@@ -1195,6 +1200,6 @@ export class ElectronIpcBridge {
     this.ipc.removeAllListeners('changelog:approve');
     this.ipc.removeAllListeners('changelog:reject');
 
-    console.log('[ElectronIpcBridge] Destroyed');
+    console.debug('[ElectronIpcBridge] Destroyed');
   }
 }

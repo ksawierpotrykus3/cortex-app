@@ -18,6 +18,16 @@ import * as path from 'path';
 import { Agent, AgentOutput, Pipeline, WorkspaceEntity } from '../../shared/types/schema';
 import { WorkflowDefinition, WorkflowExecutionResult } from '../../shared/types/workflow';
 
+/**
+ * Atomowy zapis pliku: tmp → rename.
+ * Nawet jeśli proces crashe w trakcie writeFileSync, oryginalny plik pozostaje nienaruszony.
+ */
+function atomicWriteFileSync(filePath: string, data: string, encoding: BufferEncoding = 'utf8'): void {
+  const tmpPath = filePath + '.tmp';
+  fs.writeFileSync(tmpPath, data, encoding);
+  fs.renameSync(tmpPath, filePath);
+}
+
 // === Database Row Types ====================================================
 interface AgentRow {
   id: string;
@@ -29,9 +39,22 @@ interface AgentRow {
   updated_at: string;
 }
 
+/** Minimalny interfejs dla better-sqlite3 Database — runtime lazy-loaded. */
+interface Database {
+  prepare(sql: string): Statement;
+  pragma(sql: string, arg?: unknown): unknown;
+  exec(sql: string): void;
+  close(): void;
+}
+interface Statement {
+  run(...params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
+  get<T = unknown>(...params: unknown[]): T | undefined;
+  all<T = unknown>(...params: unknown[]): T[];
+}
+
 // === StorageEngine =========================================================
 export class StorageEngine {
-  private db: any = null; // better-sqlite3 Database
+  private db: Database | null = null;
   private basePath: string;
   private ready: boolean = false;
 
@@ -59,8 +82,8 @@ export class StorageEngine {
     try {
       const Database = require('better-sqlite3');
       this.db = new Database(path.join(configDir, 'nexus.db'));
-      this.db.pragma('journal_mode = WAL');
-      this.db.pragma('foreign_keys = ON');
+      this.db!.pragma('journal_mode = WAL');
+      this.db!.pragma('foreign_keys = ON');
       await this.initSchema();
       console.log('[StorageEngine] SQLite initialized');
     } catch (err) {
@@ -136,10 +159,9 @@ export class StorageEngine {
     if (!fs.existsSync(agentDir)) {
       fs.mkdirSync(agentDir, { recursive: true });
     }
-    fs.writeFileSync(
+    atomicWriteFileSync(
       path.join(agentDir, `${agent.id}.json`),
-      JSON.stringify(agent, null, 2),
-      'utf8'
+      JSON.stringify(agent, null, 2)
     );
   }
 
@@ -396,10 +418,9 @@ export class StorageEngine {
     if (!fs.existsSync(wsDir)) {
       fs.mkdirSync(wsDir, { recursive: true });
     }
-    fs.writeFileSync(
+    atomicWriteFileSync(
       path.join(wsDir, 'entities.json'),
-      JSON.stringify(entities, null, 2),
-      'utf8'
+      JSON.stringify(entities, null, 2)
     );
   }
 
@@ -429,10 +450,9 @@ export class StorageEngine {
     if (!fs.existsSync(pipelineDir)) {
       fs.mkdirSync(pipelineDir, { recursive: true });
     }
-    fs.writeFileSync(
+    atomicWriteFileSync(
       path.join(pipelineDir, `${pipeline.id}.json`),
-      JSON.stringify(pipeline, null, 2),
-      'utf8'
+      JSON.stringify(pipeline, null, 2)
     );
   }
 
@@ -468,10 +488,9 @@ export class StorageEngine {
     if (!fs.existsSync(workflowDir)) {
       fs.mkdirSync(workflowDir, { recursive: true });
     }
-    fs.writeFileSync(
+    atomicWriteFileSync(
       path.join(workflowDir, `${workflow.id}.json`),
-      JSON.stringify(workflow, null, 2),
-      'utf8'
+      JSON.stringify(workflow, null, 2)
     );
   }
 
@@ -503,10 +522,9 @@ export class StorageEngine {
     if (!fs.existsSync(resultsDir)) {
       fs.mkdirSync(resultsDir, { recursive: true });
     }
-    fs.writeFileSync(
+    atomicWriteFileSync(
       path.join(resultsDir, `${result.id}.json`),
-      JSON.stringify(result, null, 2),
-      'utf8'
+      JSON.stringify(result, null, 2)
     );
   }
 

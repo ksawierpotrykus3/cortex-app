@@ -90,6 +90,7 @@ export interface NexusNode {
   annotations?: NexusAnnotation[];
   imageAttachments?: ImageAttachment[];
   thoughtMarkers?: ThoughtMarker[];
+  tags?: string[];
 }
 
 export interface Task {
@@ -176,8 +177,8 @@ export const DEFAULT_EXPORT_SCOPE: ExportScope = {
 export type AgentRole = 'writer' | 'researcher' | 'critic' | 'auditor' | 'tool-executor';
 export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'system-reader' | 'system-writer' | 'condition';
 
-export interface PipelinePayload {
-  data: any; // Structured JSON object passed between nodes
+export interface PipelinePayload<T = unknown> {
+  data: T; // Structured JSON object passed between nodes
   metadata: {
     hopCount: number;
     tokensUsed: number;

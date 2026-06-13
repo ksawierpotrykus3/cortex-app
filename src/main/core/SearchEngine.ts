@@ -8,10 +8,10 @@ import { IAIProvider } from '../ai/IAIProvider';
 
 export class SearchEngine {
   private config: SearchConfig = { ...DEFAULT_SEARCH_CONFIG };
-  private provider: IAIProvider;
+  private provider: IAIProvider | null;
 
-  constructor(provider: IAIProvider) {
-    this.provider = provider;
+  constructor(provider?: IAIProvider) {
+    this.provider = provider ?? null;
   }
 
   setConfig(config: Partial<SearchConfig>): void {
@@ -36,6 +36,11 @@ export class SearchEngine {
     const cfg = { ...this.config, ...configOverride };
 
     if (!query.trim() || entities.length === 0) return [];
+
+    // === Krok 0: Fallback jeśli brak providera AI ============================
+    if (!this.provider) {
+      return this.fallbackSearch(query, entities, cfg.maxResults);
+    }
 
     // === Krok 1: Kompilacja kontekstu =======================================
     const contextChunks: string[] = [];
@@ -128,6 +133,36 @@ export class SearchEngine {
       }
     }
     return results.slice(0, this.config.maxResults);
+  }
+
+  /**
+   * Keyword-based fallback gdy AI jest niedostępne
+   */
+  private fallbackSearch(query: string, entities: WorkspaceEntity[], maxResults: number): SearchResult[] {
+    const q = query.toLowerCase().split(/\s+/).filter(Boolean);
+    if (q.length === 0) return [];
+
+    const results: SearchResult[] = [];
+    for (const e of entities) {
+      const text = `${e.title} ${e.content}`.toLowerCase();
+      let matchCount = 0;
+      for (const word of q) {
+        if (text.includes(word)) matchCount++;
+      }
+      if (matchCount > 0) {
+        results.push({
+          entityId: e.id,
+          entityType: e.type,
+          title: e.title || '(bez tytułu)',
+          snippet: (e.content || '').slice(0, 200),
+          relevance: Math.min(matchCount / q.length, 1),
+          viewMode: mapViewMode(e.type),
+        });
+      }
+    }
+
+    results.sort((a, b) => b.relevance - a.relevance);
+    return results.slice(0, maxResults);
   }
 }
 

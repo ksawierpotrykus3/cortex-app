@@ -4,8 +4,9 @@
 // ============================================================================
 
 import { useKeydirStore, KeyBinding } from '../renderer/store/keydirStore';
+import type { ViewMode } from '../types';
 
-type NavigateFn = (mode: any) => void;
+type NavigateFn = (mode: ViewMode) => void;
 type ActionFns = {
   newNote: () => void;
   newTask: () => void;

@@ -20,9 +20,11 @@ const TYPE_LABELS: Record<ChangeType, string> = {
 export function ChangesPanel({
   changelog,
   onNavigateToEntity,
+  onShowDiff,
 }: {
   changelog: ChangeEntry[];
   onNavigateToEntity?: (entityType: ChangeEntityType, entityId: string) => void;
+  onShowDiff?: (entityType: ChangeEntityType, entityId: string) => void;
 }) {
   const [filterType, setFilterType] = useState<"all" | ChangeType>("all");
   const [filterDate, setFilterDate] = useState<"1h" | "24h" | "7d" | "all">("all");
@@ -134,6 +136,14 @@ export function ChangesPanel({
                 className="shrink-0 text-[11px] text-[rgb(var(--accent))] opacity-0 group-hover:opacity-100 transition-opacity hover:underline cursor-pointer"
               >
                 Pokaż
+              </button>
+            )}
+            {onShowDiff && (
+              <button
+                onClick={() => onShowDiff(entry.entityType, entry.entityId)}
+                className="shrink-0 text-[11px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[rgb(var(--accent))] cursor-pointer"
+              >
+                Diff
               </button>
             )}
           </div>

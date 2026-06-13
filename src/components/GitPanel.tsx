@@ -9,7 +9,6 @@ import {
   GitFork, Plus, Check, X, FileCode, RefreshCw, Loader2,
 } from "lucide-react";
 import { GitStatusResult, GitLogEntry, GitBranchInfo } from "../shared/types/schema";
-import { NexusBridge } from "../shared/types/ipc";
 
 type Tab = 'status' | 'log' | 'branches';
 
@@ -29,6 +28,7 @@ export function GitPanel() {
 
   useEffect(() => {
     loadGitConfig();
+    loadScheduleStatus();
   }, []);
 
   useEffect(() => {
@@ -95,9 +95,9 @@ export function GitPanel() {
     try {
       const result = await window.nexusBridge?.gitCommit({ message: commitMsg, all: true });
       if (result?.success) {
-        setSuccess('Commit udany!');
         setCommitMsg('');
-        refreshAll();
+        await refreshAll();
+        setSuccess('Commit udany!');
       } else {
         setError(result?.error || 'Commit failed');
       }
@@ -113,8 +113,8 @@ export function GitPanel() {
     try {
       const result = await window.nexusBridge?.gitPush({ branch: status?.branch });
       if (result?.success) {
+        await refreshAll();
         setSuccess('Push udany!');
-        refreshAll();
       } else {
         setError(result?.error || 'Push failed');
       }
@@ -130,8 +130,8 @@ export function GitPanel() {
     try {
       const result = await window.nexusBridge?.gitPull({ branch: status?.branch });
       if (result?.success) {
+        await refreshAll();
         setSuccess('Pull udany!');
-        refreshAll();
       } else {
         setError(result?.error || 'Pull failed');
       }
@@ -350,7 +350,7 @@ export function GitPanel() {
               ) : (
                 <div className="space-y-1 max-h-60 overflow-y-auto">
                   {status?.entries.map((entry, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-[rgb(var(--panel))] rounded-lg text-sm">
+                    <div key={entry.path} className="flex items-center gap-2 px-3 py-1.5 bg-[rgb(var(--panel))] rounded-lg text-sm">
                       <span className={`text-xs font-bold uppercase ${
                         entry.status === 'added' ? 'text-emerald-400' :
                         entry.status === 'deleted' ? 'text-red-400' :
@@ -376,7 +376,7 @@ export function GitPanel() {
               <p className="text-sm text-gray-600">Brak commitów w historii.</p>
             ) : (
               log.map((entry, i) => (
-                <div key={i} className="flex items-start gap-3 px-3 py-2 bg-[rgb(var(--panel))] rounded-lg text-sm hover:bg-[rgb(var(--panel))]/70 transition-colors">
+                <div key={entry.hash} className="flex items-start gap-3 px-3 py-2 bg-[rgb(var(--panel))] rounded-lg text-sm hover:bg-[rgb(var(--panel))]/70 transition-colors">
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-[rgb(var(--accent))]" />
                     {i < log.length - 1 && <div className="w-px flex-1 bg-[rgb(var(--border))]" />}
@@ -436,7 +436,7 @@ export function GitPanel() {
                 const isMergable = !isCurrent && status?.branch && branch.name !== status.branch;
                 return (
                   <div
-                    key={i}
+                    key={branch.name}
                     className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                       isCurrent ? 'bg-[rgb(var(--accent))]/10 border border-[rgb(var(--accent))]/20' : 'bg-[rgb(var(--panel))] hover:bg-[rgb(var(--panel))]/70'
                     }`}

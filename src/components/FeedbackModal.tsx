@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { MessageSquareMore, X, Star } from "lucide-react";
 import { FeedbackEntry, ContextSnapshot, ViewMode } from "../types";
 import { useAgentStore } from "../renderer/store/agentStore";
@@ -62,6 +62,11 @@ export function FeedbackModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   const agents = useAgentStore((s) => s.agents);
 
@@ -134,7 +139,7 @@ export function FeedbackModal({
       const result = await onSave(entry);
       if (result.success) {
         setSent(true);
-        setTimeout(() => {
+        timerRef.current = setTimeout(() => {
           setIsOpen(false);
           resetForm();
         }, 1500);

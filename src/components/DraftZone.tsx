@@ -266,7 +266,7 @@ export function DraftZone({
         return true;
       }
       // Fallback: symulacja (development / test)
-      console.log(`[DraftZone] IPC send (simulated): ${channel}`, data);
+      console.debug(`[DraftZone] IPC send (simulated): ${channel}`, data);
       return true;
     } catch (err) {
       console.error('[DraftZone] IPC send failed:', err);

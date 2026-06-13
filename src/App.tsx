@@ -48,9 +48,11 @@ import { NexusBridge } from "./shared/types/ipc";
 import { CustomCommandsManager } from "./components/CustomCommandsManager";
 import { KillSwitchBanner } from "./components/KillSwitchBanner";
 import { StatusBar } from "./components/StatusBar";
+import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { OnboardingOverlay } from "./components/OnboardingOverlay";
 import { KeyDirPanel } from "./components/KeyDirPanel";
 import { SemanticSearch } from "./components/SemanticSearch";
+import { TagSuggestDialog } from "./components/TagSuggestDialog";
 import { useKeydirStore, createKeydirHandler } from "./renderer/store/keydirStore";
 import { registerDefaultKeybindings } from "./keydir";
 import { EntitySnapshot } from "./utils/diffEngine";
@@ -95,6 +97,9 @@ export function App() {
   const [lastFeedbackAction, setLastFeedbackAction] = useState('');
   const [feedbackSelectedAgentId, setFeedbackSelectedAgentId] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTagDialog, setShowTagDialog] = useState(false);
+  const [tagFilter, setTagFilter] = useState('');
 
   // Refs to keep latest state for callbacks (avoids stale closures in useEffects with [])
   const stateRef = useRef({ nodes, links, tasks, drafts, axioms, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles, pipelines, workflows });
@@ -147,7 +152,7 @@ export function App() {
           updatedAt: new Date().toISOString(),
         })),
       ];
-      const bridge = (window as any).nexusBridge;
+      const bridge = window.nexusBridge;
       if (bridge?.syncWorkspace) {
         bridge.syncWorkspace({ entities });
       }
@@ -163,6 +168,11 @@ export function App() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         useCommandStore.getState().togglePalette();
+      }
+      // ? → skróty klawiszowe (tylko poza inputami)
+      if (e.key === '?' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        setShowShortcuts(prev => !prev);
       }
     };
     window.addEventListener('keydown', handler);
@@ -190,7 +200,7 @@ export function App() {
         useCommandStore.getState().openManage();
       },
       onKillSwitch: () => {
-        const b = window.nexusBridge as any;
+        const b = window.nexusBridge as unknown as NexusBridge;
         b?.activateKillSwitch?.({ reason: 'Kill Switch from Command Palette' });
       },
     };
@@ -461,7 +471,7 @@ export function App() {
       if (agents?.length > 0) {
         useAgentStore.getState().setAgents(agents);
       }
-    });
+    }).catch(err => console.warn('[App] Failed to load agents:', err));
 
     // Listen for agent output — finalizuje streaming entry zamiast tworzyć nowy
     const cleanupOutput = bridge.onAgentOutput((output) => {
@@ -497,6 +507,7 @@ export function App() {
         setModal={setModal}
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
+        onOpenTagDialog={() => setShowTagDialog(true)}
       />
       <KillSwitchBanner />
 
@@ -614,7 +625,7 @@ export function App() {
           {activeView === "draft" && (
             <div className="flex items-start justify-center pt-8 h-full overflow-y-auto">
               <DraftZone
-                onSaved={(mutation) => console.log('[NEXUS] Mutation saved:', mutation)}
+                onSaved={(mutation) => console.debug('[NEXUS] Mutation saved:', mutation)}
                 onValidationError={(errors) => console.warn('[NEXUS] Validation errors:', errors)}
               />
             </div>
@@ -633,6 +644,22 @@ export function App() {
                 if (entityType === "node") {
                   setSelectedNodeId(entityId);
                   setActiveView("nexus");
+                }
+              }}
+              onShowDiff={(entityType, entityId) => {
+                // Find current content for the entity
+                const entity = entityType === 'node' ? nodes.find(n => n.id === entityId) :
+                  entityType === 'task' ? tasks.find(t => t.id === entityId) :
+                  entityType === 'draft' || entityType === 'manuscript' ? drafts.find(d => d.id === entityId) :
+                  null;
+                if (entity) {
+                  const title = 'title' in entity ? (entity as any).title || 'draft' : entityType;
+                  const content = 'content' in entity ? (entity as any).content || '' :
+                    'description' in entity ? (entity as any).description || '' : '';
+                  openDiff({
+                    entityId, entityType: entityType === 'draft' ? 'manuscript' : entityType as any,
+                    title, currentContent: content,
+                  });
                 }
               }}
             />
@@ -777,7 +804,7 @@ export function App() {
                       const bridge = window.nexusBridge;
                       if (bridge?.executeWorkflow) {
                         const result = await bridge.executeWorkflow({ id });
-                        console.log('[Workflow] Result:', result);
+                        console.debug('[Workflow] Result:', result);
                       }
                     } catch (err) {
                       console.error('[Workflow] Error:', err);
@@ -929,6 +956,19 @@ export function App() {
         open={showOnboarding}
         onClose={() => setShowOnboarding(false)}
         onComplete={() => localStorage.setItem('nexus_onboarding_done', 'true')}
+      />
+      <TagSuggestDialog
+        nodes={nodes}
+        onApplyTags={(nodeIds, tags) => {
+          setNodes(prev => prev.map(n => nodeIds.includes(n.id) ? { ...n, tags: [...new Set([...(n.tags || []), ...tags])] } : n));
+          setShowTagDialog(false);
+        }}
+        open={showTagDialog}
+        onClose={() => setShowTagDialog(false)}
+      />
+      <KeyboardShortcuts
+        open={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
       />
     </div>
   );

@@ -15,6 +15,7 @@ import {
 } from '../shared/types/workflow';
 import { uid } from '../utils/ids';
 import { WorkflowSandboxBanner } from './WorkflowSandboxBanner';
+import { TemplateAutocomplete } from './TemplateAutocomplete';
 
 // === Props =================================================================
 interface WorkflowEditorProps {
@@ -546,12 +547,13 @@ export function WorkflowEditor({
                     {/* Template editor for all action types */}
                     <div>
                       <span className="text-[10px] text-[rgb(var(--text-secondary))]">Szablon:</span>
-                      <textarea
+                      <TemplateAutocomplete
                         value={action.template || ''}
-                        onChange={(e) => updateAction(action.id, { template: e.target.value })}
+                        onChange={(v) => updateAction(action.id, { template: v })}
+                        context="workflow"
+                        placeholder="{{output.content}}"
                         className="w-full mt-1 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[11px] font-mono outline-none resize-none"
                         rows={2}
-                        placeholder="{{output.content}}"
                       />
                       <div className="text-[10px] text-[rgb(var(--text-secondary))] mt-0.5">
                         Zmienne: {'{{output.content}}'} {'{{agent.name}}'} {'{{date}}'} {'{{time}}'}

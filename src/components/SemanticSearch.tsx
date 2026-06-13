@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Sparkles, ExternalLink, Loader2, Settings } from 'lucide-react';
-import { SearchResult, SearchConfig, DEFAULT_SEARCH_CONFIG, WorkspaceEntity } from '../shared/types/schema';
+import { SearchResult, DEFAULT_SEARCH_CONFIG, WorkspaceEntity } from '../shared/types/schema';
 import { SearchEngine } from '../utils/searchEngine';
 
 interface SemanticSearchProps {
@@ -34,7 +34,8 @@ export function SemanticSearch({ entities, onNavigate }: SemanticSearchProps) {
   // Esc to close
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const timer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
     } else {
       setQuery('');
       setResults([]);

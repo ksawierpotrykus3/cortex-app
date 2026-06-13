@@ -4,9 +4,11 @@
 // ============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Save, Trash2, Play, Square, Settings, GripVertical, ArrowRight, Bot, FileText, SplitSquareVertical, Network, GitBranch, AlertCircle, Activity, Zap } from 'lucide-react';
-import { Pipeline, WorkflowNode, PortConnection } from '../shared/types/schema';
+import { Plus, Save, Trash2, Play, Square, Settings, GripVertical, Bot, FileText, SplitSquareVertical, Network, GitBranch, Activity } from 'lucide-react';
+import { Pipeline, WorkflowNode, PortConnection, DryRunResult } from '../shared/types/schema';
 import { uid } from '../utils/ids';
+import { TemplateAutocomplete } from "./TemplateAutocomplete";
+import { DryRunResultModal } from "./DryRunResultModal";
 
 // === Props =================================================================
 interface PipelineEditorProps {
@@ -53,6 +55,7 @@ export function PipelineEditor({
   const [editing, setEditing] = useState<Pipeline | null>(null);
   const [newNodeType, setNewNodeType] = useState<string>('llm-agent');
   const [showNewNode, setShowNewNode] = useState(false);
+  const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
 
   const selected = pipelines.find(p => p.id === selectedId) || null;
 
@@ -241,10 +244,7 @@ export function PipelineEditor({
                     const bridge = (window as any).nexusBridge as any;
                     if (bridge?.dryRunPipeline && editing) {
                       const result = await bridge.dryRunPipeline({ pipeline: editing });
-                      const lines = result.nodes.map((n: any) =>
-                        `  ${n.skipped ? '⏭' : '✓'} ${n.nodeName}: ${n.simulatedOutput.slice(0, 80)}`
-                      );
-                      alert(`[DRY-RUN] ${result.nodes.length} nodów\n${lines.join('\n')}\n\n⏱ Est. czas: ${result.totalDuration}ms`);
+                      setDryRunResult(result);
                     }
                   } catch (err) {
                     console.error('[Dry-Run] Error:', err);
@@ -371,14 +371,18 @@ export function PipelineEditor({
                           {node.condition && node.condition.mode !== 'always' && (
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[10px] text-[rgb(var(--text-secondary))] w-10">Expr:</span>
-                              <input
-                                value={node.condition.expression}
-                                onChange={e => handleUpdateNode(node.id, {
-                                  condition: { ...node.condition!, expression: e.target.value },
-                                })}
-                                className="flex-1 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[10px] outline-none font-mono"
-                                placeholder='{{prev.output}} contains "błąd"'
-                              />
+                              <div className="flex-1">
+                                <TemplateAutocomplete
+                                  value={node.condition.expression}
+                                  onChange={v => handleUpdateNode(node.id, {
+                                    condition: { ...node.condition!, expression: v },
+                                  })}
+                                  context="pipeline"
+                                  placeholder='{{prev.output}} contains "błąd"'
+                                  className="w-full bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[10px] outline-none font-mono"
+                                  rows={1}
+                                />
+                              </div>
                             </div>
                           )}
                           {node.condition && node.condition.mode !== 'always' && (
@@ -452,6 +456,12 @@ export function PipelineEditor({
           </div>
         )}
       </div>
+
+      <DryRunResultModal
+        result={dryRunResult}
+        open={dryRunResult !== null}
+        onClose={() => setDryRunResult(null)}
+      />
     </div>
   );
 }
