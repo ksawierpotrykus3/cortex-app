@@ -455,11 +455,228 @@ Pełna lista 25 funkcji które kiedykolwiek padły w rozmowach o Nexusie. Nie ws
 4. ✅ Zapis do `data/feedback.jsonl` przez IPC handler w main process
 5. ✅ Przycisk renderowany w `App.tsx` na stałe, przekazuje aktualny stan (viewMode, selectedAgentId, selectedNodeId itp.)
 
-### Dlaczego #24 i #25 są w P4 (refaktoryzacja)?
-Bo to nie są nowe funkcje — to **przepisanie całego systemu** na nowo. Obecny kod działa dobrze. Refaktoryzacja na uniwersalne klocki ma sens dopiero gdy:
-1. Wszystkie funkcje są stabilne
-2. Widać dokładnie które klocki się powtarzają
-3. Jest czas na duże zmiany bez presji
+### #27 — Playwright Browser Automate & AI Factory (~30h)
+
+**Cel:** Dodać nowy typ node'a do systemu Workflow/Pipeline — **"Browser Automate"**.
+Playwright osadzony w Electronie, bez MCP, z czyszczeniem DOM dla LLM bez wizji (DeepSeek).
+
+### Dlaczego tak, a nie inaczej?
+
+**Bez MCP** — Playwright siedzi bezpośrednio w main procesie Nexusa. Prościej, szybciej, zero zależności zewnętrznych. MCP wymaga serwera, wymaga protokołu, dodaje overhead.
+
+**Dwa etapy (Fabryka → Wykonanie):**
+1. **AI Discovery (Fabryka)** — osobny preset agenta `Ctrl+Shift+P`. User daje URL + opis, AI przez Playwright wchodzi na stronę, ściąga czysty DOM (bez scriptów/stylów), analizuje i zwraca JSON skryptu.
+2. **Browser Automate (Node)** — węzeł w WorkflowEditor. User wkleja JSON. Node wykrywa zmienne `{{ZMENNA}}` i automatycznie tworzy porty wejściowe (kabelki). Playwright wykonuje kroki BEZ udziału AI.
+
+**Czyszczenie DOM** — DeepSeek/LLM bez wizji nie widzi strony. Trzeba wyciąć wszystko co nieinteraktywne: `<script>`, `<style>`, `<svg>`, `<!-- komentarze -->`, `<head>`. Zostawić tylko: przyciski, inputy, linki, aria-label, tekst, `<form>`, `<table>`, `<select>`, `<option>`. Strona z 2MB HTML → ~50-100kB czystego, semantycznego tekstu.
+
+**Czekanie 15 minut** — WAIT_FOR z timeoutem. Node czeka asynchronicznie, nie blokuje reszty Nexusa. Po timeoutie: fail lub zwraca partial result.
+
+**Pobieranie plików** — Playwright może kliknąć w link/download, podebrać odpowiedź HTTP i zapisać do folderu. Output węzła: `{ text, files: [{ name, path, mime }], screenshot? }`.
+
+---
+
+### Szczegółowa architektura
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  WORKFLOW: "Stwórz automatyzację dla strony"                        │
+│                                                                     │
+│  ┌──────────────┐    ┌──────────────────┐    ┌───────────────────┐ │
+│  │  User Input   │───>│  Agent: Discovery │───>│  Agent: Generator │ │
+│  │  - URL        │    │  (Ctrl+Shift+P)  │    │  (zwraca JSON)   │ │
+│  │  - opis       │    │  - Playwright    │    └───────────────────┘ │
+│  └──────────────┘    │    otwiera stronę │           │              │
+│                       │    - czyści DOM    │           ▼              │
+│                       │    - AI analizuje  │    ┌──────────────────┐ │
+│                       │    - iteruje       │    │  Browser Automate │ │
+│                       │      (klika/sprawdza│   │  Node (wklejasz  │ │
+│                       │       aż zrozumie) │    │   gotowy JSON)   │ │
+│                       └──────────────────┘    │   - Playwright    │ │
+│                                                │     wykonuje sam  │ │
+│                                                │   - zmienne z     │ │
+│                                                │     portów        │ │
+│                                                │   - czeka na AI   │ │
+│                                                │   - pobiera pliki │ │
+│                                                └──────────────────┘ │
+│                                                      │              │
+│                                                      ▼              │
+│                                                ┌──────────────────┐ │
+│                                                │  Output: tekst + │ │
+│                                                │  pliki do folderu│ │
+│                                                └──────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Krok 1 — Zależności i setup
+- `npm install playwright`
+- Instalacja binarek Chromium dla Electrona
+- Sprawdzenie czy build przechodzi
+
+### Krok 2 — Silnik `src/main/core/BrowserEngine.ts`
+Klasa zarządzająca Playwrightem. Dwie główne metody:
+
+**`extractCleanDOM(url)`**:
+1. Otwiera stronę w headless Chromium
+2. Wstrzykuje JS który czyści DOM:
+   - Usuwa: `<script>`, `<style>`, `<link>`, `<svg>`, `<noscript>`, `<!-- -->`, `<head>`
+   - Zamienia: `<img>` na `[IMAGE: alt]`, `<input>` na `[INPUT: type, name, placeholder]`
+   - Zachowuje: aria-label, role, title, teksty przycisków, linków
+3. Zwraca `{ title, cleanText, interactiveElements[] }`
+
+**`executeMacro(steps, inputs)`**:
+Przetwarza sekwencję kroków:
+
+| Akcja | Opis | Przykład |
+|-------|------|----------|
+| `GOTO` | Idź na URL | `{ action: "GOTO", url: "https://..." }` |
+| `WAIT_FOR` | Czekaj na selektor | `{ action: "WAIT_FOR", selector: "#result", timeoutMs: 300000 }` |
+| `CLICK` | Kliknij | `{ action: "CLICK", selector: "#btn" }` |
+| `TYPE` | Wpisz tekst | `{ action: "TYPE", selector: "#input", text: "{{PROMPT}}" }` |
+| `SELECT` | Wybierz opcję | `{ action: "SELECT", selector: "#dropdown", value: "opcja" }` |
+| `SCROLL` | Przewiń | `{ action: "SCROLL", selector: "#list", direction: "down" }` |
+| `EXTRACT` | Pobierz tekst | `{ action: "EXTRACT", selector: ".result", attribute: "textContent" }` |
+| `EXTRACT_ATTR` | Pobierz atrybut | `{ action: "EXTRACT_ATTR", selector: "img", attribute: "src" }` |
+| `DOWNLOAD` | Ściągnij plik | `{ action: "DOWNLOAD", selector: "a.download", saveTo: "outputs/" }` |
+| `SCREENSHOT` | Zrzut ekranu | `{ action: "SCREENSHOT", fullPage: true }` |
+| `EVALUATE` | Wykonaj JS | `{ action: "EVALUATE", script: "document.title" }` |
+
+Zmienne w `text` (np. `{{PROMPT}}`) są podmieniane z `inputs` otrzymanego przez pipeline.
+
+### Krok 3 — Typy w `schema.ts` / `workflow.ts`
+```typescript
+interface MacroStep {
+  action: 'GOTO' | 'WAIT_FOR' | 'CLICK' | 'TYPE' | 'SELECT' | 'SCROLL' | 'EXTRACT' | 'EXTRACT_ATTR' | 'DOWNLOAD' | 'SCREENSHOT' | 'EVALUATE';
+  selector?: string;
+  url?: string;
+  text?: string;         // może zawierać {{ZMENNA}}
+  attribute?: string;
+  timeoutMs?: number;
+  fullPage?: boolean;
+  script?: string;
+  saveTo?: string;
+  value?: string;
+  direction?: 'up' | 'down';
+}
+
+// Nowy typ akcji workflow
+interface BrowserAutomateConfig {
+  steps: MacroStep[];
+  variables: string[];   // wykryte z {{...}} w krokach
+  outputDir: string;     // gdzie zapisać pliki
+  timeoutMs: number;     // całkowity timeout (domyślnie 15 min = 900000)
+}
+```
+
+### Krok 4 — IPC + preload
+- `browser:extract-dom(url)` → zwraca `{ title, cleanText }`
+- `browser:test-macro(steps)` → testuje skrypt, zwraca `{ success, output? }`
+
+### Krok 5 — Integracja z WorkflowEngine / PipelineExecutor
+- Nowa akcja `browser_automate` w `WorkflowActionType`
+- PipelineExecutor: gdy trafi na node `browser_automate` → `BrowserEngine.executeMacro(steps, inputs)`
+- Węzeł czeka asynchronicznie (nie blokuje UI)
+
+### Krok 6 — UI w WorkflowEditor
+- Nowy node "Browser Automate" na pasku narzędzi
+- UI klocka:
+  ```
+  ┌─ Browser Automate ────────────────────┐
+  │  JSON skrypt:                         │
+  │  ┌──────────────────────────────────┐ │
+  │  │ [                                    ] │ │
+  │  │ [paste JSON here...               ] │ │
+  │  │ [                                    ] │ │
+  │  └──────────────────────────────────┘ │
+  │  Wykryte zmienne: PROMPT, URL         │
+  │  ┌────┐ ┌────┐                        │
+  │  │PROMPT│ │ URL │                     │
+  │  └──┬──┘ └──┬──┘                     │
+  │     │       │                          │
+  │  [Test] [Zapisz]                       │
+  └─────────────────────────────────────────┘
+  ```
+- Gdy user wkleja JSON, system parsuje go, wykrywa `{{...}}` i automatycznie wystawia porty
+- Porty wejściowe (po lewej) — można podpiąć kabel z innego agenta/noda
+- Port wyjściowy (po prawej) — output węzła (tekst + pliki)
+
+### Krok 7 — Preset agenta "Browser Automation Builder" (Ctrl+Shift+P)
+System prompt:
+```
+Otrzymasz opis zadania oraz czysty zrzut HTML/tekstu ze strony. Jesteś ekspertem Playwright. Wygeneruj poprawną strukturę JSON dla skryptu automatyzacji (bez formatowania Markdown i dodatkowych tekstów). 
+
+Dostępne akcje: GOTO (url), CLICK (selector), TYPE (selector, text), WAIT_FOR (selector, timeoutMs), SELECT (selector, value), SCROLL (selector, direction), EXTRACT (selector), EXTRACT_ATTR (selector, attribute), DOWNLOAD (selector, saveTo), SCREENSHOT (fullPage), EVALUATE (script).
+
+Gdzie trzeba wpisać dynamiczny tekst (np. prompt od użytkownika), użyj zmiennej w formacie {{ZMIENNA}}.
+```
+
+---
+
+### Jak to działa w praktyce (krok po kroku, po ludzku)
+
+**Scenariusz:** Chcesz zrobić automatyzację która wchodzi na Gemini, wpisuje prompt, generuje obrazek i go pobiera.
+
+**Krok 1:** Otwierasz WorkflowEditor
+- Przeciągasz na płótno: **Agent Discovery** + **Browser Automate** + **Save to Folder**
+- Łączysz je kablami: Discovery → Browser Automate → Save
+
+**Krok 2:** Klikasz w Agent Discovery
+- Wklejasz URL: `https://gemini.google.com`
+- Piszesz: *"znajdź pole do wpisania promptu, kliknij generate, poczekaj na obrazek, pobierz go"*
+- Klikasz "Run"
+
+**Krok 3:** Agent Discovery działa:
+- Playwright otwiera Gemini
+- Ściąga DOM, czyści go (usuwa śmieci)
+- AI analizuje: "okej, jest input #prompt-area, przycisk #generate-btn, kontener .result"
+- AI generuje JSON skryptu:
+
+```json
+[
+  { "action": "GOTO", "url": "https://gemini.google.com" },
+  { "action": "WAIT_FOR", "selector": "#prompt-area", "timeoutMs": 10000 },
+  { "action": "TYPE", "selector": "#prompt-area", "text": "{{PROMPT}}" },
+  { "action": "CLICK", "selector": "#generate-btn" },
+  { "action": "WAIT_FOR", "selector": ".result-image", "timeoutMs": 300000 },
+  { "action": "EXTRACT_ATTR", "selector": ".result-image img", "attribute": "src" },
+  { "action": "DOWNLOAD", "selector": ".download-btn", "saveTo": "outputs/" }
+]
+```
+
+**Krok 4:** Klikasz w node Browser Automate
+- Wklejasz ten JSON
+- Node automatycznie wykrywa `{{PROMPT}}` → tworzy port "PROMPT" po lewej stronie
+- Możesz podpiąć do niego kabel z innego agenta (np. "Generator promptów") albo wpisać ręcznie
+
+**Krok 5:** Klikasz "Run workflow"
+- Playwright wykonuje kroki jeden po drugim:
+  - Otwiera Gemini
+  - Czeka na input (max 10s)
+  - Wpisuje prompt (pobrany z portu `{{PROMPT}}`)
+  - Kliknij generate
+  - CZEKA 5 MINUT na wygenerowanie obrazka
+  - Pobiera URL obrazka i plik
+- Output wędruje do "Save to Folder"
+- Plik ląduje w `outputs/gemini_obrazek.png`
+
+**Krok 6:** Gotowe. Możesz odpalić ten workflow z różnymi promptami — wystarczy zmienić wejście `{{PROMPT}}`. Nic nie musisz konfigurować od nowa.
+
+---
+
+### Co z długim czekaniem (15+ minut)?
+- `WAIT_FOR` ma configurable timeout (domyślnie 30s, ale możesz dać 900000 = 15 min)
+- Node czeka asynchronicznie — nie blokuje UI, nie blokuje innych workflowów
+- Po timeoutie: albo fail, albo zwraca partial result (co udało się zebrać)
+- Opcja "fire & forget": workflow odpała Playwrighta i idzie dalej, wynik zapisuje do zmiennej
+
+### Co z plikami?
+- `DOWNLOAD` zapisuje plik do wskazanego folderu
+- Output nody zawiera: `{ text, files: [{ name, path, mime }], screenshot? }`
+- Pipeline może przekazać te pliki dalej (np. do agenta który je opisze)
+
+### Co z discovery wielu stron?
+- Workflow może mieć pętlę: lista URLi → dla każdego: Discovery → Automate → Zapisz
+- Albo agent research: "przeszukaj te 5 stron i zbierz ceny" → Playwright wchodzi na każdą
 
 ---
 
@@ -473,6 +690,7 @@ Bo to nie są nowe funkcje — to **przepisanie całego systemu** na nowo. Obecn
                       
 Niezależne (mogą iść równolegle):
   #7 MicroVM
+  #27 Playwright Browser Automate
 
 Po wszystkim:
   #2 LEGO + #25 Algebra (refaktoryzacja)
@@ -484,19 +702,38 @@ Po wszystkim:
 
 ```
 ETAP 1 — Zabezpieczenie (15 min)
-  ├── T1: Podpiąć Git remote → kod na GitHub
+  ├── T1: Podpiąć Git remote → kod na GitHub ✅
 
 ETAP 2 — Ostatnie funkcje (~110h)
-  ├── #7: MicroVM (~40h)
-  ├── #23: Integracja z Gitem (~40h)
-  └── #24: Agent Template (~30h)
+  ├── #7: MicroVM (~40h) ✅
+  ├── #23: Integracja z Gitem (~40h) ✅
+  ├── #24: Agent Template (~30h) ✅
 
-ETAP 3 — Refaktoryzacja (~140h)
+ETAP 3 — Playwright (NOWOŚĆ, ~30h)
+  ├── #27: Playwright Browser Automate
+       ├── Krok 1: npm install playwright + setup
+       ├── Krok 2: BrowserEngine (extractCleanDOM + executeMacro)
+       ├── Krok 3: Typy + IPC + preload
+       ├── Krok 4: Integracja z PipelineExecutor
+       ├── Krok 5: UI w WorkflowEditor (node + porty)
+       ├── Krok 6: Preset agenta Ctrl+Shift+P
+       └── Krok 7: Testy + weryfikacja
+
+ETAP 4 — Refaktoryzacja (~140h)
   ├── #2: LEGO (~60h)
   └── #25: Algebra (~80h)
 ```
 
-**Łącznie:** ~250h (około 2-3 miesiące pół etatu)
+**Łącznie:** ~280h (około 3 miesiące pół etatu)
+
+### Zrobione (update 2026-06-13)
+| # | Funkcja | Status |
+|---|---------|--------|
+| T1 | Git remote (push na GitHub) | ✅ 15 min |
+| #7 | MicroVM (izolacja) | ✅ |
+| #23 | Integracja z Gitem | ✅ |
+| #24 | Agent Template | ✅ |
+| #27 | Playwright Browser Automate | 🔄 W trakcie |
 
 ---
 
