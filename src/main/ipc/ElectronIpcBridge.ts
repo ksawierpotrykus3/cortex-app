@@ -7,6 +7,7 @@
 import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import {
   Agent, AgentOutput, AgentStatus, ProviderAuthConfig,
@@ -225,80 +226,101 @@ export class ElectronIpcBridge {
     });
 
     // === Agent CRUD =======================================================
-    this.ipc.handle('agent:create', (_event: IpcMainInvokeEvent, payload: any) => {
-      const agent: Agent = {
-        id: crypto.randomUUID?.() || `agent_${Date.now()}`,
-        ...payload,
-        status: AgentStatus.ACTIVE,
-        runCount: 0,
-        errorCount: 0,
-        rating: 0,
-        tags: payload.tags || [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+    this.ipc.handle('agent:create', async (_event: IpcMainInvokeEvent, payload: any) => {
+      try {
+        const agent: Agent = {
+          id: crypto.randomUUID?.() || `agent_${Date.now()}`,
+          ...payload,
+          status: AgentStatus.ACTIVE,
+          runCount: 0,
+          errorCount: 0,
+          rating: 0,
+          tags: payload.tags || [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
 
-      this.orchestrator.registerAgent(agent);
-      this.storage.saveAgent(agent);
+        this.orchestrator.registerAgent(agent);
+        this.storage.saveAgent(agent);
 
-      return agent;
-    });
-
-    this.ipc.handle('agent:update', (_event: IpcMainInvokeEvent, payload: { id: string; updates: Partial<Agent> }) => {
-      this.orchestrator.updateAgent(payload.id, payload.updates);
-
-      // Load from storage, update, save back
-      const existing = this.storage.getAgent(payload.id);
-      if (existing) {
-        const updated = { ...existing, ...payload.updates, updatedAt: new Date().toISOString() };
-        this.storage.saveAgent(updated);
-        return updated;
+        return agent;
+      } catch (err) {
+        console.error('[agent:create]', err);
+        return { success: false, error: String(err) };
       }
-
-      // Fallback: get from orchestrator
-      const fromOrch = this.orchestrator.getAgent(payload.id);
-      if (fromOrch) {
-        const updated = { ...fromOrch, ...payload.updates, updatedAt: new Date().toISOString() };
-        this.storage.saveAgent(updated);
-        return updated;
-      }
-
-      throw new Error(`Agent ${payload.id} not found`);
     });
 
-    this.ipc.handle('agent:delete', (_event: IpcMainInvokeEvent, payload: { id: string }) => {
-      this.orchestrator.unregisterAgent(payload.id);
-      this.storage.deleteAgent(payload.id);
-      return { success: true };
-    });
+    this.ipc.handle('agent:update', async (_event: IpcMainInvokeEvent, payload: { id: string; updates: Partial<Agent> }) => {
+      try {
+        this.orchestrator.updateAgent(payload.id, payload.updates);
 
-    this.ipc.handle('agent:get-all', () => {
-      // Merge: z orchestratora (runtime) i storage (persistent)
-      const runtimeAgents = this.orchestrator.getAgents();
-      const storedAgents = this.storage.getAllAgents();
-
-      // Prefer runtime status
-      const runtimeMap = new Map(runtimeAgents.map(a => [a.id, a]));
-      const merged = storedAgents.map(stored => {
-        const runtime = runtimeMap.get(stored.id);
-        return runtime ? { ...stored, status: runtime.status, runCount: runtime.runCount } : stored;
-      });
-
-      // Add agents that are only in runtime (not yet saved)
-      for (const rAgent of runtimeAgents) {
-        if (!merged.find(m => m.id === rAgent.id)) {
-          merged.push(rAgent);
+        const existing = this.storage.getAgent(payload.id);
+        if (existing) {
+          const updated = { ...existing, ...payload.updates, updatedAt: new Date().toISOString() };
+          this.storage.saveAgent(updated);
+          return updated;
         }
-      }
 
-      return merged;
+        const fromOrch = this.orchestrator.getAgent(payload.id);
+        if (fromOrch) {
+          const updated = { ...fromOrch, ...payload.updates, updatedAt: new Date().toISOString() };
+          this.storage.saveAgent(updated);
+          return updated;
+        }
+
+        throw new Error(`Agent ${payload.id} not found`);
+      } catch (err) {
+        console.error('[agent:update]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
-    this.ipc.handle('agent:get', (_event: IpcMainInvokeEvent, payload: { id: string }) => {
-      const runtime = this.orchestrator.getAgent(payload.id);
-      if (runtime) return runtime;
+    this.ipc.handle('agent:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        this.orchestrator.unregisterAgent(payload.id);
+        this.storage.deleteAgent(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[agent:delete]', err);
+        return { success: false, error: String(err) };
+      }
+    });
 
-      return this.storage.getAgent(payload.id);
+    this.ipc.handle('agent:get-all', async () => {
+      try {
+        const runtimeAgents = this.orchestrator.getAgents();
+        const storedAgents = this.storage.getAllAgents();
+
+        // Prefer runtime status
+        const runtimeMap = new Map(runtimeAgents.map(a => [a.id, a]));
+        const merged = storedAgents.map(stored => {
+          const runtime = runtimeMap.get(stored.id);
+          return runtime ? { ...stored, status: runtime.status, runCount: runtime.runCount } : stored;
+        });
+
+        // Add agents that are only in runtime
+        for (const rAgent of runtimeAgents) {
+          if (!merged.find(m => m.id === rAgent.id)) {
+            merged.push(rAgent);
+          }
+        }
+
+        return merged;
+      } catch (err) {
+        console.error('[agent:get-all]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('agent:get', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        const runtime = this.orchestrator.getAgent(payload.id);
+        if (runtime) return runtime;
+        return this.storage.getAgent(payload.id);
+      } catch (err) {
+        console.error('[agent:get]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     // === Agent Execution ==================================================
@@ -316,8 +338,13 @@ export class ElectronIpcBridge {
     });
 
     this.ipc.handle('agent:stop', (_event: IpcMainInvokeEvent, payload: { id: string }) => {
-      this.orchestrator.stopAgent(payload.id);
-      return { success: true };
+      try {
+        this.orchestrator.stopAgent(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[agent:stop]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     // === Changelog Actions ================================================
@@ -331,51 +358,86 @@ export class ElectronIpcBridge {
 
     // === Agent Output Approve/Reject (F6.1) ===============================
     this.ipc.handle('agent:approve-output', async (_event, payload: { outputId: string; agentId: string }) => {
-      const outputs = this.storage.getOutputs(payload.agentId, 100);
-      const output = outputs.find(o => o.id === payload.outputId);
-      if (output) {
-        output.approved = true;
-        this.storage.saveOutput(output);
-        this.orchestrator.updateAgent(payload.agentId, { status: AgentStatus.ACTIVE });
-        return { success: true };
+      try {
+        const outputs = this.storage.getOutputs(payload.agentId, 100);
+        const output = outputs.find(o => o.id === payload.outputId);
+        if (output) {
+          output.approved = true;
+          this.storage.saveOutput(output);
+          this.orchestrator.updateAgent(payload.agentId, { status: AgentStatus.ACTIVE });
+          return { success: true };
+        }
+        throw new Error(`Output ${payload.outputId} not found`);
+      } catch (err) {
+        console.error('[agent:approve-output]', err);
+        return { success: false, error: String(err) };
       }
-      throw new Error(`Output ${payload.outputId} not found`);
     });
 
     this.ipc.handle('agent:reject-output', async (_event, payload: { outputId: string; agentId: string }) => {
-      const outputs = this.storage.getOutputs(payload.agentId, 100);
-      const output = outputs.find(o => o.id === payload.outputId);
-      if (output) {
-        output.approved = false;
-        this.storage.saveOutput(output);
-        this.orchestrator.updateAgent(payload.agentId, { status: AgentStatus.ACTIVE });
-        return { success: true };
+      try {
+        const outputs = this.storage.getOutputs(payload.agentId, 100);
+        const output = outputs.find(o => o.id === payload.outputId);
+        if (output) {
+          output.approved = false;
+          this.storage.saveOutput(output);
+          this.orchestrator.updateAgent(payload.agentId, { status: AgentStatus.ACTIVE });
+          return { success: true };
+        }
+        throw new Error(`Output ${payload.outputId} not found`);
+      } catch (err) {
+        console.error('[agent:reject-output]', err);
+        return { success: false, error: String(err) };
       }
-      throw new Error(`Output ${payload.outputId} not found`);
     });
 
     // === Agent Output History (F6.3) =======================================
     this.ipc.handle('agent:get-outputs', async (_event, payload: { agentId: string; limit?: number; offset?: number }) => {
-      return this.storage.getOutputs(payload.agentId, payload.limit || 100);
+      try {
+        return this.storage.getOutputs(payload.agentId, payload.limit || 100);
+      } catch (err) {
+        console.error('[agent:get-outputs]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('agent:get-output-stats', async (_event, payload: { agentId: string }) => {
-      return this.storage.getOutputStats(payload.agentId);
+      try {
+        return this.storage.getOutputStats(payload.agentId);
+      } catch (err) {
+        console.error('[agent:get-output-stats]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('agent:delete-output', async (_event, payload: { id: string }) => {
-      this.storage.deleteOutput(payload.id);
-      return { success: true };
+      try {
+        this.storage.deleteOutput(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[agent:delete-output]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('agent:clear-outputs', async (_event, payload: { agentId: string }) => {
-      this.storage.clearOutputs(payload.agentId);
-      return { success: true };
+      try {
+        this.storage.clearOutputs(payload.agentId);
+        return { success: true };
+      } catch (err) {
+        console.error('[agent:clear-outputs]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     // === Provider Config (Phase 2) ========================================
     this.ipc.handle('provider:get-configs', () => {
-      return this.providerRegistry.getConfigs();
+      try {
+        return this.providerRegistry.getConfigs();
+      } catch (err) {
+        console.error('[provider:get-configs]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('provider:set-api-key', (_event, payload: { label: string; apiKey: string }) => {
@@ -388,17 +450,52 @@ export class ElectronIpcBridge {
     });
 
     this.ipc.handle('provider:test-connection', async (_event, payload: { label: string }) => {
-      return this.providerRegistry.testConnection(payload.label);
+      try {
+        return this.providerRegistry.testConnection(payload.label);
+      } catch (err) {
+        console.error('[provider:test-connection]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('provider:get-models', () => {
-      return this.providerRegistry.getAvailableModels();
+      try {
+        return this.providerRegistry.getAvailableModels();
+      } catch (err) {
+        console.error('[provider:get-models]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('provider:upsert-config', (_event, payload: { config: ProviderAuthConfig }) => {
       try {
         this.providerRegistry.upsertConfig(payload.config);
         return { success: true };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    // Browser operations (#27 Playwright)
+    this.ipc.handle('browser:extract-dom', async (_event, payload: { url: string }) => {
+      try {
+        const { BrowserEngine } = await import('../core/BrowserEngine');
+        const engine = new BrowserEngine();
+        const result = await engine.extractCleanDOM(payload.url);
+        await engine.close();
+        return { success: true, ...result };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    this.ipc.handle('browser:test-macro', async (_event, payload: { steps: any[]; inputs?: Record<string, any> }) => {
+      try {
+        const { BrowserEngine } = await import('../core/BrowserEngine');
+        const engine = new BrowserEngine();
+        const result = await engine.executeMacro(payload.steps, payload.inputs || {});
+        await engine.close();
+        return result;
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
@@ -432,17 +529,32 @@ export class ElectronIpcBridge {
 
   private registerPipelineHandlers(): void {
     this.ipc.handle('pipeline:save', (_event: IpcMainInvokeEvent, payload: { pipeline: Pipeline }) => {
-      this.storage.savePipeline(payload.pipeline);
-      return { success: true };
+      try {
+        this.storage.savePipeline(payload.pipeline);
+        return { success: true };
+      } catch (err) {
+        console.error('[pipeline:save]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('pipeline:delete', (_event: IpcMainInvokeEvent, payload: { id: string }) => {
-      this.storage.deletePipeline(payload.id);
-      return { success: true };
+      try {
+        this.storage.deletePipeline(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[pipeline:delete]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('pipeline:get-all', () => {
-      return this.storage.getAllPipelines();
+      try {
+        return this.storage.getAllPipelines();
+      } catch (err) {
+        console.error('[pipeline:get-all]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('pipeline:execute', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
@@ -470,7 +582,12 @@ export class ElectronIpcBridge {
     });
 
     this.ipc.handle('pipeline:status', (_event: IpcMainInvokeEvent, payload: { id: string }) => {
-      return this.pipelineExecutor.getStatus(payload.id);
+      try {
+        return this.pipelineExecutor.getStatus(payload.id);
+      } catch (err) {
+        console.error('[pipeline:status]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     console.debug('[ElectronIpcBridge] Registered Pipeline DAG handlers (F6.12)');
@@ -482,17 +599,32 @@ export class ElectronIpcBridge {
 
   private registerWorkflowHandlers(): void {
     this.ipc.handle('workflow:save', (_event: IpcMainInvokeEvent, payload: { workflow: WorkflowDefinition }) => {
-      this.storage.saveWorkflow(payload.workflow);
-      return { success: true };
+      try {
+        this.storage.saveWorkflow(payload.workflow);
+        return { success: true };
+      } catch (err) {
+        console.error('[workflow:save]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('workflow:delete', (_event: IpcMainInvokeEvent, payload: { id: string }) => {
-      this.storage.deleteWorkflow(payload.id);
-      return { success: true };
+      try {
+        this.storage.deleteWorkflow(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[workflow:delete]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('workflow:get-all', () => {
-      return this.storage.getAllWorkflows();
+      try {
+        return this.storage.getAllWorkflows();
+      } catch (err) {
+        console.error('[workflow:get-all]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('workflow:execute', async (_event: IpcMainInvokeEvent, payload: { id: string; mode?: WorkflowMode }) => {
@@ -533,14 +665,24 @@ export class ElectronIpcBridge {
     });
 
     this.ipc.handle('workflow:result', (_event: IpcMainInvokeEvent, payload: { executionId: string }) => {
-      return this.workflowEngine.getResult(payload.executionId);
+      try {
+        return this.workflowEngine.getResult(payload.executionId);
+      } catch (err) {
+        console.error('[workflow:result]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('workflow:logs', (_event: IpcMainInvokeEvent, payload: { workflowId: string }) => {
-      const results = this.storage.getWorkflowResults(payload.workflowId);
-      // Transform results into flat log entries
-      const logs = results.flatMap(r => r.logs || []);
-      return logs;
+      try {
+        const results = this.storage.getWorkflowResults(payload.workflowId);
+        // Transform results into flat log entries
+        const logs = results.flatMap(r => r.logs || []);
+        return logs;
+      } catch (err) {
+        console.error('[workflow:logs]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     console.debug('[ElectronIpcBridge] Registered Workflow handlers (#1)');
@@ -552,10 +694,15 @@ export class ElectronIpcBridge {
 
   private registerContextHandlers(): void {
     this.ipc.handle('context:get-options', (_event: IpcMainInvokeEvent, payload: { agentId: string }) => {
-      // Return available context sources from DEFAULT_CONTEXT_CONFIG
-      return DEFAULT_CONTEXT_CONFIG.sources.map(s => ({
-        ...s,
-      }));
+      try {
+        // Return available context sources from DEFAULT_CONTEXT_CONFIG
+        return DEFAULT_CONTEXT_CONFIG.sources.map(s => ({
+          ...s,
+        }));
+      } catch (err) {
+        console.error('[context:get-options]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('context:fetch', async (_event: IpcMainInvokeEvent, payload: { agentId: string; contextConfig: ContextConfig }) => {
@@ -621,7 +768,12 @@ export class ElectronIpcBridge {
     });
 
     this.ipc.handle('workspace:get-all', () => {
-      return this.storage.getWorkspaceEntities();
+      try {
+        return this.storage.getWorkspaceEntities();
+      } catch (err) {
+        console.error('[workspace:get-all]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     console.debug('[ElectronIpcBridge] Registered Workspace handlers (F6.2)');
@@ -650,32 +802,47 @@ export class ElectronIpcBridge {
 
     // IPC handlers
     this.ipc.handle('killswitch:status', () => {
-      // Re-register active agents dynamically
-      this.orchestrator.getAgents().forEach(agent => {
-        if (agent.status === 'RUNNING' || (agent as any).status === 'PROCESSING') {
-          this.killSwitch.register(`agent:${agent.id}`, agent.name, () => {
-            this.orchestrator.stopAgent(agent.id);
-          });
-        }
-      });
-      return this.killSwitch.getStatus();
+      try {
+        // Re-register active agents dynamically
+        this.orchestrator.getAgents().forEach(agent => {
+          if (agent.status === 'RUNNING' || (agent as any).status === 'PROCESSING') {
+            this.killSwitch.register(`agent:${agent.id}`, agent.name, () => {
+              this.orchestrator.stopAgent(agent.id);
+            });
+          }
+        });
+        return this.killSwitch.getStatus();
+      } catch (err) {
+        console.error('[killswitch:status]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('killswitch:activate', (_event, payload?: { reason?: string }) => {
-      const state = this.killSwitch.activate(payload?.reason);
-      // Additional emergency: also stop pipeline + workflow engines
-      const allPipelines = this.storage.getAllPipelines();
-      for (const p of allPipelines) {
-        this.pipelineExecutor.stop(p.id);
+      try {
+        const state = this.killSwitch.activate(payload?.reason);
+        // Additional emergency: also stop pipeline + workflow engines
+        const allPipelines = this.storage.getAllPipelines();
+        for (const p of allPipelines) {
+          this.pipelineExecutor.stop(p.id);
+        }
+        this.killSwitch.register('engine:all', 'All engines', () => {
+          // No-op — already stopped above
+        });
+        return state;
+      } catch (err) {
+        console.error('[killswitch:activate]', err);
+        return { success: false, error: String(err) };
       }
-      this.killSwitch.register('engine:all', 'All engines', () => {
-        // No-op — already stopped above
-      });
-      return state;
     });
 
     this.ipc.handle('killswitch:deactivate', () => {
-      return this.killSwitch.deactivate();
+      try {
+        return this.killSwitch.deactivate();
+      } catch (err) {
+        console.error('[killswitch:deactivate]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     console.debug('[ElectronIpcBridge] Registered KillSwitch handlers (#9)');
@@ -697,12 +864,22 @@ export class ElectronIpcBridge {
     });
 
     this.ipc.handle('search:update-config', (_event, payload: { config: SearchConfig }) => {
-      this.searchEngine.setConfig(payload.config);
-      return { success: true };
+      try {
+        this.searchEngine.setConfig(payload.config);
+        return { success: true };
+      } catch (err) {
+        console.error('[search:update-config]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('search:get-config', () => {
-      return this.searchEngine.getConfig();
+      try {
+        return this.searchEngine.getConfig();
+      } catch (err) {
+        console.error('[search:get-config]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     console.debug('[ElectronIpcBridge] Registered Semantic Search handlers (AI)');
@@ -821,22 +998,32 @@ export class ElectronIpcBridge {
     this.loadGitConfig();
 
     this.ipc.handle('git:get-config', () => {
-      return { ...this.gitConfig };
+      try {
+        return { ...this.gitConfig };
+      } catch (err) {
+        console.error('[git:get-config]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('git:set-config', (_event, payload: { config: GitConfig }) => {
-      this.gitConfig = { ...payload.config };
-      // Sync scheduler-only-branch
-      this.scheduleOnlyBranch = this.gitConfig.scheduleOnlyOnBranch || '';
-      // Persist to storage
-      this.persistGitConfig();
-      // Auto-detect repo path if remoteUrl changed and is valid
-      if (this.gitConfig.remoteUrl && !this.repoPath) {
-        try {
-          this.repoPath = process.cwd();
-        } catch { /* ignore */ }
+      try {
+        this.gitConfig = { ...payload.config };
+        // Sync scheduler-only-branch
+        this.scheduleOnlyBranch = this.gitConfig.scheduleOnlyOnBranch || '';
+        // Persist to storage
+        this.persistGitConfig();
+        // Auto-detect repo path if remoteUrl changed and is valid
+        if (this.gitConfig.remoteUrl && !this.repoPath) {
+          try {
+            this.repoPath = process.cwd();
+          } catch { /* ignore */ }
+        }
+        return { success: true };
+      } catch (err) {
+        console.error('[git:set-config]', err);
+        return { success: false, error: String(err) };
       }
-      return { success: true };
     });
 
     this.ipc.handle('git:test-connection', async () => {
@@ -1129,32 +1316,42 @@ export class ElectronIpcBridge {
 
   private registerGitScheduleHandlers(): void {
     this.ipc.handle('git:schedule-status', () => {
-      return {
-        pullActive: this.pullTimer !== null,
-        pushActive: this.pushTimer !== null,
-        pullIntervalMs: this.pullIntervalMs,
-        pushIntervalMs: this.pushIntervalMs,
-      };
+      try {
+        return {
+          pullActive: this.pullTimer !== null,
+          pushActive: this.pushTimer !== null,
+          pullIntervalMs: this.pullIntervalMs,
+          pushIntervalMs: this.pushIntervalMs,
+        };
+      } catch (err) {
+        console.error('[git:schedule-status]', err);
+        return { success: false, error: String(err) };
+      }
     });
 
     this.ipc.handle('git:schedule-toggle', (_event, payload: { action: 'pull' | 'push'; active: boolean }) => {
-      if (payload.action === 'pull') {
-        if (payload.active) {
-          const ms = this.gitConfig.pullIntervalMs;
-          if (ms > 0) this.startPullSchedule(ms);
-        } else {
-          this.stopPullSchedule();
+      try {
+        if (payload.action === 'pull') {
+          if (payload.active) {
+            const ms = this.gitConfig.pullIntervalMs;
+            if (ms > 0) this.startPullSchedule(ms);
+          } else {
+            this.stopPullSchedule();
+          }
         }
-      }
-      if (payload.action === 'push') {
-        if (payload.active) {
-          const ms = this.gitConfig.pushIntervalMs;
-          if (ms > 0) this.startPushSchedule(ms);
-        } else {
-          this.stopPushSchedule();
+        if (payload.action === 'push') {
+          if (payload.active) {
+            const ms = this.gitConfig.pushIntervalMs;
+            if (ms > 0) this.startPushSchedule(ms);
+          } else {
+            this.stopPushSchedule();
+          }
         }
+        return { success: true };
+      } catch (err) {
+        console.error('[git:schedule-toggle]', err);
+        return { success: false, error: String(err) };
       }
-      return { success: true };
     });
 
     console.debug('[ElectronIpcBridge] Registered Git Scheduler handlers');
@@ -1188,6 +1385,24 @@ export class ElectronIpcBridge {
       'git:branch-list', 'git:branch-switch', 'git:branch-create',
       'git:merge', 'git:diff',
       'git:schedule-status', 'git:schedule-toggle',
+
+      // Pipeline
+      'pipeline:save', 'pipeline:delete', 'pipeline:get-all',
+      'pipeline:execute', 'pipeline:dry-run', 'pipeline:status',
+
+      // Workflow
+      'workflow:save', 'workflow:delete', 'workflow:get-all',
+      'workflow:execute', 'workflow:result', 'workflow:logs',
+      'workflow:dry-run',
+
+      // Workspace
+      'workspace:sync', 'workspace:get-all',
+
+      // KillSwitch
+      'killswitch:status', 'killswitch:activate', 'killswitch:deactivate',
+
+      // Search
+      'search:query', 'search:update-config', 'search:get-config',
     ];
 
     // Stop all git schedulers

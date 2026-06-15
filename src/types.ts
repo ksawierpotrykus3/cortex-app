@@ -175,7 +175,7 @@ export const DEFAULT_EXPORT_SCOPE: ExportScope = {
 // --- NXS-ENG-001 (Node-Based AI Engine Types) ---
 
 export type AgentRole = 'writer' | 'researcher' | 'critic' | 'auditor' | 'tool-executor';
-export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'system-reader' | 'system-writer' | 'condition';
+export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'system-reader' | 'system-writer' | 'condition' | 'browser-automate';
 
 export interface PipelinePayload<T = unknown> {
   data: T; // Structured JSON object passed between nodes

@@ -308,7 +308,7 @@ export interface AgentOutput {
 }
 
 // === Pipeline DAG (F6.12) =================================================
-export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'condition' | 'system-reader' | 'system-writer';
+export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'condition' | 'system-reader' | 'system-writer' | 'browser-automate';
 
 export interface WorkflowNode {
   id: string;

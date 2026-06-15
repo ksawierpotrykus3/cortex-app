@@ -1,6 +1,6 @@
 // ============================================================================
 // NEXUS — PipelineExecutor (F6.12)
-// Wykonuje pipeline DAG: topologiczne sortowanie + exec node'ów
+// Executes pipeline DAG via topological sort + node execution
 // ============================================================================
 
 import { Pipeline, WorkflowNode, PortConnection, AgentOutput, TriggerType, DryRunResult, DryRunNodeResult, DryRunConfig, DEFAULT_DRY_RUN_CONFIG } from '../../shared/types/schema';
@@ -23,13 +23,26 @@ export class PipelineExecutor {
   private abortController = new Map<string, AbortController>();
   private orchestrator: AgentOrchestrator;
 
+  // Auto-cleanup: max completed runs to prevent memory leak
+  private readonly MAX_CACHED_RUNS = 50;
+  private runInsertionOrder: string[] = [];
+
   constructor(orchestrator: AgentOrchestrator) {
     this.orchestrator = orchestrator;
   }
 
+  private enforceRunLimit(): void {
+    while (this.runs.size > this.MAX_CACHED_RUNS) {
+      const oldest = this.runInsertionOrder.shift();
+      if (oldest) {
+        this.runs.delete(oldest);
+        this.abortController.delete(oldest);
+      }
+    }
+  }
+
   /**
-   * Topologiczne sortowanie DAG.
-   * Zwraca listę node'ów w kolejności wykonania.
+   * Topological sort of DAG. Returns execution-order list of nodes.
    */
   topologicalSort(nodes: WorkflowNode[], connections: PortConnection[]): { sorted: WorkflowNode[]; cycles: string[] } {
     const adj = new Map<string, string[]>();
@@ -144,6 +157,8 @@ export class PipelineExecutor {
       progress: 0,
     };
     this.runs.set(pipeline.id, runState);
+    this.runInsertionOrder.push(pipeline.id);
+    this.enforceRunLimit();
 
     try {
       const { sorted, cycles } = this.topologicalSort(pipeline.nodes, pipeline.connections);
@@ -240,6 +255,25 @@ export class PipelineExecutor {
               if (firstResult) {
                 runState.nodeResults.set(node.id, firstResult);
               }
+            }
+            break;
+          }
+
+          case 'browser-automate': {
+            // #27 Playwright Browser Automate
+            try {
+              const { BrowserEngine } = await import('./BrowserEngine');
+              const browser = new BrowserEngine();
+              const steps = node.config?.steps || [];
+              const inputs = node.config?.inputs || {};
+              const result = await browser.executeMacro(steps, inputs);
+              await browser.close();
+              const outputText = result.text || result.extractedData?._screenshot || (result.success ? 'OK' : result.error || 'Failed');
+              runState.nodeResults.set(node.id, outputText);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              runState.errors.set(node.id, msg);
+              runState.nodeResults.set(node.id, `[ERROR] ${msg}`);
             }
             break;
           }

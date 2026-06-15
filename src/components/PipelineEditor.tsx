@@ -41,6 +41,7 @@ const nodeTypeMeta: Record<string, { label: string; icon: React.ReactNode; color
   'router': { label: 'Router', icon: <SplitSquareVertical className="w-3.5 h-3.5" />, color: '#fbbf24' },
   'human-in-the-loop': { label: 'Człowiek w pętli', icon: <Network className="w-3.5 h-3.5" />, color: '#f87171' },
   'condition': { label: 'Warunek IF/THEN', icon: <GitBranch className="w-3.5 h-3.5" />, color: '#60a5fa' },
+  'browser-automate': { label: 'Przeglądarka', icon: <Activity className="w-3.5 h-3.5" />, color: '#2dd4bf' },
 };
 
 // === Component =============================================================
@@ -340,6 +341,40 @@ export function PipelineEditor({
                                 className="w-full mt-1 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[11px] font-mono outline-none resize-none"
                                 rows={2}
                                 placeholder="Opcjonalnie — nadpisuje promptTemplate agenta"
+                              />
+                            </div>
+                          </>
+                        )}
+                        {node.type === 'browser-automate' && (
+                          <>
+                            <div>
+                              <span className="text-[10px] text-[rgb(var(--text-secondary))]">Skrypt Playwright (JSON):</span>
+                              <textarea
+                                value={node.config?.steps ? JSON.stringify(node.config.steps, null, 2) : ''}
+                                onChange={e => {
+                                  try {
+                                    const steps = JSON.parse(e.target.value);
+                                    handleUpdateNode(node.id, { config: { ...node.config, steps } });
+                                  } catch { /* invalid JSON — ignore */ }
+                                }}
+                                className="w-full mt-1 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[11px] font-mono outline-none resize-none"
+                                rows={6}
+                                placeholder='[{ "action": "GOTO", "url": "https://..." }]'
+                              />
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-[rgb(var(--text-secondary))]">Zmienne wejściowe (JSON):</span>
+                              <textarea
+                                value={node.config?.inputs ? JSON.stringify(node.config.inputs, null, 2) : ''}
+                                onChange={e => {
+                                  try {
+                                    const inputs = JSON.parse(e.target.value);
+                                    handleUpdateNode(node.id, { config: { ...node.config, inputs } });
+                                  } catch { /* ignore */ }
+                                }}
+                                className="w-full mt-1 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[11px] font-mono outline-none resize-none"
+                                rows={3}
+                                placeholder='{ "PROMPT": "hello world" }'
                               />
                             </div>
                           </>

@@ -731,4 +731,74 @@ Format:
       contextConfig: contextConfigWithSources(['notes', 'history', 'changelog']),
     }),
   },
+
+  // === #27 Playwright — Browser Automation Builder ==========================
+  {
+    id: 'browser-automation',
+    name: 'Browser Automation Builder',
+    description: 'Generuje skrypt Playwright do automatyzacji strony',
+    icon: 'Globe',
+    create: () => ({
+      id: crypto.randomUUID?.() || `agent_${Date.now()}`,
+      name: 'Browser Automation Builder',
+      description: 'Analizuje stronę przez Playwright i generuje JSON skryptu automatyzacji',
+      status: AgentStatus.ACTIVE,
+      promptTemplate: `Otrzymasz opis zadania oraz czysty zrzut HTML/tekstu ze strony. Jesteś ekspertem Playwright. Wygeneruj poprawną strukturę JSON dla skryptu automatyzacji (bez formatowania Markdown i dodatkowych tekstów).
+
+Dostępne akcje:
+- GOTO (url) — przejdź do URL
+- WAIT_FOR (selector, timeoutMs) — czekaj na selektor
+- CLICK (selector) — kliknij
+- TYPE (selector, text) — wpisz tekst
+- SELECT (selector, value) — wybierz opcję
+- SCROLL (selector, direction) — przewiń
+- EXTRACT (selector) — pobierz tekst
+- EXTRACT_ATTR (selector, attribute) — pobierz atrybut
+- DOWNLOAD (selector, saveTo) — pobierz plik
+- SCREENSHOT (fullPage) — zrzut ekranu
+
+Gdzie trzeba wpisać dynamiczny tekst (np. prompt od użytkownika), użyj zmiennej w formacie {{ZMIENNA}}.
+
+Opis zadania:
+{{SCHOWEK}}
+
+Czysty HTML strony:
+{{CONTEXT}}
+
+Wygeneruj JSON:
+
+[
+  { "action": "...", ... }
+]`,
+      trigger: {
+        type: TriggerType.MANUAL,
+        enabled: true,
+        useClipboard: true,
+        useScreenshot: false,
+        hotkey: 'Ctrl+Shift+P',
+      },
+      model: {
+        provider: AIProvider.GEMINI,
+        providerLabel: 'Google Gemini',
+        modelName: 'gemini-2.0-flash',
+        temperature: 0.2,
+        maxTokens: 8192,
+        topP: 0.85,
+      },
+      maxRetries: 2,
+      cooldownSeconds: 20,
+      budgetTokens: 100000,
+      budgetDepth: 100,
+      outputDestinations: [],
+      accentColor: '#2dd4bf',
+      createdAt: now(),
+      updatedAt: now(),
+      lastRunAt: undefined,
+      runCount: 0,
+      errorCount: 0,
+      rating: 0,
+      tags: ['playwright', 'automatyzacja', 'browser'],
+      contextConfig: contextConfigWithSources(['notes', 'changelog']),
+    }),
+  },
 ];

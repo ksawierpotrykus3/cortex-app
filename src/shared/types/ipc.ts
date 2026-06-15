@@ -74,6 +74,10 @@ export interface CommandChannels {
   'git:diff': { payload?: { file?: string; from?: string; to?: string; agentId?: string }; response: string };
   'git:schedule-status': { payload: void; response: { pullActive: boolean; pushActive: boolean; pullIntervalMs: number; pushIntervalMs: number } };
   'git:schedule-toggle': { payload: { action: 'pull' | 'push'; active: boolean }; response: { success: boolean } };
+
+  // Browser operations (#27 Playwright)
+  'browser:extract-dom': { payload: { url: string }; response: { success: boolean; title?: string; cleanText?: string; error?: string } };
+  'browser:test-macro': { payload: { steps: any[]; inputs?: Record<string, any> }; response: { success: boolean; output?: any; error?: string } };
 }
 
 // ============================================================================
@@ -167,6 +171,10 @@ export interface NexusBridge {
   getGitDiff: (payload?: { file?: string; from?: string; to?: string; agentId?: string }) => Promise<string>;
   getGitScheduleStatus: () => Promise<{ pullActive: boolean; pushActive: boolean; pullIntervalMs: number; pushIntervalMs: number }>;
   toggleGitSchedule: (payload: { action: 'pull' | 'push'; active: boolean }) => Promise<{ success: boolean }>;
+
+  // Browser operations (#27 Playwright)
+  browserExtractDom: (payload: { url: string }) => Promise<{ success: boolean; title?: string; cleanText?: string; error?: string }>;
+  browserTestMacro: (payload: { steps: any[]; inputs?: Record<string, any> }) => Promise<{ success: boolean; output?: any; error?: string }>;
 
   // Context Builder (F6.2)
   getContextOptions: (payload: { agentId: string }) => Promise<ContextSource[]>;

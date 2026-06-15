@@ -15,8 +15,8 @@ describe('AGENT_PRESETS', () => {
   // ------------------------------------------------------------------
   // Test 1: Eksportuje dokładnie 12 presetów (#24)
   // ------------------------------------------------------------------
-  it('eksportuje dokładnie 12 presetów', () => {
-    expect(AGENT_PRESETS).toHaveLength(12);
+  it('eksportuje dokładnie 13 presetów (#27 Playwright)', () => {
+    expect(AGENT_PRESETS).toHaveLength(13);
   });
 
   // ------------------------------------------------------------------

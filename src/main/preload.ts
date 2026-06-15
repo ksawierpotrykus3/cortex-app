@@ -104,6 +104,10 @@ const nexusBridge: NexusBridge = {
   getGitScheduleStatus: () => ipcRenderer.invoke('git:schedule-status'),
   toggleGitSchedule: (payload) => ipcRenderer.invoke('git:schedule-toggle', payload),
 
+  // Browser operations (#27 Playwright)
+  browserExtractDom: (payload) => ipcRenderer.invoke('browser:extract-dom', payload),
+  browserTestMacro: (payload) => ipcRenderer.invoke('browser:test-macro', payload),
+
   // ========================================================================
   // Context Builder (F6.2)
   // ========================================================================
