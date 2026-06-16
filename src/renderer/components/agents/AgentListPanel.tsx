@@ -68,6 +68,7 @@ export function AgentListPanel({ onExecuteAgent, onStopAgent }: AgentListPanelPr
           <div className="relative" ref={presetRef}>
             <button
               onClick={() => setPresetOpen(!presetOpen)}
+              aria-label="Wybierz z presetów"
               className="p-1.5 rounded-lg text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--accent))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
               title="Z presetów"
             >
@@ -160,6 +161,7 @@ export function AgentListPanel({ onExecuteAgent, onStopAgent }: AgentListPanelPr
                   {isRunning ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); onStopAgent(agent.id); }}
+                      aria-label="Zatrzymaj"
                       className="p-1 rounded text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
                       title="Zatrzymaj"
                     >
@@ -168,6 +170,7 @@ export function AgentListPanel({ onExecuteAgent, onStopAgent }: AgentListPanelPr
                   ) : (
                     <button
                       onClick={(e) => { e.stopPropagation(); onExecuteAgent(agent.id); }}
+                      aria-label="Uruchom"
                       className="p-1 rounded text-green-400 hover:bg-green-400/10 transition-colors cursor-pointer"
                       title="Uruchom"
                     >
@@ -176,6 +179,7 @@ export function AgentListPanel({ onExecuteAgent, onStopAgent }: AgentListPanelPr
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); duplicateAgent(agent.id); }}
+                    aria-label="Duplikuj"
                     className="p-1 rounded text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
                     title="Duplikuj"
                   >
@@ -183,6 +187,7 @@ export function AgentListPanel({ onExecuteAgent, onStopAgent }: AgentListPanelPr
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setHistoryAgentId(agent.id); setHistoryAgentName(agent.name); }}
+                    aria-label="Historia"
                     className="p-1 rounded text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--accent))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
                     title="Historia"
                   >
@@ -190,6 +195,7 @@ export function AgentListPanel({ onExecuteAgent, onStopAgent }: AgentListPanelPr
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); removeAgent(agent.id); }}
+                    aria-label="Usuń"
                     className="p-1 rounded text-[rgb(var(--text-secondary))] hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
                     title="Usuń"
                   >

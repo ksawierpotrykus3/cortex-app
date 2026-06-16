@@ -25,6 +25,9 @@ export function GitPanel() {
   const [showNewBranch, setShowNewBranch] = useState(false);
   const [gitEnabled, setGitEnabled] = useState(false);
   const [scheduleStatus, setScheduleStatus] = useState<{ pullActive: boolean; pushActive: boolean; pullIntervalMs: number; pushIntervalMs: number } | null>(null);
+  const [diffContent, setDiffContent] = useState<string | null>(null);
+  const [diffFile, setDiffFile] = useState<string | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
 
   useEffect(() => {
     loadGitConfig();
@@ -196,6 +199,19 @@ export function GitPanel() {
     setLoading(false);
   };
 
+  const handleLoadDiff = async (filePath: string) => {
+    setDiffLoading(true);
+    setDiffFile(filePath);
+    setDiffContent(null);
+    try {
+      const diff = await window.nexusBridge?.getGitDiff({ file: filePath });
+      setDiffContent(diff || 'Brak zmian w diffie.');
+    } catch (err: any) {
+      setDiffContent(`Błąd: ${err.message || String(err)}`);
+    }
+    setDiffLoading(false);
+  };
+
   // ========================================================================
   // RENDER
   // ========================================================================
@@ -263,6 +279,7 @@ export function GitPanel() {
         <button
           onClick={refreshAll}
           disabled={loading}
+          aria-label="Odśwież"
           className="p-2 text-gray-500 hover:text-white transition-colors cursor-pointer disabled:opacity-40"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -326,6 +343,7 @@ export function GitPanel() {
                 <button
                   onClick={handlePush}
                   disabled={loading}
+                  aria-label="Push"
                   className="px-3 py-2 rounded-lg text-sm font-medium border border-[rgb(var(--border))] text-gray-300 hover:text-white hover:border-gray-500 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ArrowUp className="w-4 h-4" />
@@ -333,6 +351,7 @@ export function GitPanel() {
                 <button
                   onClick={handlePull}
                   disabled={loading}
+                  aria-label="Pull"
                   className="px-3 py-2 rounded-lg text-sm font-medium border border-[rgb(var(--border))] text-gray-300 hover:text-white hover:border-gray-500 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ArrowDown className="w-4 h-4" />
@@ -360,13 +379,39 @@ export function GitPanel() {
                         {entry.status === 'untracked' ? '??' : entry.status.substring(0, 1).toUpperCase()}
                       </span>
                       <FileCode className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                      <span className="text-gray-300 truncate">{entry.path}</span>
-                      {entry.staged && <span className="ml-auto text-xs text-emerald-500">staged</span>}
+                      <span className="text-gray-300 truncate flex-1">{entry.path}</span>
+                      {entry.staged && <span className="text-xs text-emerald-500">staged</span>}
+                      <button
+                        onClick={() => handleLoadDiff(entry.path)}
+                        disabled={diffLoading}
+                        className="px-1.5 py-0.5 rounded text-[10px] font-mono border border-[rgb(var(--border))] text-gray-500 hover:text-white hover:border-gray-500 transition-colors cursor-pointer disabled:opacity-40"
+                      >
+                        Diff
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Diff viewer */}
+            {diffContent !== null && (
+              <div className="border border-[rgb(var(--border))] rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 bg-[rgb(var(--panel))] border-b border-[rgb(var(--border))]">
+                  <span className="text-xs font-mono text-gray-400">Diff: {diffFile}</span>
+                  <button
+                    onClick={() => { setDiffContent(null); setDiffFile(null); }}
+                    className="text-gray-500 hover:text-white transition-colors cursor-pointer text-xs"
+                    aria-label="Zamknij diff"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <pre className="p-3 text-[11px] font-mono overflow-x-auto max-h-64 overflow-y-auto text-gray-300 leading-relaxed">
+                  {diffLoading ? 'Ładowanie...' : diffContent}
+                </pre>
+              </div>
+            )}
           </>
         )}
 

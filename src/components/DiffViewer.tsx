@@ -176,7 +176,7 @@ function SideBySideView({
         </div>
         {leftLines.map((line, i) => (
           <div
-            key={i}
+            key={`left-${i}`}
             className={`flex px-3 ${
               line?.op === 'delete' ? 'bg-red-500/10 text-red-400' : 'text-[rgb(var(--text-main))]'
             } ${line === null ? 'bg-red-500/5 opacity-30' : ''} hover:bg-[rgb(var(--border))]/20`}

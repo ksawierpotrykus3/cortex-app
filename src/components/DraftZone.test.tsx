@@ -21,19 +21,18 @@ import { validateMutation, AgentMutation, DraftSubmission } from '../shared/vali
 import { stringify, parse } from 'flatted';
 
 // ============================================================
-// Setup: global window mock and Electron IPC mock
+// Setup: global window mock — nexusBridge (contextBridge API)
 // ============================================================
 beforeEach(() => {
-  (window as any).electron = {
-    ipcRenderer: {
-      send: vi.fn(),
-    },
+  (window as any).nexusBridge = {
+    sendMutation: vi.fn(),
     invoke: vi.fn(),
   };
 });
 
 afterEach(() => {
   cleanup();
+  delete (window as any).nexusBridge;
 });
 
 // ============================================================
@@ -158,8 +157,7 @@ describe('DraftZone — RTL: corrupted data rejection (TDD Test 1)', () => {
 
     // Sprawdź czy IPC został wywołany (walidacja przeszła)
     await waitFor(() => {
-      expect((window as any).electron.ipcRenderer.send).toHaveBeenCalledWith(
-        'save-mutation',
+      expect((window as any).nexusBridge.sendMutation).toHaveBeenCalledWith(
         expect.objectContaining({
           mutation: expect.objectContaining({
             id: 'agent_01',
@@ -191,7 +189,7 @@ describe('DraftZone — RTL: corrupted data rejection (TDD Test 1)', () => {
     expect(saveButton).toBeDisabled();
 
     // IPC NIGDY nie powinien być wywołany
-    expect((window as any).electron.ipcRenderer.send).not.toHaveBeenCalled();
+    expect((window as any).nexusBridge.sendMutation).not.toHaveBeenCalled();
   });
 
   it('odrzuca przez Zod: ID z niedozwolonymi znakami → komunikat o błędzie', async () => {
@@ -219,7 +217,7 @@ describe('DraftZone — RTL: corrupted data rejection (TDD Test 1)', () => {
     });
 
     // IPC NIE powinien być wywołany
-    expect((window as any).electron.ipcRenderer.send).not.toHaveBeenCalled();
+    expect((window as any).nexusBridge.sendMutation).not.toHaveBeenCalled();
   });
 });
 
@@ -276,8 +274,7 @@ describe('DraftZone — full save cycle', () => {
 
     // Sprawdź czy IPC send został wywołany
     await waitFor(() => {
-      expect((window as any).electron.ipcRenderer.send).toHaveBeenCalledWith(
-        'save-mutation',
+      expect((window as any).nexusBridge.sendMutation).toHaveBeenCalledWith(
         expect.objectContaining({
           mutation: expect.objectContaining({
             id: 'agent_test',

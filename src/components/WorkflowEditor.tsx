@@ -263,6 +263,7 @@ export function WorkflowEditor({
               <button
                 onClick={() => removeCondition(group.id, cond.id)}
                 className="p-0.5 text-[rgb(var(--text-secondary))] hover:text-red-400 cursor-pointer"
+                aria-label="Usuń warunek"
               >
                 <Trash2 size={12} />
               </button>
@@ -326,6 +327,7 @@ export function WorkflowEditor({
           </button>
           <button
             onClick={() => onDeleteWorkflow(editing.id)}
+            aria-label="Usuń workflow"
             className="p-1.5 rounded text-[rgb(var(--text-secondary))] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
             <Trash2 size={14} />
@@ -447,6 +449,7 @@ export function WorkflowEditor({
                     <button
                       onClick={() => removeAction(action.id)}
                       className="p-0.5 text-[rgb(var(--text-secondary))] hover:text-red-400 cursor-pointer"
+                      aria-label="Usuń akcję"
                     >
                       <Trash2 size={12} />
                     </button>

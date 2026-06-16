@@ -15,7 +15,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Agent, AgentOutput, Pipeline, WorkspaceEntity } from '../../shared/types/schema';
+import { Agent, AgentOutput, Pipeline, WorkspaceEntity, DownloadedFileRecord } from '../../shared/types/schema';
 import { WorkflowDefinition, WorkflowExecutionResult } from '../../shared/types/workflow';
 
 /**
@@ -219,13 +219,14 @@ export class StorageEngine {
 
     // Per-day JSONL file
     const outputFile = path.join(outputDir, `${date}.jsonl`);
-    fs.appendFileSync(outputFile, JSON.stringify(output) + '\n', 'utf8');
 
     // Also save to SQLite
     if (this.db) {
       try {
+        // JSONL append-first for crash recovery
+        fs.appendFileSync(outputFile, JSON.stringify(output) + '\n', 'utf8');
         const stmt = this.db.prepare(`
-          INSERT INTO outputs (id, agent_id, agent_name, status, content, tokens_used, execution_ms,
+          INSERT OR REPLACE INTO outputs (id, agent_id, agent_name, status, content, tokens_used, execution_ms,
             trigger_type, model_name, rating, approved, tags, error, created_at, completed_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
@@ -258,7 +259,7 @@ export class StorageEngine {
         id: r.id,
         agentId: r.agent_id,
         agentName: r.agent_name,
-        status: 'ACTIVE' as any,
+        status: r.status || 'ACTIVE',
         prompt: '',
         contextSize: 0,
         content: r.content || '',
@@ -538,6 +539,162 @@ export class StorageEngine {
   }
 
   // =========================================================================
+  // Downloaded Files Storage (#27 Playwright)
+  // =========================================================================
+
+  /** Kopiuje plik do storage/files/{id}/ i zapisuje rekord w JSONL */
+  saveDownloadedFile(
+    sourceUrl: string,
+    filePath: string,
+    originalName: string,
+    mime: string,
+    metadata: Record<string, any> = {}
+  ): DownloadedFileRecord {
+    const filesDir = path.join(this.basePath, 'files');
+    if (!fs.existsSync(filesDir)) {
+      fs.mkdirSync(filesDir, { recursive: true });
+    }
+
+    const id = crypto.randomUUID?.() || `file_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const fileDir = path.join(filesDir, id);
+    if (!fs.existsSync(fileDir)) {
+      fs.mkdirSync(fileDir, { recursive: true });
+    }
+
+    // Sanitize filename
+    const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storedPath = path.join(fileDir, safeName);
+
+    // Copy file to storage
+    if (fs.existsSync(filePath) && filePath !== storedPath) {
+      fs.copyFileSync(filePath, storedPath);
+    } else if (!fs.existsSync(filePath)) {
+      throw new Error(`Source file not found: ${filePath}`);
+    }
+
+    const stats = fs.statSync(storedPath);
+    const record: DownloadedFileRecord = {
+      id,
+      sourceUrl,
+      originalName: safeName,
+      storedPath,
+      mime,
+      sizeBytes: stats.size,
+      metadata,
+      downloadedAt: new Date().toISOString(),
+    };
+
+    // Append to files JSONL
+    const filesJsonl = path.join(this.basePath, 'files', 'files.jsonl');
+    fs.appendFileSync(filesJsonl, JSON.stringify(record) + '\n', 'utf8');
+
+    console.debug(`[StorageEngine] File saved: ${safeName} (${stats.size} bytes) → ${storedPath}`);
+    return record;
+  }
+
+  /** Zapisuje wiele plików z outputu BrowserEngine */
+  saveDownloadedFiles(
+    sourceUrl: string,
+    files: Array<{ name: string; path: string; mime: string }>,
+    metadata: Record<string, any> = {}
+  ): DownloadedFileRecord[] {
+    return files.map(f => {
+      const mimeType = f.mime || this.guessMime(f.name);
+      return this.saveDownloadedFile(sourceUrl, f.path, f.name, mimeType, metadata);
+    });
+  }
+
+  /** Zwraca wszystkie pobrane pliki (ostatnie N) */
+  getDownloadedFiles(limit: number = 50): DownloadedFileRecord[] {
+    const filesJsonl = path.join(this.basePath, 'files', 'files.jsonl');
+    if (!fs.existsSync(filesJsonl)) return [];
+
+    const lines = fs.readFileSync(filesJsonl, 'utf8').trim().split('\n').reverse();
+    const records: DownloadedFileRecord[] = [];
+    for (const line of lines) {
+      if (!line) continue;
+      try {
+        records.push(JSON.parse(line) as DownloadedFileRecord);
+        if (records.length >= limit) break;
+      } catch { /* skip malformed */ }
+    }
+    return records;
+  }
+
+  /** Zwraca pliki po metadanych (np. po agentId) */
+  getDownloadedFilesByMetadata(key: string, value: any, limit: number = 50): DownloadedFileRecord[] {
+    return this.getDownloadedFiles(1000).filter(r => r.metadata?.[key] === value).slice(0, limit);
+  }
+
+  /** Usuwa plik z dysku i z rejestru */
+  deleteDownloadedFile(id: string): boolean {
+    // Read all records, filter out the deleted one, rewrite JSONL
+    const filesJsonl = path.join(this.basePath, 'files', 'files.jsonl');
+    if (!fs.existsSync(filesJsonl)) return false;
+
+    const lines = fs.readFileSync(filesJsonl, 'utf8').trim().split('\n');
+    const remaining: string[] = [];
+    let found = false;
+
+    for (const line of lines) {
+      if (!line) continue;
+      try {
+        const record = JSON.parse(line) as DownloadedFileRecord;
+        if (record.id === id) {
+          found = true;
+          // Delete file from disk
+          try {
+            if (fs.existsSync(record.storedPath)) {
+              fs.unlinkSync(record.storedPath);
+            }
+            // Try to remove parent dir
+            const dir = path.dirname(record.storedPath);
+            if (fs.existsSync(dir)) {
+              fs.rmdirSync(dir, { recursive: true });
+            }
+          } catch { /* ignore file delete errors */ }
+          continue;
+        }
+      } catch { /* skip malformed */ }
+      remaining.push(line);
+    }
+
+    if (found) {
+      fs.writeFileSync(filesJsonl, remaining.join('\n') + '\n', 'utf8');
+      return true;
+    }
+    return false;
+  }
+
+  /** Proste zgadywanie MIME po rozszerzeniu */
+  private guessMime(filename: string): string {
+    const ext = path.extname(filename).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.csv': 'text/csv',
+      '.json': 'application/json',
+      '.txt': 'text/plain',
+      '.md': 'text/markdown',
+      '.html': 'text/html',
+      '.htm': 'text/html',
+      '.zip': 'application/zip',
+      '.mp3': 'audio/mpeg',
+      '.mp4': 'video/mp4',
+    };
+    return mimeMap[ext] || 'application/octet-stream';
+  }
+
+  // =========================================================================
   // Cleanup
   // =========================================================================
 
@@ -547,6 +704,6 @@ export class StorageEngine {
       this.db = null;
     }
     this.ready = false;
-    console.log('[StorageEngine] Destroyed');
+    console.debug('[StorageEngine] Destroyed');
   }
 }

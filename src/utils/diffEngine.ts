@@ -284,10 +284,10 @@ function backtrack(
     }
 
     if (cameFromK === k - 1) {
-      // Vertical move → add in new (insertion)
+      // K increased → right move → deletion
       stack.push({ type: 'delete', text: oldArr[prevX] });
     } else {
-      // Horizontal move → delete from old (deletion)
+      // K decreased → down move → insertion
       stack.push({ type: 'add', text: newArr[prevY] });
     }
 

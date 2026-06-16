@@ -5,6 +5,7 @@
 
 import { WorkspaceEntity, SearchResult, SearchConfig, DEFAULT_SEARCH_CONFIG, AIProvider } from '../../shared/types/schema';
 import { IAIProvider } from '../ai/IAIProvider';
+import { fallbackSearch, mapViewMode } from '../../shared/utils/search';
 
 export class SearchEngine {
   private config: SearchConfig = { ...DEFAULT_SEARCH_CONFIG };
@@ -39,7 +40,7 @@ export class SearchEngine {
 
     // === Krok 0: Fallback jeśli brak providera AI ============================
     if (!this.provider) {
-      return this.fallbackSearch(query, entities, cfg.maxResults);
+      return fallbackSearch(query, entities, cfg.maxResults);
     }
 
     // === Krok 1: Kompilacja kontekstu =======================================
@@ -47,13 +48,13 @@ export class SearchEngine {
 
     for (const e of entities) {
       const typeLabel =
-        e.type === 'node' ? 'Notatka' :
+        e.type === 'node' ? 'Note' :
         e.type === 'task' ? 'Task' :
-        e.type === 'draft' ? 'Manuskrypt' :
+        e.type === 'draft' ? 'Manuscript' :
         'Wiki';
       const content = (e.content || '').slice(0, 1000);
       contextChunks.push(
-        `[${typeLabel}] ID: ${e.id} | Tytuł: ${e.title || '(bez tytułu)'}\nTreść: ${content}\n`
+        `[${typeLabel}] ID: ${e.id} | Title: ${e.title || '(no title)'}\nContent: ${content}\n`
       );
     }
 
@@ -126,7 +127,7 @@ export class SearchEngine {
           entityId: e.id,
           entityType: e.type,
           title: e.title || '',
-          snippet: 'Znaleziono przez referencję ID w odpowiedzi AI',
+          snippet: 'Found via ID reference in AI response',
           relevance: 0.5,
           viewMode: mapViewMode(e.type),
         });
@@ -135,43 +136,4 @@ export class SearchEngine {
     return results.slice(0, this.config.maxResults);
   }
 
-  /**
-   * Keyword-based fallback gdy AI jest niedostępne
-   */
-  private fallbackSearch(query: string, entities: WorkspaceEntity[], maxResults: number): SearchResult[] {
-    const q = query.toLowerCase().split(/\s+/).filter(Boolean);
-    if (q.length === 0) return [];
-
-    const results: SearchResult[] = [];
-    for (const e of entities) {
-      const text = `${e.title} ${e.content}`.toLowerCase();
-      let matchCount = 0;
-      for (const word of q) {
-        if (text.includes(word)) matchCount++;
-      }
-      if (matchCount > 0) {
-        results.push({
-          entityId: e.id,
-          entityType: e.type,
-          title: e.title || '(bez tytułu)',
-          snippet: (e.content || '').slice(0, 200),
-          relevance: Math.min(matchCount / q.length, 1),
-          viewMode: mapViewMode(e.type),
-        });
-      }
-    }
-
-    results.sort((a, b) => b.relevance - a.relevance);
-    return results.slice(0, maxResults);
-  }
-}
-
-function mapViewMode(type: string): string {
-  switch (type) {
-    case 'node': return 'nexus';
-    case 'task': return 'lab-todo';
-    case 'draft': return 'lab-writing';
-    case 'wiki': return 'wiki';
-    default: return 'nexus';
-  }
 }

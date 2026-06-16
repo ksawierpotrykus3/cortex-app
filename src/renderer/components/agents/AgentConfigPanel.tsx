@@ -4,7 +4,7 @@
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, Play, Trash2, Settings, Clipboard, Folder, Globe, Bot, BookOpen } from 'lucide-react';
+import { RotateCcw, Play, Trash2, Settings, Clipboard, Folder, Globe, Bot, BookOpen, Shield } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
 import { PromptEditor } from './PromptEditor';
 import { TriggerConfig } from './TriggerConfig';
@@ -49,7 +49,7 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
   useEffect(() => {
     const bridge = window.nexusBridge;
     if (bridge?.getAvailableModels) {
-      bridge.getAvailableModels().then(models => setAvailableModels(models));
+      bridge.getAvailableModels().then(models => setAvailableModels(models)).catch(err => console.error('[AgentConfigPanel] Failed to load models:', err));
     }
   }, []);
 
@@ -321,6 +321,33 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
                 />
               </div>
             </div>
+
+            {/* #7 MicroVM: Execution Mode */}
+            <div className="mt-3 flex items-center justify-between px-3 py-2 bg-[rgb(var(--panel))] rounded-lg border border-[rgb(var(--border))]">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-[rgb(var(--text-muted))]" />
+                <div>
+                  <span className="text-[12px] font-medium text-[rgb(var(--text-main))]">Tryb izolacji (sandbox)</span>
+                  <p className="text-[10px] text-[rgb(var(--text-muted))]">
+                    Wykonuje agenta w izolowanym procesie z limitem pamięci i czasu
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agent.executionMode === 'sandbox'}
+                  onChange={(e) => updateAgent(agent.id, {
+                    executionMode: e.target.checked ? 'sandbox' : 'live',
+                  })}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-[rgb(var(--border))] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[rgb(var(--accent))]"></div>
+                <span className="ml-2 text-[11px] font-medium text-[rgb(var(--text-muted))]">
+                  {agent.executionMode === 'sandbox' ? 'Sandbox' : 'Live'}
+                </span>
+              </label>
+            </div>
           </div>
 
           {/* Output Routing */}
@@ -368,7 +395,7 @@ export function AgentConfigPanel({ onExecute }: AgentConfigPanelProps) {
             </label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {agent.tags.map((tag, i) => (
-                <span key={i} className="px-2 py-0.5 text-[10px] bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))] rounded-full flex items-center gap-1">
+                <span key={tag} className="px-2 py-0.5 text-[10px] bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))] rounded-full flex items-center gap-1">
                   {tag}
                   <button
                     onClick={() => updateAgent(agent.id, { tags: agent.tags.filter((_, j) => j !== i) })}

@@ -8,6 +8,7 @@ import { AlertTriangle } from 'lucide-react';
 import { ContextConfig, ContextSource, DEFAULT_CONTEXT_CONFIG, ContextSelection, ContextSourceConfig } from '../../../shared/types/schema';
 import { useAgentStore } from '../../store/agentStore';
 import { ToggleSwitch } from '../ui/ToggleSwitch';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
 interface SourceBreakdownItem {
   sourceId: string;
@@ -38,13 +39,18 @@ function TestContextModal({
   onClose: () => void;
 }) {
   const isOverLimit = tokensUsed > maxTokens;
+  const modalRef = useFocusTrap(true);
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Podgląd kontekstu"
         className="bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-xl w-[600px] max-h-[80vh] flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -52,7 +58,7 @@ function TestContextModal({
           <h2 className="text-[15px] font-semibold text-[rgb(var(--text-main))]">
             Podgląd kontekstu
           </h2>
-          <button onClick={onClose} className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer p-1">
+          <button onClick={onClose} aria-label="Zamknij" className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer p-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -95,6 +101,7 @@ function TestContextModal({
         <div className="px-5 py-3 border-t border-[rgb(var(--border))] flex justify-end">
           <button
             onClick={onClose}
+            aria-label="Zamknij podgląd"
             className="px-4 py-1.5 text-[12px] font-medium bg-[rgb(var(--accent))]/20 text-[rgb(var(--accent))] rounded-lg hover:bg-[rgb(var(--accent))]/30 transition-colors cursor-pointer"
           >
             Zamknij

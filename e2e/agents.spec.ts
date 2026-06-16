@@ -2,16 +2,15 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Agenci — podstawowy przepływ E2E', () => {
 
-  test('powinien wyświetlić panel agentów', async ({ page }) => {
+  test('powinien przełączyć widok na Agents', async ({ page }) => {
     await page.goto('/');
-    // Panel agentów — szukamy znanego tekstu
-    await expect(page.locator('text=Agent').first()).toBeVisible();
+    await page.getByText('Agents').first().click();
+    // W widoku agents powinien być widoczny przycisk Kill Switch
+    await expect(page.getByText('Kill Switch').first()).toBeVisible();
   });
 
-  test('powinien wyświetlić KillSwitchBanner po uruchomieniu agenta', async ({ page }) => {
+  test('powinien wyświetlać przycisk Kill Switch w domyślnym widoku', async ({ page }) => {
     await page.goto('/');
-    // Sprawdzamy czy komponent istnieje w DOM (ukryty domyślnie)
-    const killBanner = page.locator('[data-testid="kill-switch-banner"]');
-    await expect(killBanner).toBeAttached();
+    await expect(page.getByText('Kill Switch').first()).toBeVisible();
   });
 });

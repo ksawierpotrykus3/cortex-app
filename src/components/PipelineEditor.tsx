@@ -4,11 +4,17 @@
 // ============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Save, Trash2, Play, Square, Settings, GripVertical, Bot, FileText, SplitSquareVertical, Network, GitBranch, Activity } from 'lucide-react';
+import {
+  Plus, Save, Trash2, Play, Square, Settings, GripVertical,
+  Bot, FileText, SplitSquareVertical, Network, GitBranch, Activity,
+  Globe, Download, Camera, Search, Edit3, ChevronDown, ChevronRight,
+  TestTube, AlertCircle, CheckCircle
+} from 'lucide-react';
 import { Pipeline, WorkflowNode, PortConnection, DryRunResult } from '../shared/types/schema';
 import { uid } from '../utils/ids';
 import { TemplateAutocomplete } from "./TemplateAutocomplete";
 import { DryRunResultModal } from "./DryRunResultModal";
+import { PIPELINE_TEMPLATES, PipelineTemplate, detectVariables } from '../shared/templates/pipelineTemplates';
 
 // === Props =================================================================
 interface PipelineEditorProps {
@@ -44,6 +50,20 @@ const nodeTypeMeta: Record<string, { label: string; icon: React.ReactNode; color
   'browser-automate': { label: 'Przeglądarka', icon: <Activity className="w-3.5 h-3.5" />, color: '#2dd4bf' },
 };
 
+// === Ikonki dla templatów ==================================================
+function templateIcon(iconName: string): React.ReactNode {
+  const icons: Record<string, React.ReactNode> = {
+    Globe: <Globe className="w-4 h-4" />,
+    Download: <Download className="w-4 h-4" />,
+    Camera: <Camera className="w-4 h-4" />,
+    Search: <Search className="w-4 h-4" />,
+    Edit3: <Edit3 className="w-4 h-4" />,
+    GitBranch: <GitBranch className="w-4 h-4" />,
+    FileText: <FileText className="w-4 h-4" />,
+  };
+  return icons[iconName] || <Settings className="w-4 h-4" />;
+}
+
 // === Component =============================================================
 export function PipelineEditor({
   pipelines,
@@ -57,6 +77,9 @@ export function PipelineEditor({
   const [newNodeType, setNewNodeType] = useState<string>('llm-agent');
   const [showNewNode, setShowNewNode] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [testResult, setTestResult] = useState<{ nodeId: string; success: boolean; message: string } | null>(null);
+  const [testingNodeId, setTestingNodeId] = useState<string | null>(null);
 
   const selected = pipelines.find(p => p.id === selectedId) || null;
 
@@ -69,7 +92,34 @@ export function PipelineEditor({
     }
   }, [selected]);
 
-  const handleNew = () => {
+  // =========================================================================
+  // Template handling
+  // =========================================================================
+  const handleNewFromTemplate = useCallback((template: PipelineTemplate) => {
+    const data = template.create();
+    const now = new Date().toISOString();
+    const pipeline: Pipeline = {
+      id: uid(),
+      name: data.name,
+      description: data.description,
+      nodes: data.nodes,
+      connections: data.connections.map((c, i) => ({
+        id: `conn_${uid()}`,
+        sourceNodeId: c.sourceNodeId,
+        sourcePort: 'output',
+        targetNodeId: c.targetNodeId,
+        targetPort: 'input',
+      })),
+      createdAt: now,
+      updatedAt: now,
+      isHeadless: false,
+    };
+    onSavePipeline(pipeline);
+    setSelectedId(pipeline.id);
+    setShowTemplates(false);
+  }, [onSavePipeline]);
+
+  const handleNewEmpty = () => {
     const pipeline = createEmptyPipeline();
     onSavePipeline(pipeline);
     setSelectedId(pipeline.id);
@@ -159,20 +209,84 @@ export function PipelineEditor({
     });
   };
 
+  // =========================================================================
+  // Test browser macro from UI
+  // =========================================================================
+  const handleTestMacro = async (node: WorkflowNode) => {
+    if (!node.config?.steps) return;
+    setTestingNodeId(node.id);
+    setTestResult(null);
+    try {
+      const bridge = (window as any).nexusBridge as any;
+      if (bridge?.browserTestMacro) {
+        const result = await bridge.browserTestMacro({
+          steps: node.config.steps,
+          inputs: node.config.inputs || {},
+        });
+        setTestResult({
+          nodeId: node.id,
+          success: result.success,
+          message: result.success
+            ? `Sukces! ${result.output?.text ? `Tekst: ${result.output.text.slice(0, 200)}...` : 'Sprawdź output w logach.'}`
+            : `Błąd: ${result.error || 'Nieznany błąd'}`,
+        });
+      }
+    } catch (err: any) {
+      setTestResult({
+        nodeId: node.id,
+        success: false,
+        message: `Błąd: ${err.message || String(err)}`,
+      });
+    }
+    setTestingNodeId(null);
+  };
+
   const isRunning = runningPipelineId === selectedId;
 
   return (
     <div className="h-full flex bg-[rgb(var(--background))]">
       {/* Left: Pipeline list */}
       <div className="w-56 border-r border-[rgb(var(--border))] flex flex-col shrink-0">
-        <div className="px-3 py-3 border-b border-[rgb(var(--border))]">
+        <div className="px-3 py-3 border-b border-[rgb(var(--border))] space-y-2">
           <button
-            onClick={handleNew}
+            onClick={handleNewEmpty}
             className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[rgb(var(--accent))] text-white rounded-lg text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
           >
             <Plus size={14} />
             Nowy pipeline
           </button>
+          <button
+            onClick={() => setShowTemplates(!showTemplates)}
+            className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+              showTemplates
+                ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))] bg-[rgb(var(--accent))]/5'
+                : 'border-[rgb(var(--border))] text-[rgb(var(--text-secondary))] hover:border-[rgb(var(--accent))]/50'
+            }`}
+          >
+            {showTemplates ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+            Szablony
+          </button>
+
+          {/* Template list */}
+          {showTemplates && (
+            <div className="max-h-60 overflow-y-auto space-y-1 pt-1">
+              {PIPELINE_TEMPLATES.map(tpl => (
+                <button
+                  key={tpl.id}
+                  onClick={() => handleNewFromTemplate(tpl)}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left hover:bg-[rgb(var(--border))]/30 transition-colors cursor-pointer"
+                >
+                  <span className="text-[rgb(var(--accent))] shrink-0">
+                    {templateIcon(tpl.icon)}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="font-medium truncate text-[rgb(var(--text-main))]">{tpl.name}</div>
+                    <div className="text-[10px] text-[rgb(var(--text-secondary))] truncate">{tpl.description.slice(0, 60)}...</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {pipelines.length === 0 ? (
@@ -258,6 +372,7 @@ export function PipelineEditor({
               </button>
               <button
                 onClick={() => handleDelete(editing.id)}
+                aria-label="Usuń pipeline"
                 className="p-1.5 rounded text-[rgb(var(--text-secondary))] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
               >
                 <Trash2 size={14} />
@@ -266,12 +381,39 @@ export function PipelineEditor({
 
             {/* Nodes grid */}
             <div className="flex-1 overflow-y-auto p-4">
+              {/* Test result banner */}
+              {testResult && (
+                <div className={`mb-3 px-3 py-2 rounded-lg text-xs flex items-center gap-2 ${
+                  testResult.success
+                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                }`}>
+                  {testResult.success
+                    ? <CheckCircle size={14} />
+                    : <AlertCircle size={14} />
+                  }
+                  <span className="font-mono">{testResult.message}</span>
+                  <button
+                    onClick={() => setTestResult(null)}
+                    className="ml-auto text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text-main))] cursor-pointer"
+                    aria-label="Zamknij wynik testu"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               {/* Node list */}
               <div className="space-y-2">
                 {editing.nodes.map((node, idx) => {
                   const meta = nodeTypeMeta[node.type] || { label: node.type, icon: <Settings className="w-3.5 h-3.5" />, color: '#888' };
                   const incomingConns = editing.connections.filter(c => c.targetNodeId === node.id);
                   const outgoingConns = editing.connections.filter(c => c.sourceNodeId === node.id);
+
+                  // Detekcja zmiennych dla browser-automate
+                  const detectedVars = node.type === 'browser-automate'
+                    ? detectVariables(node.config?.steps || [])
+                    : [];
 
                   return (
                     <div key={node.id} className="border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--bg-surface))]">
@@ -309,6 +451,7 @@ export function PipelineEditor({
                         <button
                           onClick={() => handleRemoveNode(node.id)}
                           className="p-0.5 rounded text-[rgb(var(--text-secondary))] hover:text-red-400 cursor-pointer"
+                          aria-label="Usuń node"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -348,20 +491,49 @@ export function PipelineEditor({
                         {node.type === 'browser-automate' && (
                           <>
                             <div>
-                              <span className="text-[10px] text-[rgb(var(--text-secondary))]">Skrypt Playwright (JSON):</span>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] text-[rgb(var(--text-secondary))]">Skrypt Playwright (JSON):</span>
+                                <button
+                                  onClick={() => handleTestMacro(node)}
+                                  disabled={testingNodeId === node.id}
+                                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium transition-colors cursor-pointer ${
+                                    testingNodeId === node.id
+                                      ? 'bg-yellow-500/20 text-yellow-400'
+                                      : 'bg-[rgb(var(--border))]/30 text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--accent))]'
+                                  }`}
+                                >
+                                  <TestTube size={10} />
+                                  {testingNodeId === node.id ? 'Testowanie...' : 'Testuj'}
+                                </button>
+                              </div>
                               <textarea
                                 value={node.config?.steps ? JSON.stringify(node.config.steps, null, 2) : ''}
                                 onChange={e => {
                                   try {
                                     const steps = JSON.parse(e.target.value);
                                     handleUpdateNode(node.id, { config: { ...node.config, steps } });
-                                  } catch { /* invalid JSON — ignore */ }
+                                  } catch (e) { console.warn('[PipelineEditor] Invalid steps JSON', e); }
                                 }}
-                                className="w-full mt-1 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[11px] font-mono outline-none resize-none"
+                                className="w-full bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded px-2 py-1 text-[11px] font-mono outline-none resize-none"
                                 rows={6}
                                 placeholder='[{ "action": "GOTO", "url": "https://..." }]'
                               />
                             </div>
+
+                            {/* Wykryte zmienne */}
+                            {detectedVars.length > 0 && (
+                              <div className="bg-blue-500/5 border border-blue-500/20 rounded px-2 py-1.5">
+                                <span className="text-[9px] text-blue-400 font-medium">Wykryte zmienne:</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {detectedVars.map(v => (
+                                    <span key={v} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono">
+                                      {`{{${v}}}`}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             <div>
                               <span className="text-[10px] text-[rgb(var(--text-secondary))]">Zmienne wejściowe (JSON):</span>
                               <textarea
@@ -487,6 +659,18 @@ export function PipelineEditor({
               <p className="text-[11px] opacity-50 mt-1">
                 Pipeline łączy agentów w łańcuchy — output jednego jest inputem następnego
               </p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-md mx-auto">
+                {PIPELINE_TEMPLATES.slice(0, 4).map(tpl => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => handleNewFromTemplate(tpl)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs border border-[rgb(var(--border))] hover:border-[rgb(var(--accent))]/50 hover:bg-[rgb(var(--accent))]/5 transition-colors cursor-pointer"
+                  >
+                    <span className="text-[rgb(var(--accent))]">{templateIcon(tpl.icon)}</span>
+                    <span>{tpl.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

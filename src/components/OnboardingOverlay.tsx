@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, ArrowRight, ChevronLeft, Zap, GitBranch, Shield, Sparkles, Workflow, Bot, Network } from "lucide-react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface OnboardingOverlayProps {
   open: boolean;
@@ -94,11 +95,13 @@ export function OnboardingOverlay({ open, onClose, onComplete }: OnboardingOverl
 
   if (!open) return null;
 
+  const focusTrapRef = useFocusTrap(open);
+
   const StepIcon = STEPS[step].icon;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-2xl shadow-2xl w-[480px] overflow-hidden">
+    <div ref={focusTrapRef} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" aria-label="Samouczek Nexus" className="bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-2xl shadow-2xl w-[480px] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
           <div className="flex items-center gap-2">
@@ -107,6 +110,7 @@ export function OnboardingOverlay({ open, onClose, onComplete }: OnboardingOverl
           </div>
           <button
             onClick={() => { onComplete(); onClose(); }}
+            aria-label="Zamknij"
             className="p-1 rounded-lg text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--bg-elevated))] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -118,7 +122,7 @@ export function OnboardingOverlay({ open, onClose, onComplete }: OnboardingOverl
           <div className="flex gap-1.5">
             {Array.from({ length: total }).map((_, i) => (
               <div
-                key={i}
+                key={`dot-${i}`}
                 className={`h-1 flex-1 rounded-full transition-colors ${
                   i <= step ? 'bg-[rgb(var(--accent))]' : 'bg-[rgb(var(--border))]'
                 }`}

@@ -36,7 +36,7 @@ export function RightPanel({
         <h3 className="text-[15px] font-medium text-[rgb(var(--text-main))]">
           {state === "axioms" ? "Nexus Axioms" : "Properties"}
         </h3>
-        <button onClick={onClose} className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--border))] p-1 rounded transition-colors cursor-pointer">
+        <button onClick={onClose} aria-label="Zamknij panel" className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--border))] p-1 rounded transition-colors cursor-pointer">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -86,7 +86,7 @@ function AxiomsPanelContent({
        </div>
        
        <div className="shrink-0 mb-4 bg-[rgb(var(--background))]">
-           <button onClick={handleAddAxiom} className="w-full py-2.5 rounded-xl text-[rgb(var(--background))] bg-[rgb(var(--text-main))] hover:bg-[rgb(var(--text-muted))] transition-colors shadow-sm text-[13px] font-medium flex items-center justify-center gap-2 cursor-pointer tracking-wide">
+           <button onClick={handleAddAxiom} aria-label="Utwórz nowy aksjomat" className="w-full py-2.5 rounded-xl text-[rgb(var(--background))] bg-[rgb(var(--text-main))] hover:bg-[rgb(var(--text-muted))] transition-colors shadow-sm text-[13px] font-medium flex items-center justify-center gap-2 cursor-pointer tracking-wide">
              <Plus className="w-4 h-4" />
              Create New Axiom
            </button>
@@ -99,6 +99,7 @@ function AxiomsPanelContent({
                <span className="bg-[rgb(var(--border))]/50 px-2 py-0.5 rounded text-[11px] tracking-wide uppercase text-[rgb(var(--text-muted))]">Rule #{idx + 1}</span>
                <button 
                  onClick={() => handleDeleteAxiom(axiom.id)}
+                 aria-label="Usuń aksjomat"
                  className="text-[rgb(var(--text-muted))] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 rounded-md hover:bg-[rgb(var(--background))]"
                >
                  <X className="w-3.5 h-3.5" />
@@ -212,6 +213,7 @@ function PropertiesPanelContent({
               onClick={() => {
                 onNodeUpdate?.(selectedNode.id, { imageAttachments: [] });
               }}
+              aria-label="Wyczyść wszystkie obrazy"
               className="text-[rgb(var(--text-muted))] hover:text-red-400 text-[12px] cursor-pointer"
             >
               Clear all
@@ -234,6 +236,7 @@ function PropertiesPanelContent({
                     const updated = (selectedNode.imageAttachments || []).filter(a => a.id !== att.id);
                     onNodeUpdate?.(selectedNode.id, { imageAttachments: updated });
                   }}
+                  aria-label="Usuń obraz"
                   className="text-[rgb(var(--text-muted))] hover:text-red-400 p-1 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -266,6 +269,7 @@ function PropertiesPanelContent({
                     onClick={() => onLinkDelete?.(link)}
                     className="text-[rgb(var(--text-muted))] hover:text-red-400 p-1 rounded transition-colors cursor-pointer"
                     title="Remove link"
+                    aria-label="Usuń połączenie"
                   >
                     <Unlink className="w-3.5 h-3.5" />
                   </button>
@@ -292,6 +296,7 @@ function PropertiesPanelContent({
                 };
                 onNodeUpdate?.(selectedNode.id, { annotations: [...(selectedNode.annotations || []), newAnn] });
              }}
+             aria-label="Dodaj adnotację"
              className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer p-1 rounded hover:bg-[rgb(var(--border))]"
           >
              <Plus className="w-4 h-4" />
@@ -322,6 +327,7 @@ function PropertiesPanelContent({
                           const updated = (selectedNode.annotations || []).filter(a => a.id !== ann.id);
                           onNodeUpdate?.(selectedNode.id, { annotations: updated });
                        }}
+                       aria-label="Usuń adnotację"
                        className="text-[rgb(var(--text-muted))] hover:text-red-400 p-1 rounded-md transition-colors cursor-pointer"
                     >
                        <X className="w-4 h-4" />
@@ -348,6 +354,7 @@ function PropertiesPanelContent({
       <div className="mt-8 pt-4 w-full shrink-0 mb-6">
         <button 
            onClick={() => onNodeDelete?.(selectedNode.id)} 
+           aria-label="Usuń węzeł"
            className="w-full py-2.5 bg-[rgb(var(--background))] hover:bg-red-500/10 border border-[rgb(var(--border))] hover:border-red-500/30 text-red-500 text-[13px] font-medium transition-colors cursor-pointer rounded-lg shadow-sm flex items-center justify-center gap-2"
         >
           <Trash2 className="w-4 h-4" /> Delete Node

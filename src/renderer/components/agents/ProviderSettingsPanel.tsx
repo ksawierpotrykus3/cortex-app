@@ -5,8 +5,9 @@
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Key, Check, AlertCircle, RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { X, Key, Check, AlertCircle, RefreshCw, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { ProviderAuthConfig, AIProvider } from '../../../shared/types/schema';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
 // === Props =================================================================
 interface ProviderSettingsPanelProps {
@@ -29,6 +30,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
   }, []);
   const [newCustomUrl, setNewCustomUrl] = useState('');
   const [newCustomKey, setNewCustomKey] = useState('');
+  const modalRef = useFocusTrap(isOpen);
 
   // Load configs on mount
   useEffect(() => {
@@ -71,45 +73,48 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
   const handleTest = async (label: string) => {
     setTestingLabel(label);
     setTestResults(prev => ({ ...prev, [label]: { success: false } }));
-
-    const bridge = window.nexusBridge;
-    if (!bridge?.testConnection) return;
-
-    const result = await bridge.testConnection({ label });
-    setTestResults(prev => ({ ...prev, [label]: result }));
-    setTestingLabel(null);
+    try {
+      const bridge = window.nexusBridge;
+      if (!bridge?.testConnection) return;
+      const result = await bridge.testConnection({ label });
+      if (mountedRef.current) setTestResults(prev => ({ ...prev, [label]: result }));
+    } catch (err) {
+      if (mountedRef.current) setTestResults(prev => ({ ...prev, [label]: { success: false, error: err instanceof Error ? err.message : 'Connection failed' } }));
+    } finally {
+      if (mountedRef.current) setTestingLabel(null);
+    }
   };
 
   const handleAddCustom = async () => {
     if (!newCustomUrl.trim()) return;
-
-    // Create a custom OpenRouter/Ollama provider
-    const config: ProviderAuthConfig = {
-      provider: newCustomUrl.includes('ollama') ? AIProvider.OLLAMA : AIProvider.OPENROUTER,
-      label: `Custom (${new URL(newCustomUrl).hostname})`,
-      apiKey: newCustomKey || '',
-      baseUrl: newCustomUrl.replace(/\/+$/, '') + '/v1',
-      models: ['custom-model'],
-      isBuiltin: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const bridge = window.nexusBridge;
-    if (bridge?.upsertProviderConfig) {
-      await bridge.upsertProviderConfig({ config });
-      await loadConfigs();
+    try {
+      const config: ProviderAuthConfig = {
+        provider: newCustomUrl.includes('ollama') ? AIProvider.OLLAMA : AIProvider.OPENROUTER,
+        label: `Custom (${new URL(newCustomUrl).hostname})`,
+        apiKey: newCustomKey || '',
+        baseUrl: newCustomUrl.replace(/\/+$/, '') + '/v1',
+        models: ['custom-model'],
+        isBuiltin: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const bridge = window.nexusBridge;
+      if (bridge?.upsertProviderConfig) {
+        await bridge.upsertProviderConfig({ config });
+        await loadConfigs();
+      }
+      setNewCustomUrl('');
+      setNewCustomKey('');
+    } catch (err) {
+      console.error('[ProviderSettingsPanel] Failed to add custom provider:', err);
     }
-
-    setNewCustomUrl('');
-    setNewCustomKey('');
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[600px] max-h-[80vh] bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-xl shadow-2xl flex flex-col">
+    <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" aria-label="Klucze API Providerów" className="w-[600px] max-h-[80vh] bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-xl shadow-2xl flex flex-col">
         {/* Header */}
         <div className="px-5 py-4 border-b border-[rgb(var(--border))] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -118,6 +123,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
           </div>
           <button
             onClick={onClose}
+            aria-label="Zamknij"
             className="p-1.5 rounded-lg text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -149,6 +155,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
                     <button
                       onClick={() => handleTest(cfg.label)}
                       disabled={isTesting || !hasKey}
+                      aria-label="Testuj połączenie"
                       className="p-1.5 rounded-lg text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent))]/10 transition-colors disabled:opacity-30 cursor-pointer"
                       title="Testuj połączenie"
                     >
@@ -161,6 +168,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
                         onClick={async () => {
                           // For now just visual — full delete via IPC
                         }}
+                        aria-label="Usuń"
                         className="p-1.5 rounded-lg text-[rgb(var(--text-secondary))] hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
                         title="Usuń"
                       >
@@ -200,6 +208,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
                     <button
                       onClick={() => handleSetApiKey(cfg.label)}
                       disabled={!editingKeys[cfg.label]?.trim() || isSaving}
+                      aria-label="Zapisz klucz"
                       className="px-3 py-1.5 text-[12px] font-medium bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))] rounded-lg hover:bg-[rgb(var(--accent))]/25 transition-colors disabled:opacity-30 cursor-pointer"
                     >
                       {isSaving ? 'Zapisuję...' : 'Zapisz'}
@@ -255,6 +264,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
               <button
                 onClick={handleAddCustom}
                 disabled={!newCustomUrl.trim()}
+                aria-label="Dodaj własny endpoint"
                 className="px-3 py-1.5 text-[12px] font-medium bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))] rounded-lg hover:bg-[rgb(var(--accent))]/25 transition-colors disabled:opacity-30 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -273,6 +283,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
           </span>
           <button
             onClick={onClose}
+            aria-label="Zamknij okno"
             className="px-4 py-1.5 text-[12px] font-medium bg-[rgb(var(--accent))]/20 text-[rgb(var(--accent))] rounded-lg hover:bg-[rgb(var(--accent))]/30 transition-colors cursor-pointer"
           >
             Zamknij

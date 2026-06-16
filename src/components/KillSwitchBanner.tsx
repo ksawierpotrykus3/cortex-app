@@ -64,7 +64,7 @@ export function KillSwitchBanner({ className = '' }: KillSwitchBannerProps) {
         <div className={`flex items-center gap-3 px-4 py-2 bg-red-600/20 border-b border-red-500/40 ${className}`}>
           <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
           <span className="text-[12px] text-red-300 flex-1">
-            <strong>Kill Switch aktywny</strong>
+            <strong>Kill Switch active</strong>
             {state.reason && ` — ${state.reason}`}
             {state.killedAt && ` (${new Date(state.killedAt).toLocaleTimeString()})`}
           </span>
@@ -74,12 +74,12 @@ export function KillSwitchBanner({ className = '' }: KillSwitchBannerProps) {
             className="px-3 py-1 text-[11px] font-medium bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-40 cursor-pointer"
           >
             <ShieldOff size={14} className="inline mr-1" />
-            Dezaktywuj
+            Deactivate
           </button>
         </div>
       )}
 
-      {/* Przycisk Kill Switch w headerze (zawsze widoczny) */}
+      {/* Kill Switch button in header (always visible) */}
       <button
         onClick={state.active ? handleDeactivate : handleActivate}
         disabled={loading}
@@ -90,7 +90,7 @@ export function KillSwitchBanner({ className = '' }: KillSwitchBannerProps) {
               ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
               : 'bg-[rgb(var(--border))] text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border border-transparent'
         }`}
-        title={state.active ? 'Kill Switch aktywny — kliknij by dezaktywować' : hasActive ? 'Aktywne procesy — kliknij by zatrzymać wszystko' : 'Emergency stop'}
+        title={state.active ? 'Kill Switch active — click to deactivate' : hasActive ? 'Active processes — click to stop all' : 'Emergency stop'}
       >
         {state.active ? (
           <ShieldOff size={14} />

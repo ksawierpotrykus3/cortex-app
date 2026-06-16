@@ -84,6 +84,7 @@ function NexusCanvasInner({
   // #11: Glob filter
   const [globFilter, setGlobFilter] = useState('');
   const [showGlobFilter, setShowGlobFilter] = useState(false);
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // --- Teleport to project ---
   const panToProject = useCallback((projectId: string) => {
@@ -694,7 +695,7 @@ function NexusCanvasInner({
               placeholder="Filtruj po tagu..."
               className="w-40 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg px-3 py-1.5 text-[12px] text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] outline-none focus:border-[rgb(var(--accent))]"
             />
-            <button onClick={() => { setShowGlobFilter(false); setTagFilter(''); }} className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer">
+            <button aria-label="Zamknij filtr" onClick={() => { setShowGlobFilter(false); setTagFilter(''); }} className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer">
               <X size={14} />
             </button>
           </div>
@@ -712,7 +713,7 @@ function NexusCanvasInner({
                key={env.id}
                initial={{ opacity: 0 }}
                animate={{ opacity: 1, x: env.x, y: env.y, width: env.width, height: env.height }}
-               transition={{ type: "spring", bounce: 0, duration: 0.5 }}
+               transition={{ type: prefersReducedMotion ? "tween" : "spring", bounce: 0, duration: prefersReducedMotion ? 0 : 0.5 }}
                className="absolute top-0 left-0 border-2 border-dashed border-[rgb(var(--border))] rounded-3xl pointer-events-none bg-[rgb(var(--border))]/10"
              >
                <div className="absolute -top-3 left-6 bg-[rgb(var(--background))] px-3 py-0.5 text-xs font-semibold text-[rgb(var(--accent))] border border-[rgb(var(--border))] rounded-full pointer-events-auto capitalize shadow-sm z-0">
@@ -740,7 +741,12 @@ function NexusCanvasInner({
                   strokeWidth="14"
                   stroke="transparent"
                   style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-                  onClick={() => setLinks(prev => prev.filter(l => !(l.source === link.source && l.target === link.target)))}
+                  onClick={() => {
+                    const confirmed = window.confirm('Usuń to połączenie?');
+                    if (confirmed) {
+                      setLinks(prev => prev.filter(l => !(l.source === link.source && l.target === link.target)));
+                    }
+                  }}
                   onMouseEnter={() => setHoveredLink(idx)}
                   onMouseLeave={() => setHoveredLink(null)}
                 />
@@ -797,7 +803,7 @@ function NexusCanvasInner({
             isDragging={draggedNode?.id === node.id}
             onSelect={(e) => {
                 e.stopPropagation();
-                if (e.shiftKey) e.preventDefault(); // Dodaj to
+                if (e.shiftKey) e.preventDefault(); // Let shift-select through
                 if (linkingFrom && linkingFrom !== node.id) {
                     setLinks(prev => {
                         const exists = prev.find(l => (l.source === linkingFrom && l.target === node.id) || (l.source === node.id && l.target === linkingFrom));
@@ -823,7 +829,7 @@ function NexusCanvasInner({
             onDragStart={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (e.shiftKey) e.preventDefault(); // Dodaj to
+                if (e.shiftKey) e.preventDefault(); // Let shift-select through
                 if (linkingFrom) {
                     if (linkingFrom !== node.id) {
                         setLinks(prev => {
@@ -1034,19 +1040,24 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
   const [annotationCat, setAnnotationCat] = useState<'comment' | 'raw-fragment' | 'issue'>('comment');
   const [showSettings, setShowSettings] = useState(false);
 
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const cardWidth = node.width || 256;
   const fontFamilyClass = node.fontFamily === 'serif' ? 'font-serif' : node.fontFamily === 'mono' ? 'font-mono' : 'font-sans';
 
+  // Per-card ResizeObserver with ref callback to avoid dependency churn
+  const cardResizeCallbackRef = useRef(onHeightChange);
+  cardResizeCallbackRef.current = onHeightChange;
+
   useEffect(() => {
-      if (!cardRef.current) return;
-      const observer = new ResizeObserver(() => {
-          if (cardRef.current) {
-              onHeightChange(cardRef.current.offsetHeight);
-          }
-      });
-      observer.observe(cardRef.current);
-      return () => observer.disconnect();
-  }, [onHeightChange]);
+    if (!cardRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        cardResizeCallbackRef.current(entry.contentRect.height);
+      }
+    });
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleResizeStart = (e: React.PointerEvent) => {
       e.stopPropagation();
@@ -1085,7 +1096,7 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
         data-node-id={node.id}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
-        transition={isDragging ? { type: "tween", duration: 0 } : { type: "spring", bounce: 0.1, duration: 0.2 }}
+        transition={isDragging ? { type: "tween", duration: 0 } : { type: prefersReducedMotion ? "tween" : "spring", bounce: 0.1, duration: prefersReducedMotion ? 0 : 0.2 }}
         style={{ width: cardWidth, height: nodeHeight || 300 }}
         className="absolute top-0 left-0 z-10 overflow-hidden rounded-xl shadow-lg border border-[rgb(var(--border))] group/img cursor-pointer"
         onPointerDown={onSelect}
@@ -1114,7 +1125,7 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
       data-node-id={node.id}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
-      transition={isDragging ? { type: "tween", duration: 0 } : { type: "spring", bounce: 0.1, duration: 0.2 }}
+      transition={isDragging ? { type: "tween", duration: 0 } : { type: prefersReducedMotion ? "tween" : "spring", bounce: 0.1, duration: prefersReducedMotion ? 0 : 0.2 }}
       style={{ width: cardWidth, height: nodeHeight }}
       className={`absolute top-0 left-0 bg-[rgb(var(--panel))] text-[13px] flex flex-col z-10 pointer-events-auto group shadow-lg rounded-xl overflow-visible touch-none
         border ${isSpecial ? (node.accent === 'blue' ? 'border-[rgb(var(--accent))] shadow-[0_0_15px_rgba(45,212,191,0.1)]' : 'border-purple-400/50') : 'border-[rgb(var(--border))]'}
@@ -1126,20 +1137,28 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
     >
       {/* Input Handle (Left side) */}
       <div 
+        role="button"
+        tabIndex={0}
+        aria-label="Utwórz połączenie przychodzące"
         className="absolute -left-2.5 top-[19px] w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         onPointerDown={(e) => {
             onLinkStart(e);
         }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLinkStart(e as any); } }}
       >
          <div className="w-2.5 h-2.5 bg-[rgb(var(--background))] border-[1.5px] border-[rgb(var(--text-muted))] rounded-full pointer-events-none" />
       </div>
 
       {/* Output Handle (Right side) */}
       <div 
+        role="button"
+        tabIndex={0}
+        aria-label="Utwórz połączenie wychodzące"
         className="absolute -right-2.5 top-[19px] w-6 h-6 flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity cursor-crosshair z-20"
         onPointerDown={(e) => {
             onLinkStart(e);
         }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLinkStart(e as any); } }}
       >
          <div className="w-3 h-3 bg-[rgb(var(--background))] border-2 border-[rgb(var(--accent))] rounded-full hover:scale-125 transition-transform pointer-events-none" />
       </div>
@@ -1156,12 +1175,17 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
       >
         {/* Collapse toggle button */}
         <div 
+          role="button"
+          tabIndex={0}
+          aria-label={isCollapsed ? "Rozwiń węzeł" : "Zwiń węzeł"}
+          aria-expanded={!isCollapsed}
           className="flex items-center gap-1 cursor-pointer shrink-0 mr-1"
           onPointerDown={(e) => {
             e.stopPropagation();
             onUpdateNode?.(node.id, { collapsed: !isCollapsed });
           }}
-          title={isCollapsed ? "Expand node" : "Collapse node"}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onUpdateNode?.(node.id, { collapsed: !isCollapsed }); } }}
+          title={isCollapsed ? "Rozwiń węzeł" : "Zwiń węzeł"}
         >
           <svg width="10" height="10" viewBox="0 0 10 10" className={`transition-transform ${isCollapsed ? '' : 'rotate-90'}`}>
             <path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -1188,9 +1212,9 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
                  <span className="font-semibold text-[13px] text-[rgb(var(--text-main))] truncate select-none">{node.title}</span>
                  {node.thoughtMarkers && node.thoughtMarkers.length > 0 && (
                    <div className="flex gap-1 shrink-0">
-                     {node.thoughtMarkers.map((m, i) => (
+                     {node.thoughtMarkers.map(m => (
                        <div 
-                         key={i} 
+                         key={m} 
                          title={`Thought status: ${m}`}
                          className={`w-1.5 h-1.5 rounded-full ${
                            m === 'certain' ? 'bg-orange-400' : 
@@ -1239,14 +1263,16 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
           <span className="text-[10px] text-[rgb(var(--text-muted))] hidden group-hover:block opacity-70">
              {node.id.substring(0,4)}
           </span>
-          <span
-             className="w-4 h-4 text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer flex items-center justify-center"
-             onPointerDown={(e) => { e.stopPropagation(); setIsAddingAnnotation(!isAddingAnnotation); setShowSettings(false); }}
-             title="Add inline annotation"
-          >+</span>
-          <span
-             className="w-4 h-4 text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
-             onPointerDown={(e) => {
+          <button
+             aria-label="Dodaj adnotację"
+             className="w-4 h-4 text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer flex items-center justify-center bg-transparent border-none p-0"
+             onClick={(e) => { e.stopPropagation(); setIsAddingAnnotation(!isAddingAnnotation); setShowSettings(false); }}
+             title="Dodaj adnotację"
+          >+</button>
+          <button
+             aria-label="Pokaż historię zmian"
+             className="w-4 h-4 text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center bg-transparent border-none p-0"
+             onClick={(e) => {
                e.stopPropagation();
                useDiffStore.getState().openDiff({
                  entityId: node.id,
@@ -1258,12 +1284,13 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
              title="Pokaż historię zmian"
           >
              <History size={12} />
-          </span>
-          <span
-             className={`w-4 h-4 transition-colors cursor-pointer flex items-center justify-center ${showSettings ? 'text-[rgb(var(--text-main))] opacity-100' : 'text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))]'}`}
-             onPointerDown={(e) => { e.stopPropagation(); setShowSettings(!showSettings); setIsAddingAnnotation(false); }}
-             title="Settings"
-          >...</span>
+          </button>
+          <button
+             aria-label="Ustawienia węzła"
+             className={`w-4 h-4 transition-colors cursor-pointer flex items-center justify-center bg-transparent border-none p-0 ${showSettings ? 'text-[rgb(var(--text-main))] opacity-100' : 'text-[rgb(var(--text-muted))] opacity-0 group-hover:opacity-100 hover:text-[rgb(var(--text-main))]'}`}
+             onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); setIsAddingAnnotation(false); }}
+             title="Ustawienia węzła"
+          >...</button>
           {showSettings && (
              <div className="absolute top-6 right-0 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg shadow-xl p-2 z-50 min-w-[140px]" onPointerDown={e => e.stopPropagation()}>
                 <div className="text-[10px] font-bold text-[rgb(var(--text-muted))] uppercase mb-1">Font Family</div>

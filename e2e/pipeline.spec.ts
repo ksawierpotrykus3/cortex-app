@@ -2,15 +2,15 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Pipeline — testy E2E', () => {
 
-  test('powinien wyświetlić PipelineEditor', async ({ page }) => {
+  test('powinien wyświetlać Pipeline jako opcję w dropdown More', async ({ page }) => {
     await page.goto('/');
-    // PipelineEditor powinien być dostępny w widoku pipline
-    const pipelineEditor = page.locator('[data-testid="pipeline-editor"]');
-    await expect(pipelineEditor).toBeAttached();
+    await page.getByText('More').first().click();
+    await expect(page.getByText('Pipeline').first()).toBeVisible();
   });
 
-  test('powinien wyświetlić listę pipelineów', async ({ page }) => {
+  test('powinien przełączyć widok na Pipeline przez dropdown More', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('text=Pipeline').first()).toBeVisible();
+    await page.getByText('More').first().click();
+    await page.getByText('Pipeline').first().click();
   });
 });

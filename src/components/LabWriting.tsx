@@ -789,9 +789,9 @@ const NoteEntry: React.FC<{
           {/* Thought Marker Circles */}
           {draft.thoughtMarkers && draft.thoughtMarkers.length > 0 && (
             <div className="flex gap-1 mt-1.5 flex-wrap justify-end max-w-full">
-              {draft.thoughtMarkers.map((m, i) => (
+              {draft.thoughtMarkers.map(m => (
                 <div 
-                  key={i} 
+                  key={m} 
                   title={`Thought status: ${m}`} 
                   className={`w-1.5 h-1.5 rounded-full ${
                     m === 'certain' ? 'bg-orange-400' : 

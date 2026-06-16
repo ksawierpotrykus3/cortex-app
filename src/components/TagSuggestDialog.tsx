@@ -7,6 +7,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Tags, Sparkles, Check, Search } from 'lucide-react';
 import { suggestTags, getTagsByCategory, TagSuggestion } from '../utils/tagEngine';
 import { NexusNode } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface TagSuggestDialogProps {
   nodes: NexusNode[];
@@ -99,7 +100,7 @@ export function TagSuggestDialog({ nodes, onApplyTags, open, onClose }: TagSugge
               Tagowanie notatek
             </h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--bg-elevated))] transition-colors cursor-pointer">
+          <button onClick={onClose} aria-label="Zamknij" className="p-1.5 rounded-lg text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--bg-elevated))] transition-colors cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>

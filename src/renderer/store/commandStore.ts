@@ -227,7 +227,7 @@ function buildCustomCommand(cc: CustomCommandData): Command {
   };
 }
 
-// === Global actions bridge — App.tsx ustawia referencje =====================
+// === Global actions bridge — set once from App.tsx ==========================
 let _globalActions: GlobalActionsRef = {};
 
 export interface GlobalActionsRef {
@@ -238,9 +238,9 @@ export interface GlobalActionsRef {
 }
 
 export function setGlobalActions(ref: GlobalActionsRef) {
-  _globalActions = ref;
+  _globalActions = Object.freeze({ ...ref });
 }
 
-export function getGlobalActions(): GlobalActionsRef {
+export function getGlobalActions(): Readonly<GlobalActionsRef> {
   return _globalActions;
 }

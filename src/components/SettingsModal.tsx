@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Save, HardDrive, Unplug, GitBranch } from "lucide-react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { ModalState } from "../types";
 import { del } from "idb-keyval";
 import { GitSettingsPanel } from "./GitSettingsPanel";
@@ -15,6 +16,8 @@ export function SettingsModal({
   geminiKey?: string;
   setGeminiKey?: (key: string) => void;
 }) {
+  const focusTrapRef = useFocusTrap(state === "settings");
+
   if (state !== "settings") return null;
 
   const [activeTab, setActiveTab] = useState<'general' | 'git'>('general');
@@ -41,15 +44,16 @@ export function SettingsModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-xl shadow-2xl w-[500px] overflow-hidden flex flex-col">
+    <div ref={focusTrapRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" aria-label="Ustawienia" className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-xl shadow-2xl w-[500px] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-[rgb(var(--border))]">
-          <h2 className="text-lg font-bold text-white tracking-wide">
+          <h2 className="text-lg font-bold text-[rgb(var(--text-main))] tracking-wide">
             Settings & Extensions
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-200 transition-colors cursor-pointer"
+            aria-label="Zamknij"
+            className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -64,7 +68,7 @@ export function SettingsModal({
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))]'
-                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  : 'border-transparent text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-secondary))]'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -77,7 +81,7 @@ export function SettingsModal({
           {activeTab === 'general' && (
             <>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">
+                <label className="text-sm font-medium text-[rgb(var(--text-secondary))]">
                   Gemini API Key (For Vision/OCR)
                 </label>
                 <input 
@@ -85,7 +89,7 @@ export function SettingsModal({
                   value={geminiKey || ""}
                   onChange={(e) => setGeminiKey?.(e.target.value)}
                   placeholder="AI Studio API Key"
-                  className="w-full bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg px-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-gray-500 transition-colors"
+                  className="w-full bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-lg px-4 py-2 text-sm text-[rgb(var(--text-main))] focus:outline-none focus:border-[rgb(var(--text-secondary))] transition-colors"
                 />
                 <p className="text-[11px] text-[rgb(var(--text-muted))] mt-1">
                   Required for image processing and external AI agent behavior. Stored locally.
@@ -95,7 +99,7 @@ export function SettingsModal({
               <div className="pt-6 border-t border-[rgb(var(--border))]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-1">
+                    <h3 className="text-sm font-medium text-[rgb(var(--text-secondary))] flex items-center gap-2 mb-1">
                       <HardDrive className="w-4 h-4 text-emerald-500" />
                       Local File System
                     </h3>
@@ -126,7 +130,7 @@ export function SettingsModal({
         <div className="p-4 border-t border-[rgb(var(--border))] flex justify-end gap-3 bg-[rgb(var(--panel))]/30">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-[rgb(var(--text-muted))] hover:text-white transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer"
           >
             Cancel
           </button>

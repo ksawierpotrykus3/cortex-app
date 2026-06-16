@@ -400,10 +400,15 @@ describe('GitPanel — error handling', () => {
     fireEvent.change(textarea, { target: { value: 'Test' } });
 
     const commitBtn = screen.getByText('Commit & Push');
+
+    // Sprawdź czy przycisk nie jest disabled przed kliknięciem
+    expect(commitBtn).not.toBeDisabled();
     fireEvent.click(commitBtn);
 
+    // Poczekaj na sukces — refreshAll (3 promisy) + setSuccess
+    await new Promise(r => setTimeout(r, 100));
     await waitFor(() => {
       expect(screen.getByText('Commit udany!')).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
   });
 });

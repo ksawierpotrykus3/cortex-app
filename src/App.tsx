@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { LeftSidebar } from "./components/LeftSidebar";
 import { TopNavigation } from "./components/TopNavigation";
 import { NexusCanvas, NexusCanvasHandle } from "./components/NexusCanvas";
@@ -22,6 +22,7 @@ import { ExportModal } from "./components/ExportModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { LogViewer } from "./components/LogViewer";
 import { DraftZone } from "./components/DraftZone";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ViewMode, RightPanelState, ModalState, NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, FeedbackEntry, WikiArticle, Pipeline } from "./types";
 import { uid } from "./utils/ids";
 import { useFileSystemWatcher } from "./fs";
@@ -94,6 +95,26 @@ export function App() {
   const [runningPipelineId, setRunningPipelineId] = useState<string | null>(null);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+
+  // Shared workflow creation logic
+  const handleCreateWorkflow = useCallback(() => {
+    const now = new Date().toISOString();
+    const newWf: WorkflowDefinition = {
+      id: `wf_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: 'Nowy workflow',
+      description: '',
+      mode: 'sandbox',
+      trigger: { type: 'on_approve' },
+      conditions: null,
+      actions: [],
+      createdAt: now,
+      updatedAt: now,
+      runCount: 0,
+      lastRunAt: null,
+    };
+    setWorkflows((prev) => [...prev, newWf]);
+    setSelectedWorkflowId(newWf.id);
+  }, []);
   const [lastFeedbackAction, setLastFeedbackAction] = useState('');
   const [feedbackSelectedAgentId, setFeedbackSelectedAgentId] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -130,37 +151,38 @@ export function App() {
   const getSnapshots = useDiffStore((s) => s.getSnapshots);
 
   // F6.2: Sync workspace entities to main process
+  const workspaceEntities = useMemo(() => [
+    ...nodes.map(n => ({
+      id: n.id, type: 'node' as const, title: n.title, content: n.content,
+      projectId: n.projectId, updatedAt: new Date().toISOString(),
+    })),
+    ...tasks.map(t => ({
+      id: t.id, type: 'task' as const, title: t.title, content: t.description || '',
+      status: t.status, updatedAt: t.updatedAt || new Date().toISOString(),
+    })),
+    ...drafts.map(d => ({
+      id: d.id, type: 'draft' as const, title: d.content.slice(0, 80), content: d.content,
+      folderId: d.folderId, updatedAt: d.updatedAt || new Date().toISOString(),
+    })),
+    ...wikiArticles.map(w => ({
+      id: w.id, type: 'wiki' as const, title: w.title, content: w.content || '',
+      updatedAt: new Date().toISOString(),
+    })),
+  ], [nodes, tasks, drafts, wikiArticles]);
+
   const workspaceSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (workspaceSyncTimerRef.current) clearTimeout(workspaceSyncTimerRef.current);
     workspaceSyncTimerRef.current = setTimeout(() => {
-      const entities: any[] = [
-        ...nodes.map(n => ({
-          id: n.id, type: 'node' as const, title: n.title, content: n.content,
-          projectId: n.projectId, updatedAt: new Date().toISOString(),
-        })),
-        ...tasks.map(t => ({
-          id: t.id, type: 'task' as const, title: t.title, content: t.description || '',
-          status: t.status, updatedAt: t.updatedAt || new Date().toISOString(),
-        })),
-        ...drafts.map(d => ({
-          id: d.id, type: 'draft' as const, title: d.content.slice(0, 80), content: d.content,
-          folderId: d.folderId, updatedAt: d.updatedAt || new Date().toISOString(),
-        })),
-        ...wikiArticles.map(w => ({
-          id: w.id, type: 'wiki' as const, title: w.title, content: w.content || '',
-          updatedAt: new Date().toISOString(),
-        })),
-      ];
       const bridge = window.nexusBridge;
       if (bridge?.syncWorkspace) {
-        bridge.syncWorkspace({ entities });
+        bridge.syncWorkspace({ entities: workspaceEntities });
       }
-    }, 2000); // Debounce 2s
+    }, 2000);
     return () => {
       if (workspaceSyncTimerRef.current) clearTimeout(workspaceSyncTimerRef.current);
     };
-  }, [nodes, tasks, drafts, wikiArticles]);
+  }, [workspaceEntities]);
 
   // #12: Command Palette — globalny skrót Ctrl+K
   useEffect(() => {
@@ -280,8 +302,8 @@ export function App() {
       const isEmpty = !state.nodes?.length && !state.links?.length;
       
       if (isEmpty) {
-        // Auto-import was removed — contextIsolation: true blokuje require() w renderer
-        // Import z plików workspace będzie dodany w Phase 3 przez StorageEngine IPC
+        // First run: onboarding will be triggered by the overlay timer (500ms)
+        // No default data needed — user starts with a clean workspace
       }
       
       setNodes(state.nodes || []);
@@ -313,7 +335,7 @@ export function App() {
     setManuscriptMetas(newState.manuscriptMetas || []);
     setAxioms(newState.axioms || []);
     setGeminiKey(newState.geminiKey || "");
-    if (newState.changelog) changeLogRef.current = new (ChangeLog as any)(newState.changelog);
+    if (newState.changelog) changeLogRef.current = new ChangeLog(newState.changelog);
     if (newState.feedback) setFeedback(newState.feedback);
     if (newState.wiki) setWikiArticles(newState.wiki);
   });
@@ -327,7 +349,11 @@ export function App() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [nodes, links, tasks, drafts, axioms, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, feedback, wikiArticles, isLoaded]);
+  }, [
+    nodes, links, tasks, drafts, axioms, geminiKey,
+    manuscriptFolders, manuscriptTabs, manuscriptMetas,
+    feedback, wikiArticles, isLoaded,
+  ]);
 
   const setLabMode = (mode: "todo" | "writing") => {
     setActiveView(`lab-${mode}` as ViewMode);
@@ -498,6 +524,7 @@ export function App() {
   if (!isLoaded) return null;
 
   return (
+    <ErrorBoundary>
     <div className="flex flex-col h-screen text-[rgb(var(--text-main))] overflow-hidden bg-[rgb(var(--background))]">
       <TopNavigation
         activeView={activeView}
@@ -751,24 +778,7 @@ export function App() {
                   workflows={workflows}
                   selectedId={selectedWorkflowId}
                   onSelect={setSelectedWorkflowId}
-                  onCreateNew={() => {
-                    const now = new Date().toISOString();
-                    const newWf: WorkflowDefinition = {
-                      id: `wf_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                      name: 'Nowy workflow',
-                      description: '',
-                      mode: 'sandbox',
-                      trigger: { type: 'on_approve' },
-                      conditions: null,
-                      actions: [],
-                      createdAt: now,
-                      updatedAt: now,
-                      runCount: 0,
-                      lastRunAt: null,
-                    };
-                    setWorkflows((prev) => [...prev, newWf]);
-                    setSelectedWorkflowId(newWf.id);
-                  }}
+                  onCreateNew={handleCreateWorkflow}
                 />
               </div>
               <div className="flex-1 overflow-hidden">
@@ -810,24 +820,7 @@ export function App() {
                       console.error('[Workflow] Error:', err);
                     }
                   }}
-                  onCreateNew={() => {
-                    const now = new Date().toISOString();
-                    const newWf: WorkflowDefinition = {
-                      id: `wf_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                      name: 'Nowy workflow',
-                      description: '',
-                      mode: 'sandbox',
-                      trigger: { type: 'on_approve' },
-                      conditions: null,
-                      actions: [],
-                      createdAt: now,
-                      updatedAt: now,
-                      runCount: 0,
-                      lastRunAt: null,
-                    };
-                    setWorkflows((prev) => [...prev, newWf]);
-                    setSelectedWorkflowId(newWf.id);
-                  }}
+                  onCreateNew={handleCreateWorkflow}
                 />
               </div>
             </div>
@@ -971,6 +964,7 @@ export function App() {
         onClose={() => setShowShortcuts(false)}
       />
     </div>
+    </ErrorBoundary>
   );
 }
 

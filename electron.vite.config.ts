@@ -1,6 +1,5 @@
 // ============================================================================
-// NEXUS — electron.vite.config.ts
-// Konfiguracja electron-vite: 3 targety (main, preload, renderer)
+// NEXUS — electron-vite configuration: 3 targets (main, preload, renderer)
 // Zastępuje stary scripts/build.ts + vite.config.ts
 // ============================================================================
 
@@ -31,10 +30,11 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          preload: path.join(__dirname, 'src/main/preload.ts'),
+          index: path.join(__dirname, 'src/main/preload.ts'),
         },
         output: {
           format: 'cjs',
+          entryFileNames: 'index.js',
         },
       },
     },

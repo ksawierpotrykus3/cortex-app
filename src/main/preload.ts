@@ -107,6 +107,13 @@ const nexusBridge: NexusBridge = {
   // Browser operations (#27 Playwright)
   browserExtractDom: (payload) => ipcRenderer.invoke('browser:extract-dom', payload),
   browserTestMacro: (payload) => ipcRenderer.invoke('browser:test-macro', payload),
+  browserDownloadAndSave: (payload) => ipcRenderer.invoke('browser:download-and-save', payload),
+  browserSaveFiles: (payload) => ipcRenderer.invoke('browser:save-files', payload),
+  browserGetDownloadedFiles: (payload) => ipcRenderer.invoke('browser:get-downloaded-files', payload || {}),
+  browserDeleteFile: (payload) => ipcRenderer.invoke('browser:delete-file', payload),
+
+  // Logs pagination (A7 fix)
+  getLogs: (payload) => ipcRenderer.invoke('logs:get', payload || {}),
 
   // ========================================================================
   // Context Builder (F6.2)

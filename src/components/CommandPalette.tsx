@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Search, Hash, ArrowRight, AlertTriangle, Compass, FileText, CheckSquare, PenTool, Bot, GitBranch, Zap, BookOpen, BarChart, Wrench, Settings } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useCommandStore } from '../renderer/store/commandStore';
 import type { Command } from '../renderer/store/commandStore';
 
@@ -185,10 +186,13 @@ export function CommandPalette() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const focusTrapRef = useFocusTrap(paletteOpen);
+
   if (!paletteOpen) return null;
 
   return (
     <div
+      ref={focusTrapRef}
       className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]"
       onClick={closePalette}
     >
@@ -197,6 +201,9 @@ export function CommandPalette() {
 
       {/* Dialog */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command Palette"
         className="relative w-full max-w-lg bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >

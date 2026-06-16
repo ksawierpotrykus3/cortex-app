@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
 import { useCommandStore, CustomCommandData, CustomActionType } from '../renderer/store/commandStore';
 import { uid } from '../utils/ids';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const ACTION_TYPES: CustomActionType[] = [
   'navigate', 'open-url', 'run-workflow', 'run-agent', 'run-pipeline', 'shell',
@@ -36,6 +37,8 @@ export function CustomCommandsManager() {
   const [form, setForm] = useState<CustomCommandData>(defaultForm());
 
   if (!manageOpen) return null;
+
+  const focusTrapRef = useFocusTrap(manageOpen);
 
   function defaultForm(): CustomCommandData {
     return {
@@ -80,11 +83,11 @@ export function CustomCommandsManager() {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center" onClick={closeManage}>
       <div className="absolute inset-0 bg-black/50" />
-      <div className="relative w-full max-w-xl bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-xl shadow-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div ref={focusTrapRef} role="dialog" aria-modal="true" aria-label="Zarządzanie komendami" className="relative w-full max-w-xl bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-xl shadow-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[rgb(var(--border))]">
           <h2 className="text-[14px] font-semibold text-[rgb(var(--text-main))]">Custom Commands</h2>
-          <button onClick={closeManage} className="p-1 rounded-lg hover:bg-[rgb(var(--border))]/50 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer">
+          <button onClick={closeManage} aria-label="Zamknij" className="p-1 rounded-lg hover:bg-[rgb(var(--border))]/50 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer">
             <X size={16} />
           </button>
         </div>

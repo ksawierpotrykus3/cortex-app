@@ -475,34 +475,20 @@ Plik: [src/main/index.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/sr
 - **DraftZone** z walidacją Zod i testami
 - **LogViewer** z wirtualnym scrollingiem i testami
 - **System providerów** — Gemini, OpenRouter, Ollama
+- **Workflows** — WorkflowEngine (598 linii, 7 triggerów, 9 akcji, template engine, dry-run), WorkflowEditor, WorkflowList, workflowStore, IPC, testy jednostkowe (9)
+- **Command Palette** — CommandPalette (Ctrl+K, fuzzy search, kategorie, dangerous commands), commandStore (custom commands, rejestracja)
+- **Diff Viewer** — diffEngine (Myers algorytm O(ND)), DiffViewer (side-by-side + inline), diffStore, testy
+- **Git** — GitPanel (Status/Historia/Branche), GitSettingsPanel, IPC, testy (30+)
+- **E2E** — Playwright z 6 plikami testów (app, navigation, pipeline, workflow, agents, wiki) — **wymagają uruchomienia dev servera**
 
-### Nierozpoczęte / Opcjonalne (poza planem F1-F6):
+### Nierozpoczęte / Opcjonalne (poza planem F1-F6 + rozszerzenia):
 
-#### #1 — Workflows (w trakcie planowania)
-- [Plan implementacji](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/_plans/workflows/WORKFLOWS_PLAN.md)
-- **Model architektoniczny: wszystko customizable**
-  - Wszystko jest konfigurowalne przez Ciebie bez grzebania w kodzie
-  - Pluginowy system akcji — rejestrujesz własne typy akcji przez config
-  - Wyrażenia zamiast stałych — każdy warunek to `{source, operator, value}`
-  - Templates engine z rejestracją zmiennych i funkcji
-  - Każdy workflow to czysty JSON — export, import, duplikacja, modyfikacja ręczna
-  - Brak limitu na liczbę triggerów, warunków, akcji, kroków
-- **Tryb bezpieczeństwa: domyślnie Sandbox (dry-run)**
-  - Wszystko co tworzysz działa w trybie sandbox — żadna akcja nie jest wykonywana naprawdę
-  - Dopiero ręczne przełączenie na Live powoduje faktyczne wykonanie
-  - Dotyczy każdego workflow, agenta i akcji z osobna
-- **Szacunek: ~37h**
-- Obejmuje też: Bramki Logiczne (#6), Szablony outputu, Dry-Run (#10), Webhooki, Notyfikacje
+#### Architektura V2
+- RigidBlueprint, VramCulling, native C++ addony — leżą w `zadanie_tymczasowe/`, niezintegrowane
 
-#### #5 — Diff Viewer
-#### #12 — Command Palette
-#### #23 — Integracja z Gitem (branchowanie, commit, diff, auto-push)
-#### #6 — Bramki Logiczne (częściowo wliczone w #1)
-#### #10 — Dry-Run (częściowo wliczone w #1)
 #### Inne
-- Testy E2E / integracyjne — Playwright / pełny cykl agenta
-- Manual / Poradnik — miejsce z dokumentacją funkcji i przykładami
-- Architektura V2 — native C++ addony, RigidBlueprint, VramCulling (z `zadanie_tymczasowe/`)
+- Manual / Poradnik użytkownika — brak, ale nie jest potrzebny w fazie deweloperskiej
+- Prawdziwe E2E z pełnym cyklem agenta (wymaga API key)
 
 ### Do weryfikacji:
 - Testy jednostkowe istnieją dla: DraftZone, LogViewer, FeedbackModal, exportEngine, ExportModal, ExportScopeSelector, AgentOrchestrator, PermissionPanel, ContextBuilder, ContextConfigPanel, AgentHistoryPanel, WikiPanel, AgentPresets, PipelineExecutor, PipelineEditor **(152 testy łącznie)**

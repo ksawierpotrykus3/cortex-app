@@ -3,9 +3,10 @@
 // Executes pipeline DAG via topological sort + node execution
 // ============================================================================
 
-import { Pipeline, WorkflowNode, PortConnection, AgentOutput, TriggerType, DryRunResult, DryRunNodeResult, DryRunConfig, DEFAULT_DRY_RUN_CONFIG } from '../../shared/types/schema';
+import { Pipeline, WorkflowNode, PortConnection, AgentOutput, TriggerType, DryRunResult, DryRunNodeResult, DryRunConfig, DEFAULT_DRY_RUN_CONFIG, DownloadedFileRecord } from '../../shared/types/schema';
 import { AgentOrchestrator } from './AgentOrchestrator';
 import { evalCondition } from './ConditionEval';
+import { StorageEngine } from '../storage/StorageEngine';
 
 export type PipelineRunStatus = 'idle' | 'running' | 'completed' | 'failed' | 'stopped';
 
@@ -22,13 +23,15 @@ export class PipelineExecutor {
   private runs = new Map<string, PipelineRunState>();
   private abortController = new Map<string, AbortController>();
   private orchestrator: AgentOrchestrator;
+  private storage: StorageEngine | null = null;
 
   // Auto-cleanup: max completed runs to prevent memory leak
   private readonly MAX_CACHED_RUNS = 50;
   private runInsertionOrder: string[] = [];
 
-  constructor(orchestrator: AgentOrchestrator) {
+  constructor(orchestrator: AgentOrchestrator, storage?: StorageEngine) {
     this.orchestrator = orchestrator;
+    if (storage) this.storage = storage;
   }
 
   private enforceRunLimit(): void {
@@ -268,8 +271,21 @@ export class PipelineExecutor {
               const inputs = node.config?.inputs || {};
               const result = await browser.executeMacro(steps, inputs);
               await browser.close();
-              const outputText = result.text || result.extractedData?._screenshot || (result.success ? 'OK' : result.error || 'Failed');
-              runState.nodeResults.set(node.id, outputText);
+
+              // Zapisz pobrane pliki do storage jeśli jest dostępny
+              if (result.success && result.files && result.files.length > 0 && this.storage) {
+                const pipelineName = pipeline.name || 'pipeline';
+                const records = this.storage.saveDownloadedFiles(
+                  inputs._url || '',
+                  result.files,
+                  { pipelineId: pipeline.id, pipelineName, nodeId: node.id, nodeName: node.name }
+                );
+                const fileInfo = records.map(r => `${r.originalName} (${r.sizeBytes} bytes)`).join(', ');
+                runState.nodeResults.set(node.id, `[BROWSER] Download complete: ${fileInfo}`);
+              } else {
+                const outputText = result.text || result.extractedData?._screenshot || (result.success ? 'OK' : result.error || 'Failed');
+                runState.nodeResults.set(node.id, outputText);
+              }
             } catch (err) {
               const msg = err instanceof Error ? err.message : String(err);
               runState.errors.set(node.id, msg);

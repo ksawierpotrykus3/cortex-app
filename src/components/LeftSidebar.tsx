@@ -51,7 +51,7 @@ export function LeftSidebar({
           Projects
         </span>
         <div className="flex items-center gap-2">
-            <button onClick={onCreateProject} className="p-1 hover:bg-[rgb(var(--border))] rounded transition-colors text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))]" title="Add Project">
+            <button onClick={onCreateProject} className="p-1 hover:bg-[rgb(var(--border))] rounded transition-colors text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))]" title="Add Project" aria-label="Dodaj projekt">
                 <Plus className="w-3.5 h-3.5" />
             </button>
             <span className="text-[10px] font-medium text-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10 px-2 py-0.5 rounded-full ring-1 ring-[rgb(var(--accent))]/20">
@@ -100,7 +100,7 @@ export function LeftSidebar({
                       />
                   ) : (
                       <span 
-                          className="text-[13px] font-medium text-[rgb(var(--text-main))] capitalize truncate shrink select-none"
+                          className="text-[13px] font-medium text-[rgb(var(--text-main))] capitalize truncate shrink-0 select-none"
                           onPointerDown={(e) => {
                               if (onProjectDragStart) {
                                   e.preventDefault();
@@ -120,37 +120,40 @@ export function LeftSidebar({
 
                 {!editingProject && (
                     <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity gap-1">
-                        <button 
+                        <button
                            onClick={(e) => {
                                e.stopPropagation();
                                if (onProjectCenter) onProjectCenter(projectId);
                            }}
                            className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer rounded hover:bg-[rgb(var(--border))]"
                            title="Center on canvas"
+                           aria-label="Wyśrodkuj na płótnie"
                         >
                            <Maximize className="w-3 h-3" />
                         </button>
-                        <button 
+                        <button
                            onClick={(e) => {
                                e.stopPropagation();
                                if (onSelectProject) onSelectProject(projectId);
                            }}
                            className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer rounded hover:bg-[rgb(var(--border))]"
                            title="Select Project Nodes"
+                           aria-label="Zaznacz węzły projektu"
                         >
                             <MousePointerClick className="w-3 h-3" />
                         </button>
-                        <button 
+                        <button
                            onClick={(e) => {
                                e.stopPropagation();
                                if (onCreateNode) onCreateNode(projectId);
                            }}
                            className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer rounded hover:bg-[rgb(var(--border))]"
                            title="Add Note to Project"
+                           aria-label="Dodaj notatkę do projektu"
                         >
                             <Plus className="w-3 h-3" />
                         </button>
-                        <button 
+                        <button
                            onClick={(e) => {
                                e.stopPropagation();
                                setEditValue(projectId);
@@ -158,16 +161,18 @@ export function LeftSidebar({
                            }}
                            className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer rounded hover:bg-[rgb(var(--border))]"
                            title="Rename Project"
+                           aria-label="Zmień nazwę projektu"
                         >
                             <Edit2 className="w-3 h-3" />
                         </button>
-                        <button 
+                        <button
                            onClick={(e) => {
                                e.stopPropagation();
                                if (onDeleteProject) onDeleteProject(projectId);
                            }}
                            className="p-1 text-red-500 hover:text-red-400 cursor-pointer rounded hover:bg-red-500/20"
                            title="Delete Project"
+                           aria-label="Usuń projekt"
                         >
                             <Trash2 className="w-3 h-3" />
                         </button>

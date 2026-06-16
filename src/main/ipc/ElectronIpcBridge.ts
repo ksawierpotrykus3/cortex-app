@@ -32,6 +32,19 @@ function sanitizeUrl(url: string, token: string | undefined): string {
   return url.replace(token, '[REDACTED]');
 }
 
+/** #S6: Sanityzacja nazwy brancha — tylko dozwolone znaki */
+function sanitizeBranchName(name: string): string {
+  // Git branch: litery, cyfry, . - _ /
+  return name.replace(/[^a-zA-Z0-9._\-\/]/g, '');
+}
+
+/** #S6: Sanityzacja ścieżki pliku dla git diff */
+function sanitizeGitPath(file: string): string {
+  // Pozwala tylko na bezpieczne znaki w ścieżce
+  if (/[/\\]\.\.([/\\]|$)/.test(file)) return '';
+  return file.replace(/[^a-zA-Z0-9._\-\/\\@]/g, '');
+}
+
 /** Wykonuje komendę git przez spawn — bezpiecznie, bez shell injection */
 function gitSpawn(args: string[], opts: { cwd?: string; env?: Record<string, string> }): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -98,7 +111,7 @@ export class ElectronIpcBridge {
     this.orchestrator = orchestrator;
     this.storage = storage;
     this.providerRegistry = providerRegistry;
-    this.pipelineExecutor = new PipelineExecutor(orchestrator);
+    this.pipelineExecutor = new PipelineExecutor(orchestrator, this.storage);
     this.workflowEngine = new WorkflowEngine(orchestrator);
     this.killSwitch = new KillSwitch();
     this.searchEngine = new SearchEngine(this.getPrimaryAIProvider() ?? undefined);
@@ -268,7 +281,7 @@ export class ElectronIpcBridge {
           return updated;
         }
 
-        throw new Error(`Agent ${payload.id} not found`);
+        return { success: false, error: `Agent ${payload.id} not found` };
       } catch (err) {
         console.error('[agent:update]', err);
         return { success: false, error: String(err) };
@@ -433,7 +446,18 @@ export class ElectronIpcBridge {
     // === Provider Config (Phase 2) ========================================
     this.ipc.handle('provider:get-configs', () => {
       try {
-        return this.providerRegistry.getConfigs();
+        // #S3: Never expose apiKey to renderer
+        const configs = this.providerRegistry.getConfigs();
+        return configs.map(c => ({
+          provider: c.provider,
+          label: c.label,
+          baseUrl: c.baseUrl,
+          models: c.models,
+          isBuiltin: c.isBuiltin,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+          hasApiKey: !!c.apiKey,
+        }));
       } catch (err) {
         console.error('[provider:get-configs]', err);
         return { success: false, error: String(err) };
@@ -498,6 +522,75 @@ export class ElectronIpcBridge {
         return result;
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    // Browser: download file via Playwright and save to storage (#27)
+    this.ipc.handle('browser:download-and-save', async (_event, payload: { url: string; steps: any[]; inputs?: Record<string, any>; metadata?: Record<string, any> }) => {
+      try {
+        const { BrowserEngine } = await import('../core/BrowserEngine');
+        const engine = new BrowserEngine();
+        const result = await engine.executeMacro(payload.steps, payload.inputs || {});
+
+        // Save any downloaded files to storage
+        if (result.success && result.files && result.files.length > 0) {
+          const records = this.storage.saveDownloadedFiles(payload.url, result.files, {
+            ...payload.metadata,
+            browserAction: 'macro',
+          });
+          await engine.close();
+          return { success: true, files: result.files, records };
+        }
+
+        await engine.close();
+        return result;
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    // Browser: save existing files to storage (from any source)
+    this.ipc.handle('browser:save-files', async (_event, payload: { sourceUrl: string; files: Array<{ name: string; path: string; mime: string }>; metadata?: Record<string, any> }) => {
+      try {
+        const records = this.storage.saveDownloadedFiles(payload.sourceUrl, payload.files, payload.metadata || {});
+        return { success: true, records };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    // Browser: get downloaded files from storage
+    this.ipc.handle('browser:get-downloaded-files', async (_event, payload?: { limit?: number; metadataKey?: string; metadataValue?: any }) => {
+      try {
+        if (payload?.metadataKey && payload?.metadataValue !== undefined) {
+          return this.storage.getDownloadedFilesByMetadata(payload.metadataKey, payload.metadataValue, payload.limit || 50);
+        }
+        return this.storage.getDownloadedFiles(payload?.limit || 50);
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    // Browser: delete a downloaded file
+    this.ipc.handle('browser:delete-file', async (_event, payload: { id: string }) => {
+      try {
+        const deleted = this.storage.deleteDownloadedFile(payload.id);
+        return { success: deleted };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    // Logs: paginated log entries (A7 fix)
+    this.ipc.handle('logs:get', async (_event, payload?: { cursor?: string | null; limit?: number }) => {
+      try {
+        const limit = payload?.limit || 50;
+        // Get logs from storage — for now return empty (placeholder)
+        // TODO: implement actual log storage and retrieval
+        return { entries: [], nextCursor: null, hasMore: false };
+      } catch (error) {
+        console.error('[logs:get]', error);
+        return { entries: [], nextCursor: null, hasMore: false };
       }
     });
 
@@ -711,7 +804,7 @@ export class ElectronIpcBridge {
         return result;
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        return { context: `Błąd pobierania kontekstu: ${msg}`, tokensUsed: 0 };
+        return { context: `Context fetch error: ${msg}`, tokensUsed: 0, sourceBreakdown: [] };
       }
     });
 
@@ -1190,8 +1283,13 @@ export class ElectronIpcBridge {
 
     this.ipc.handle('git:branch-create', async (_event, payload: { name: string; from?: string }) => {
       try {
-        const args = ['checkout', '-b', payload.name];
-        if (payload.from) args.push(payload.from);
+        const safeName = sanitizeBranchName(payload.name);
+        if (!safeName) return { success: false, error: 'Invalid branch name' };
+        const args = ['checkout', '-b', safeName];
+        if (payload.from) {
+          const safeFrom = sanitizeBranchName(payload.from);
+          if (safeFrom) args.push(safeFrom);
+        }
         await this.gitExec(args);
         return { success: true };
       } catch (err: any) {
@@ -1202,8 +1300,11 @@ export class ElectronIpcBridge {
     this.ipc.handle('git:merge', async (_event, payload: { from: string; to: string; agentId?: string }) => {
       try {
         this.checkGitPermission(payload?.agentId, true);
-        await this.gitExec(['checkout', payload.to]);
-        await this.gitExec(['merge', payload.from, '--no-edit']);
+        const safeFrom = sanitizeBranchName(payload.from);
+        const safeTo = sanitizeBranchName(payload.to);
+        if (!safeFrom || !safeTo) return { success: false, error: 'Invalid branch name' };
+        await this.gitExec(['checkout', safeTo]);
+        await this.gitExec(['merge', safeFrom, '--no-edit']);
         return { success: true };
       } catch (err: any) {
         return { success: false, error: err.message };
@@ -1215,12 +1316,18 @@ export class ElectronIpcBridge {
         this.checkGitPermission(payload?.agentId, false);
         const args: string[] = ['diff'];
         if (payload?.from && payload?.to) {
-          args.push(`${payload.from}..${payload.to}`);
+          const safeFrom = sanitizeBranchName(payload.from);
+          const safeTo = sanitizeBranchName(payload.to);
+          if (!safeFrom || !safeTo) return '';
+          args.push(`${safeFrom}..${safeTo}`);
         } else if (payload?.from) {
-          args.push(payload.from);
+          const safeFrom = sanitizeBranchName(payload.from);
+          if (!safeFrom) return '';
+          args.push(safeFrom);
         }
         if (payload?.file) {
-          args.push('--', payload.file);
+          const safeFile = sanitizeGitPath(payload.file);
+          if (safeFile) args.push('--', safeFile);
         }
         const { stdout } = await this.gitExec(args);
         return stdout;
@@ -1375,6 +1482,14 @@ export class ElectronIpcBridge {
 
       // Context Builder (F6.8)
       'agent:get-workspace-entities',
+
+      // Browser operations (#27)
+      'browser:extract-dom', 'browser:test-macro',
+      'browser:download-and-save', 'browser:save-files',
+      'browser:get-downloaded-files', 'browser:delete-file',
+
+      // Logs pagination
+      'logs:get',
 
       // Feedback (#26)
       'feedback:save',

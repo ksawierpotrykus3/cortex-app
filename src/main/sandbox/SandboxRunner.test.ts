@@ -92,6 +92,30 @@ describe('SandboxRunner', () => {
     expect(result.error).toContain('timeout');
   });
 
+  it('runInSandbox zwraca sukces gdy worker odpowie poprawnie', async () => {
+    const { fork } = await import('child_process');
+    const childMock = mockChild();
+    (fork as any).mockReturnValue(childMock);
+
+    const promise = runner.runInSandbox({
+      agent: createMockAgent({ executionMode: 'sandbox' }),
+      context: 'test context',
+      providerApiKey: 'test-key',
+      providerBaseUrl: '',
+      timeoutMs: 5000,
+    });
+
+    // Simulate worker response
+    const onMsgCallback = childMock.on.mock.calls.find((c: any[]) => c[0] === 'message')?.[1];
+    expect(onMsgCallback).toBeDefined();
+    onMsgCallback({ type: 'result', success: true, output: { content: 'Hello from sandbox', tokensUsed: 50, executionMs: 100 } });
+
+    const result = await promise;
+    expect(result.success).toBe(true);
+    expect(result.output?.content).toBe('Hello from sandbox');
+    expect(result.output?.tokensUsed).toBe(50);
+  });
+
   it('akceptuje sandbox executionMode w konfiguracji agenta', () => {
     const agent = createMockAgent({ executionMode: 'sandbox' });
     expect(agent.executionMode).toBe('sandbox');

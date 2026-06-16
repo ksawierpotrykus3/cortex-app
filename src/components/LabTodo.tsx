@@ -505,9 +505,9 @@ const TaskCard: React.FC<{
             {/* Thought Marker Circles */}
             {task.thoughtMarkers && task.thoughtMarkers.length > 0 && (
               <div className="flex gap-1 shrink-0">
-                {task.thoughtMarkers.map((m, i) => (
+                {task.thoughtMarkers.map(m => (
                   <div 
-                    key={i} 
+                    key={m} 
                     title={`Thought status: ${m}`}
                     className={`w-1.5 h-1.5 rounded-full ${
                       m === 'certain' ? 'bg-orange-400' : 

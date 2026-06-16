@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { ModalState, NexusNode, NexusLink, Task, WritingDraft, ExportScope, DEFAULT_EXPORT_SCOPE, ViewMode } from "../types";
 import { generateAIExport, downloadFile, generateExportFilename, getExportPreset, TaskExport, DraftExport } from "../exportEngine";
 import { ExportScopeSelector } from "./ExportScopeSelector";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export function ExportModal({
   state,
@@ -60,6 +61,8 @@ export function ExportModal({
 
   if (state !== "export") return null;
 
+  const focusTrapRef = useFocusTrap(state === "export");
+
   const handleSave = () => {
     if (!hasAnySelected) return;
 
@@ -96,15 +99,16 @@ export function ExportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-xl shadow-2xl w-[520px] overflow-hidden flex flex-col">
+      <div ref={focusTrapRef} role="dialog" aria-modal="true" aria-label="Eksportuj" className="bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-xl shadow-2xl w-[520px] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[rgb(var(--border))]">
-          <h2 className="text-lg font-bold text-white tracking-wide">
+          <h2 className="text-lg font-bold text-[rgb(var(--text-main))] tracking-wide">
             Export Builder
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-200 transition-colors"
+            aria-label="Zamknij"
+            className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -114,7 +118,7 @@ export function ExportModal({
         <div className="p-6 space-y-5 flex-1">
           {/* Nazwa pliku */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-300">
+            <label className="text-sm font-medium text-[rgb(var(--text-secondary))]">
               Nazwa pliku:
             </label>
             <input
@@ -124,10 +128,10 @@ export function ExportModal({
                 isFilenameEdited.current = true;
                 setFilename(e.target.value);
               }}
-              className="w-full px-3 py-2 text-[13px] bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[rgb(var(--accent))] transition-colors"
+              className="w-full px-3 py-2 text-[13px] bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] focus:outline-none focus:border-[rgb(var(--accent))] transition-colors"
               placeholder="nazwa_pliku.json"
             />
-            <p className="text-[11px] text-gray-500">
+            <p className="text-[11px] text-[rgb(var(--text-muted))]">
               Plik zostanie zapisany jako JSON z rozszerzeniem .json
             </p>
           </div>
@@ -144,7 +148,7 @@ export function ExportModal({
         <div className="p-4 border-t border-[rgb(var(--border))] flex justify-end gap-3 bg-[rgb(var(--panel))]/30">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-sm text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -154,7 +158,7 @@ export function ExportModal({
             className={`px-5 py-2 text-sm font-medium text-white rounded-lg shadow-md transition-colors ${
               hasAnySelected
                 ? "bg-[rgb(var(--accent))] hover:bg-indigo-500 cursor-pointer"
-                : "bg-gray-600 cursor-not-allowed opacity-50"
+                : "bg-[rgb(var(--text-muted))] cursor-not-allowed opacity-50"
             }`}
           >
             Eksportuj

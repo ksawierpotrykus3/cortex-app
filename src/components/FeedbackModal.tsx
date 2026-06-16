@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { MessageSquareMore, X, Star } from "lucide-react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { FeedbackEntry, ContextSnapshot, ViewMode } from "../types";
 import { useAgentStore } from "../renderer/store/agentStore";
 
@@ -63,6 +64,7 @@ export function FeedbackModal({
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusTrapRef = useFocusTrap(isOpen);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
@@ -161,6 +163,7 @@ export function FeedbackModal({
           <button
             key={star}
             type="button"
+            aria-label={`Ocena ${star} z 5`}
             onClick={() => setRating(star === rating ? 0 : star)}
             onMouseEnter={() => setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
@@ -168,12 +171,12 @@ export function FeedbackModal({
           >
             <Star
               size={18}
-              className={star <= current ? 'fill-yellow-400 text-yellow-400' : 'text-gray-500'}
+              className={star <= current ? 'fill-yellow-400 text-yellow-400' : 'text-[rgb(var(--text-muted))]'}
             />
           </button>
         ))}
         {rating > 0 && (
-          <span className="text-xs text-gray-400 ml-1">{rating}/5</span>
+          <span className="text-xs text-[rgb(var(--text-muted))] ml-1">{rating}/5</span>
         )}
       </div>
     );
@@ -193,16 +196,20 @@ export function FeedbackModal({
 
   return (
     <div
+      ref={focusTrapRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={() => { if (!saving) { setIsOpen(false); resetForm(); } }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Przekaż pomysł"
         className="bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-xl p-6 w-[480px] shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold">Przekaż pomysł / zgłoś problem</h2>
-          <button onClick={() => { if (!saving) { setIsOpen(false); resetForm(); } }} className="cursor-pointer">
+          <button onClick={() => { if (!saving) { setIsOpen(false); resetForm(); } }} aria-label="Zamknij" className="cursor-pointer">
             <X size={18} />
           </button>
         </div>
@@ -215,7 +222,7 @@ export function FeedbackModal({
           <div className="space-y-4">
             {/* Entity Picker */}
             <div>
-              <label className="text-xs font-medium text-gray-400">Dotyczy</label>
+              <label className="text-xs font-medium text-[rgb(var(--text-muted))]">Dotyczy</label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {ENTITY_OPTIONS.map((opt) => (
                   <label
@@ -223,7 +230,7 @@ export function FeedbackModal({
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs cursor-pointer border transition-colors ${
                       entityType === opt.type
                         ? 'border-[rgb(var(--accent))] bg-[rgb(var(--accent-bg))] text-[rgb(var(--accent))]'
-                        : 'border-[rgb(var(--border))] text-gray-400 hover:text-white'
+                        : 'border-[rgb(var(--border))] text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))]'
                     }`}
                   >
                     <input
@@ -256,12 +263,12 @@ export function FeedbackModal({
 
             {/* Auto-context */}
             <div>
-              <label className="text-xs font-medium text-gray-400">Dołączany kontekst (auto)</label>
-              <div className="mt-1 bg-[rgb(var(--background))]/50 border border-[rgb(var(--border))] rounded-lg p-3 text-xs space-y-1 font-mono text-gray-400">
-                <div>Widok: <span className="text-gray-300">{viewMode}</span></div>
-                {entityLabel && <div>Zaznaczony element: <span className="text-gray-300">{entityLabel}</span></div>}
-                {projectId && <div>Projekt: <span className="text-gray-300">{projectId}</span></div>}
-                <div>Ostatnia akcja: <span className="text-gray-300">{lastAction}</span></div>
+              <label className="text-xs font-medium text-[rgb(var(--text-muted))]">Dołączany kontekst (auto)</label>
+              <div className="mt-1 bg-[rgb(var(--background))]/50 border border-[rgb(var(--border))] rounded-lg p-3 text-xs space-y-1 font-mono text-[rgb(var(--text-muted))]">
+                <div>Widok: <span className="text-[rgb(var(--text-secondary))]">{viewMode}</span></div>
+                {entityLabel && <div>Zaznaczony element: <span className="text-[rgb(var(--text-secondary))]">{entityLabel}</span></div>}
+                {projectId && <div>Projekt: <span className="text-[rgb(var(--text-secondary))]">{projectId}</span></div>}
+                <div>Ostatnia akcja: <span className="text-[rgb(var(--text-secondary))]">{lastAction}</span></div>
               </div>
             </div>
 
@@ -274,7 +281,7 @@ export function FeedbackModal({
 
             {/* Title */}
             <div>
-              <label className="text-xs font-medium text-gray-400">Tytuł *</label>
+              <label className="text-xs font-medium text-[rgb(var(--text-muted))]">Tytuł *</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -287,7 +294,7 @@ export function FeedbackModal({
 
             {/* Description */}
             <div>
-              <label className="text-xs font-medium text-gray-400">Opis *</label>
+              <label className="text-xs font-medium text-[rgb(var(--text-muted))]">Opis *</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -299,7 +306,7 @@ export function FeedbackModal({
 
             {/* Suggestion */}
             <div>
-              <label className="text-xs font-medium text-gray-400">Sugestia (opcjonalnie)</label>
+              <label className="text-xs font-medium text-[rgb(var(--text-muted))]">Sugestia (opcjonalnie)</label>
               <textarea
                 value={suggestion}
                 onChange={(e) => setSuggestion(e.target.value)}
@@ -311,7 +318,7 @@ export function FeedbackModal({
 
             {/* Rating */}
             <div>
-              <label className="text-xs font-medium text-gray-400">Ocena (opcjonalnie)</label>
+              <label className="text-xs font-medium text-[rgb(var(--text-muted))]">Ocena (opcjonalnie)</label>
               <div className="mt-1">
                 {renderStars()}
               </div>
@@ -322,7 +329,7 @@ export function FeedbackModal({
               <button
                 onClick={() => { setIsOpen(false); resetForm(); }}
                 disabled={saving}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white cursor-pointer disabled:opacity-40"
+                className="px-4 py-2 text-sm text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer disabled:opacity-40"
               >
                 Anuluj
               </button>

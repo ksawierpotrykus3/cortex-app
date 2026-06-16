@@ -89,7 +89,7 @@ export function SemanticSearch({ entities, onNavigate }: SemanticSearchProps) {
       if (bridge?.updateSearchConfig) {
         await bridge.updateSearchConfig({ config: { searchPrompt, maxResults: 10 } });
       }
-    } catch {}
+    } catch (e) { console.warn('[SemanticSearch] Failed to save search config', e); }
     setShowConfig(false);
   }, [searchPrompt]);
 
@@ -102,7 +102,7 @@ export function SemanticSearch({ entities, onNavigate }: SemanticSearchProps) {
           const cfg = await bridge.getSearchConfig();
           setSearchPrompt(cfg.searchPrompt);
         }
-      } catch {}
+      } catch (e) { console.warn('[SemanticSearch] Failed to load search config', e); }
     })();
   }, []);
 
@@ -146,6 +146,7 @@ export function SemanticSearch({ entities, onNavigate }: SemanticSearchProps) {
               <button
                 onClick={() => setShowConfig(true)}
                 className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer"
+                aria-label="Ustawienia promptu"
                 title="Ustawienia promptu wyszukiwania"
               >
                 <Settings size={14} />
@@ -153,6 +154,7 @@ export function SemanticSearch({ entities, onNavigate }: SemanticSearchProps) {
               <button
                 onClick={() => setOpen(false)}
                 className="p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] cursor-pointer"
+                aria-label="Zamknij wyszukiwanie"
               >
                 <X size={16} />
               </button>

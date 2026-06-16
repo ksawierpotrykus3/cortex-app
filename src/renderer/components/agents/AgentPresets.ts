@@ -3,7 +3,7 @@
 // 12 gotowych szablonów agentów do szybkiego tworzenia
 // ============================================================================
 
-import { Agent, AgentStatus, TriggerType, AIProvider, ContextConfig, DEFAULT_CONTEXT_CONFIG } from '../../../shared/types/schema';
+import { Agent, AgentStatus, TriggerType, AIProvider, ContextConfig, DEFAULT_CONTEXT_CONFIG, DEFAULT_PERMISSION_SET, OutputDestinationType } from '../../../shared/types/schema';
 
 export interface AgentPreset {
   id: string;
@@ -72,6 +72,8 @@ Streszczenie (maks. 5 zdań):`,
       errorCount: 0,
       rating: 0,
       tags: ['streszczanie', 'kontekst'],
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
   {
@@ -128,6 +130,8 @@ Odpowiedź w formacie:
       errorCount: 0,
       rating: 0,
       tags: ['korekta', 'gramatyka', 'styl'],
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
   {
@@ -185,6 +189,8 @@ Format:
       errorCount: 0,
       rating: 0,
       tags: ['kreatywność', 'pomysły', 'brainstorming'],
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
   {
@@ -244,6 +250,8 @@ Odpowiedź w formacie:
       errorCount: 0,
       rating: 0,
       tags: ['analiza', 'audyt', 'wnioski'],
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
 
@@ -298,6 +306,8 @@ Tłumaczenie:`,
       errorCount: 0,
       rating: 0,
       tags: ['tłumaczenie', 'języki', 'lokalizacja'],
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
 
@@ -361,6 +371,8 @@ Format odpowiedzi:
       rating: 0,
       tags: ['research', 'analiza', 'wiedza'],
       contextConfig: contextConfigWithSources(['notes', 'history']),
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
 
@@ -423,6 +435,13 @@ Format:
       errorCount: 0,
       rating: 0,
       tags: ['code review', 'jakość', 'bezpieczeństwo'],
+      executionMode: 'sandbox',
+      permissions: {
+        ...DEFAULT_PERMISSION_SET,
+        allowedTriggers: [TriggerType.MANUAL],
+        allowedDestinations: [OutputDestinationType.CHANGELOG],
+        maxTokensPerRun: 16384,
+      },
     }),
   },
 
@@ -485,6 +504,13 @@ Format:
       errorCount: 0,
       rating: 0,
       tags: ['generowanie kodu', 'programowanie', 'dev'],
+      executionMode: 'sandbox',
+      permissions: {
+        ...DEFAULT_PERMISSION_SET,
+        allowedTriggers: [TriggerType.MANUAL],
+        allowedDestinations: [OutputDestinationType.CHANGELOG, OutputDestinationType.FILE],
+        maxTokensPerRun: 32768,
+      },
     }),
   },
 
@@ -549,6 +575,13 @@ Format:
       errorCount: 0,
       rating: 0,
       tags: ['debugowanie', 'błędy', 'naprawa'],
+      executionMode: 'sandbox',
+      permissions: {
+        ...DEFAULT_PERMISSION_SET,
+        allowedTriggers: [TriggerType.MANUAL],
+        allowedDestinations: [OutputDestinationType.CHANGELOG],
+        gitAccess: true,
+      },
     }),
   },
 
@@ -607,6 +640,8 @@ Format:
       errorCount: 0,
       rating: 0,
       tags: ['edycja', 'styl', 'czytelność'],
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
 
@@ -662,6 +697,8 @@ Sekcje i nagłówki dobierz odpowiednio do treści.`,
       errorCount: 0,
       rating: 0,
       tags: ['formatowanie', 'markdown', 'struktura'],
+      executionMode: 'live',
+      permissions: DEFAULT_PERMISSION_SET,
     }),
   },
 
@@ -729,6 +766,12 @@ Format:
       rating: 0,
       tags: ['edukacja', 'wyjaśnianie', 'wiedza'],
       contextConfig: contextConfigWithSources(['notes', 'history', 'changelog']),
+      executionMode: 'live',
+      permissions: {
+        ...DEFAULT_PERMISSION_SET,
+        allowedTriggers: [TriggerType.MANUAL],
+        allowedDestinations: [OutputDestinationType.CHANGELOG, OutputDestinationType.KNOWLEDGE],
+      },
     }),
   },
 
@@ -799,6 +842,13 @@ Wygeneruj JSON:
       rating: 0,
       tags: ['playwright', 'automatyzacja', 'browser'],
       contextConfig: contextConfigWithSources(['notes', 'changelog']),
+      executionMode: 'sandbox',
+      permissions: {
+        ...DEFAULT_PERMISSION_SET,
+        allowedTriggers: [TriggerType.MANUAL],
+        allowedDestinations: [OutputDestinationType.CHANGELOG, OutputDestinationType.FILE],
+        maxTokensPerRun: 32768,
+      },
     }),
   },
 ];

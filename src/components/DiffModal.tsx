@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { DiffViewer } from './DiffViewer';
 import { EntitySnapshot } from '../utils/diffEngine';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface DiffModalProps {
   open: boolean;
@@ -39,12 +40,15 @@ export function DiffModal({
 
   if (!open) return null;
 
+  const focusTrapRef = useFocusTrap(open);
+
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[rgb(var(--background))]">
+    <div ref={focusTrapRef} role="dialog" aria-modal="true" aria-label={`Porównanie wersji: ${title}`} className="fixed inset-0 z-[100] flex flex-col bg-[rgb(var(--background))]">
       {/* Close button bar */}
       <div className="absolute top-3 right-3 z-10">
         <button
           onClick={onClose}
+          aria-label="Zamknij"
           className="p-2 rounded-lg hover:bg-[rgb(var(--border))]/50 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] transition-colors cursor-pointer"
         >
           <X size={18} />

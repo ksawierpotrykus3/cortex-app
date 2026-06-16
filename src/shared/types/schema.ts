@@ -554,6 +554,27 @@ export interface FeedbackEntry {
   status: 'new' | 'read' | 'in-progress' | 'done';
 }
 
+// === Downloaded Files (#27 Playwright) ======================================
+export interface DownloadedFileRecord {
+  id: string;
+  /** URL strony z której pobrano plik */
+  sourceUrl: string;
+  /** Oryginalna nazwa pliku */
+  originalName: string;
+  /** Ścieżka gdzie plik został skopiowany (storage/files/{id}/{name}) */
+  storedPath: string;
+  /** MIME type pliku */
+  mime: string;
+  /** Rozmiar w bajtach */
+  sizeBytes: number;
+  /** Dodatkowe metadane (np. agentId, pipelineId, workflowId) */
+  metadata: Record<string, any>;
+  /** ISO timestamp */
+  downloadedAt: string;
+  /** SHA256 checksum */
+  checksum?: string;
+}
+
 // === IPC Event Names ======================================================
 export const IPC_EVENTS = {
   // Agent commands (Renderer → Main)
@@ -613,4 +634,12 @@ export const IPC_EVENTS = {
   GIT_DIFF: 'git:diff',
   GIT_SCHEDULE_STATUS: 'git:schedule-status',
   GIT_SCHEDULE_TOGGLE: 'git:schedule-toggle',
+
+  // Browser (#27 Playwright)
+  BROWSER_EXTRACT_DOM: 'browser:extract-dom',
+  BROWSER_TEST_MACRO: 'browser:test-macro',
+  BROWSER_DOWNLOAD_AND_SAVE: 'browser:download-and-save',
+  BROWSER_SAVE_FILES: 'browser:save-files',
+  BROWSER_GET_DOWNLOADED_FILES: 'browser:get-downloaded-files',
+  BROWSER_DELETE_FILE: 'browser:delete-file',
 } as const;

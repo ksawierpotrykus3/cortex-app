@@ -81,7 +81,7 @@ export class AgentOrchestrator {
 
     this.agents.set(agent.id, state);
     this.setStatus(agent.id, AgentStatus.ACTIVE);
-    console.log(`[AgentOrchestrator] Agent "${agent.name}" (${agent.id}) zarejestrowany`);
+    console.debug(`[AgentOrchestrator] Agent "${agent.name}" (${agent.id}) zarejestrowany`);
   }
 
   /**
@@ -93,7 +93,7 @@ export class AgentOrchestrator {
 
     this.stopHeartbeat(agentId);
     this.agents.delete(agentId);
-    console.log(`[AgentOrchestrator] Agent ${agentId} usunięty`);
+    console.debug(`[AgentOrchestrator] Agent ${agentId} usunięty`);
   }
 
   /**
@@ -656,7 +656,20 @@ export class AgentOrchestrator {
             const filePath = config.filePath;
             if (filePath) {
               try {
-                const content = await fs.promises.readFile(filePath, 'utf8');
+                // #S2: Security — restrict file access to allowed directories
+                const storageBasePath = this.storage ? (this.storage as any).basePath : null;
+                const allowedDirs = [
+                  process.cwd(),
+                  storageBasePath || path.join(process.cwd(), 'data'),
+                ].filter(Boolean).map(d => path.resolve(d));
+                const resolved = path.resolve(filePath);
+                const isAllowed = allowedDirs.some(dir => resolved.startsWith(dir));
+                if (!isAllowed) {
+                  sourceText = `=== Plik: ${filePath} ===\n(Odmowa dostępu — plik poza dozwolonym katalogiem)\n`;
+                  console.warn(`[AgentOrchestrator] Path traversal blocked: ${filePath} (resolved: ${resolved}, allowed: ${allowedDirs.join(', ')})`);
+                  break;
+                }
+                const content = await fs.promises.readFile(resolved, 'utf8');
                 sourceText = `=== Plik: ${filePath} ===\n${content}\n`;
               } catch {
                 sourceText = `=== Plik: ${filePath} ===\n(Nie można odczytać pliku)\n`;

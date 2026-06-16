@@ -4,7 +4,7 @@
 // Tripartite Channel: Command, Telemetry, Data Firehose
 // ============================================================================
 
-import { Agent, AgentOutput, AgentStatus, ProviderAuthConfig, ContextSource, ContextConfig, GitConfig, GitStatusResult, GitLogEntry, GitBranchInfo, Pipeline, FeedbackEntry, WorkspaceEntity, KillSwitchState, SearchResult, SearchConfig, DryRunResult, DryRunConfig } from './schema';
+import { Agent, AgentOutput, AgentStatus, ProviderAuthConfig, ContextSource, ContextConfig, GitConfig, GitStatusResult, GitLogEntry, GitBranchInfo, Pipeline, FeedbackEntry, WorkspaceEntity, KillSwitchState, SearchResult, SearchConfig, DryRunResult, DryRunConfig, DownloadedFileRecord } from './schema';
 import { WorkflowDefinition, WorkflowExecutionResult, WorkflowLogEntry, WorkflowMode } from './workflow';
 
 // ============================================================================
@@ -21,7 +21,7 @@ export interface CommandChannels {
   'agent:get': { payload: { id: string }; response: Agent | null };
 
   // Agent execution
-  'agent:execute': { payload: { id: string; context?: string; triggerType?: import('./schema').TriggerType }; response: { success: boolean } };
+  'agent:execute': { payload: { id: string; context?: string; triggerType?: import('./schema').TriggerType }; response: { success: boolean; output?: AgentOutput } };
   'agent:stop': { payload: { id: string }; response: { success: boolean } };
 
   // Storage
@@ -78,6 +78,13 @@ export interface CommandChannels {
   // Browser operations (#27 Playwright)
   'browser:extract-dom': { payload: { url: string }; response: { success: boolean; title?: string; cleanText?: string; error?: string } };
   'browser:test-macro': { payload: { steps: any[]; inputs?: Record<string, any> }; response: { success: boolean; output?: any; error?: string } };
+  'browser:download-and-save': { payload: { url: string; steps: any[]; inputs?: Record<string, any>; metadata?: Record<string, any> }; response: { success: boolean; files?: any[]; records?: DownloadedFileRecord[]; error?: string } };
+  'browser:save-files': { payload: { sourceUrl: string; files: Array<{ name: string; path: string; mime: string }>; metadata?: Record<string, any> }; response: { success: boolean; records?: DownloadedFileRecord[]; error?: string } };
+  'browser:get-downloaded-files': { payload: { limit?: number; metadataKey?: string; metadataValue?: any }; response: DownloadedFileRecord[] };
+  'browser:delete-file': { payload: { id: string }; response: { success: boolean; error?: string } };
+
+  // Logs pagination
+  'logs:get': { payload: { cursor?: string | null; limit?: number }; response: { entries: Array<{ id: string; timestamp: number; payload: any; size: number }>; nextCursor: string | null; hasMore: boolean } };
 }
 
 // ============================================================================
@@ -175,6 +182,13 @@ export interface NexusBridge {
   // Browser operations (#27 Playwright)
   browserExtractDom: (payload: { url: string }) => Promise<{ success: boolean; title?: string; cleanText?: string; error?: string }>;
   browserTestMacro: (payload: { steps: any[]; inputs?: Record<string, any> }) => Promise<{ success: boolean; output?: any; error?: string }>;
+  browserDownloadAndSave: (payload: { url: string; steps: any[]; inputs?: Record<string, any>; metadata?: Record<string, any> }) => Promise<{ success: boolean; files?: any[]; records?: DownloadedFileRecord[]; error?: string }>;
+  browserSaveFiles: (payload: { sourceUrl: string; files: Array<{ name: string; path: string; mime: string }>; metadata?: Record<string, any> }) => Promise<{ success: boolean; records?: DownloadedFileRecord[]; error?: string }>;
+  browserGetDownloadedFiles: (payload?: { limit?: number; metadataKey?: string; metadataValue?: any }) => Promise<DownloadedFileRecord[]>;
+  browserDeleteFile: (payload: { id: string }) => Promise<{ success: boolean; error?: string }>;
+
+  // Logs pagination (A7 fix)
+  getLogs: (payload?: { cursor?: string | null; limit?: number }) => Promise<{ entries: Array<{ id: string; timestamp: number; payload: any; size: number }>; nextCursor: string | null; hasMore: boolean }>;
 
   // Context Builder (F6.2)
   getContextOptions: (payload: { agentId: string }) => Promise<ContextSource[]>;

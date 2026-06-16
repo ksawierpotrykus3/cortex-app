@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { X, Keyboard } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface KeyboardShortcutsProps {
   open: boolean;
@@ -55,10 +56,16 @@ const SHORTCUTS = [
 export function KeyboardShortcuts({ open, onClose }: KeyboardShortcutsProps) {
   if (!open) return null;
 
+  const focusTrapRef = useFocusTrap(open);
+
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
+        ref={focusTrapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Skróty klawiszowe"
         className="relative w-full max-w-2xl bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-xl shadow-2xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
@@ -72,6 +79,7 @@ export function KeyboardShortcuts({ open, onClose }: KeyboardShortcutsProps) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Zamknij"
             className="p-1.5 rounded-lg text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--bg-elevated))] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />

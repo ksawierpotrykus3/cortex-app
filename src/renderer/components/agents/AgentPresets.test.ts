@@ -149,3 +149,68 @@ describe('AGENT_PRESETS', () => {
     expect(enabledSources).toContain('changelog');
   });
 });
+
+describe('AgentPresets #24 extensions', () => {
+  it('każdy preset ma ustawiony executionMode', () => {
+    for (const preset of AGENT_PRESETS) {
+      const agent = preset.create();
+      expect(agent.executionMode).toBeDefined();
+      expect(['live', 'sandbox']).toContain(agent.executionMode);
+    }
+  });
+
+  it('każdy preset ma ustawiony permissions', () => {
+    for (const preset of AGENT_PRESETS) {
+      const agent = preset.create();
+      expect(agent.permissions).toBeDefined();
+      expect(agent.permissions!.allowedTriggers).toBeDefined();
+      expect(agent.permissions!.allowedDestinations).toBeDefined();
+      expect(agent.permissions!.maxTokensPerRun).toBeGreaterThan(0);
+    }
+  });
+
+  it('presety sandbox mają executionMode sandbox', () => {
+    const sandboxIds = ['code-reviewer', 'code-generator', 'debugger', 'browser-automation'];
+    for (const id of sandboxIds) {
+      const preset = AGENT_PRESETS.find(p => p.id === id);
+      expect(preset).toBeDefined();
+      const agent = preset!.create();
+      expect(agent.executionMode).toBe('sandbox');
+    }
+  });
+
+  it('presety live mają executionMode live', () => {
+    const liveIds = ['summarizer', 'proofreader', 'brainstormer', 'analyst', 'translator', 'researcher', 'editor', 'formatter', 'teacher'];
+    for (const id of liveIds) {
+      const preset = AGENT_PRESETS.find(p => p.id === id);
+      expect(preset).toBeDefined();
+      const agent = preset!.create();
+      expect(agent.executionMode).toBe('live');
+    }
+  });
+
+  it('niektóre presety mają ustawiony contextConfig', () => {
+    const withContext = ['researcher', 'teacher', 'browser-automation'];
+    for (const id of withContext) {
+      const preset = AGENT_PRESETS.find(p => p.id === id);
+      expect(preset).toBeDefined();
+      const agent = preset!.create();
+      expect(agent.contextConfig).toBeDefined();
+      expect(agent.contextConfig!.sources.some(s => s.enabled)).toBe(true);
+    }
+  });
+
+  it('Code Generator ma FILE w destination', () => {
+    const preset = AGENT_PRESETS.find(p => p.id === 'code-generator');
+    expect(preset).toBeDefined();
+    const agent = preset!.create();
+    expect(agent.permissions!.allowedDestinations).toContain('FILE');
+  });
+
+  it('Debugger ma gitAccess: true', () => {
+    const preset = AGENT_PRESETS.find(p => p.id === 'debugger');
+    expect(preset).toBeDefined();
+    const agent = preset!.create();
+    expect(agent.permissions!.gitAccess).toBe(true);
+  });
+});

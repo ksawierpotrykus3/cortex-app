@@ -6,6 +6,7 @@
 import React from "react";
 import { X, CheckCircle2, SkipForward, AlertTriangle, Clock, Cpu, Activity } from "lucide-react";
 import type { DryRunResult } from "../shared/types/schema";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface DryRunResultModalProps {
   result: DryRunResult | null;
@@ -16,14 +17,19 @@ interface DryRunResultModalProps {
 export function DryRunResultModal({ result, open, onClose }: DryRunResultModalProps) {
   if (!open || !result) return null;
 
+  const focusTrapRef = useFocusTrap(open && !!result);
+
   const completedNodes = result.nodes.filter(n => !n.skipped).length;
   const skippedNodes = result.nodes.filter(n => n.skipped).length;
   const totalTokens = result.nodes.reduce((s, n) => s + n.estimatedTokens, 0);
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center" onClick={onClose}>
+    <div ref={focusTrapRef} className="fixed inset-0 z-[200] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Wynik symulacji"
         className="relative w-full max-w-2xl bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-xl shadow-2xl max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -37,6 +43,7 @@ export function DryRunResultModal({ result, open, onClose }: DryRunResultModalPr
           </div>
           <button
             onClick={onClose}
+            aria-label="Zamknij"
             className="p-1.5 rounded-lg text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--bg-elevated))] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />

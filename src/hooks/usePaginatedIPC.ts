@@ -115,13 +115,15 @@ export function usePaginatedIPC(options?: UsePaginatedIPCOptions): UsePaginatedI
     try {
       let response: LogPageResponse;
 
-      // Próba przez Electron IPC (produkcja)
-      if (typeof window !== 'undefined' && (window as any).electron?.invoke) {
-        response = await (window as any).electron.invoke(IPC_CHANNEL, cursorRef.current, pageSize);
-      } else if (typeof window !== 'undefined' && (window as any).require) {
-        // Electron z nodeIntegration = true
-        const { ipcRenderer } = (window as any).require('electron');
-        response = await ipcRenderer.invoke(IPC_CHANNEL, cursorRef.current, pageSize);
+      // Through Electron IPC (nexusBridge)
+      if (typeof window !== 'undefined' && (window as any).nexusBridge?.getLogs) {
+        const data = await (window as any).nexusBridge.getLogs({ cursor: cursorRef.current, limit: pageSize });
+        response = {
+          entries: data?.entries || [],
+          nextCursor: data?.nextCursor || null,
+          hasMore: data?.hasMore ?? false,
+          pageSize,
+        };
       } else {
         // Fallback dla development (przeglądarka)
         response = {

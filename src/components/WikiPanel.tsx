@@ -195,7 +195,7 @@ export function WikiPanel({
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Tagi</label>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {editing.tags.map((tag, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))] flex items-center gap-1">
+                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))] flex items-center gap-1">
                         {tag}
                         <button
                           onClick={() => setEditing({ ...editing, tags: editing.tags.filter((_, j) => j !== i) })}

@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, RotateCcw, Trash2, Search, CheckCircle, XCircle, Clock, Zap, AlertCircle } from 'lucide-react';
 import { AgentOutput } from '../../../shared/types/schema';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
 // === Props =================================================================
 interface AgentHistoryPanelProps {
@@ -28,6 +29,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
   const [filterRating, setFilterRating] = useState<'all' | 'low' | 'mid' | 'high'>('all');
   const [stats, setStats] = useState<{ total: number; avgTokens: number; avgExecutionMs: number; errorRate: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useFocusTrap(agentId !== null);
 
   // Load first page
   useEffect(() => {
@@ -41,7 +43,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
     try {
       const s = await bridge.getOutputStats({ agentId });
       setStats(s);
-    } catch {}
+    } catch (e) { console.warn('[AgentHistoryPanel] Failed to load stats', e); }
   };
 
   const loadPage = async (p: number, reset = false) => {
@@ -114,8 +116,11 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Historia: ${agentName}`}
         className="bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--border))] rounded-xl w-11/12 h-[90%] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
@@ -136,7 +141,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
               </div>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer">
+          <button onClick={onClose} aria-label="Zamknij" className="p-1.5 rounded-lg text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -175,6 +180,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
           {outputs.length > 0 && (
             <button
               onClick={handleClear}
+              aria-label="Wyczyść historię"
               className="px-2 py-1.5 text-[11px] text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
             >
               <Trash2 className="w-3 h-3" />
@@ -234,6 +240,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => handleReRun(output.content)}
+                    aria-label="Wyślij ponownie"
                     className="p-1.5 rounded text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--accent))] hover:bg-[rgb(var(--border))]/50 transition-colors cursor-pointer"
                     title="Wyślij ponownie"
                   >
@@ -241,6 +248,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
                   </button>
                   <button
                     onClick={() => handleDelete(output.id)}
+                    aria-label="Usuń"
                     className="p-1.5 rounded text-[rgb(var(--text-secondary))] hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
                     title="Usuń"
                   >
@@ -264,6 +272,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
           </span>
           <button
             onClick={() => handleReRun()}
+            aria-label="Uruchom agenta"
             className="px-3 py-1.5 text-[11px] font-medium bg-[rgb(var(--accent))]/20 text-[rgb(var(--accent))] rounded-lg hover:bg-[rgb(var(--accent))]/30 transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <Zap className="w-3 h-3" />

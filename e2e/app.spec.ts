@@ -7,25 +7,27 @@ test.describe('Nexus App — podstawowe testy E2E', () => {
     await expect(page).toHaveTitle(/Nexus System/);
   });
 
-  test('powinien wyświetlać TopNavigation z kluczowymi przyciskami', async ({ page }) => {
+  test('powinien wyświetlać nagłówek NEXUS z przyciskami nawigacji', async ({ page }) => {
     await page.goto('/');
-    // Spodziewane elementy nawigacji
-    await expect(page.locator('nav')).toBeVisible();
-    await expect(page.locator('text=Nexus').first()).toBeVisible();
-  });
-
-  test('powinien otwierać LeftSidebar', async ({ page }) => {
-    await page.goto('/');
-    // Sidebar powinien być widoczny
-    const sidebar = page.locator('aside');
-    await expect(sidebar).toBeVisible();
+    await expect(page.getByText('NEXUS').first()).toBeVisible();
+    await expect(page.getByText('Topology').first()).toBeVisible();
+    await expect(page.getByText('Laboratory').first()).toBeVisible();
+    await expect(page.getByText('Knowledge Base').first()).toBeVisible();
+    await expect(page.getByText('Agents').first()).toBeVisible();
   });
 
   test('powinien otwierać Command Palette przez Ctrl+K', async ({ page }) => {
     await page.goto('/');
-    // Symulacja Ctrl+K
     await page.keyboard.press('Control+k');
-    // Command palette powinna się pojawić
-    await expect(page.locator('[data-testid="command-palette"]').first()).toBeVisible({ timeout: 5000 });
+    // Po Ctrl+K powinien pojawić się overlay — sprawdzamy czy zniknął przycisk nawigacji (paleta otwarta)
+    await expect(page.getByPlaceholder(/search|szukaj/i).first()).toBeVisible({ timeout: 3000 });
+  });
+
+  test('powinien zamykać Command Palette przez Escape', async ({ page }) => {
+    await page.goto('/');
+    await page.keyboard.press('Control+k');
+    await expect(page.getByPlaceholder(/search|szukaj/i).first()).toBeVisible({ timeout: 3000 });
+    await page.keyboard.press('Escape');
+    await expect(page.getByPlaceholder(/search|szukaj/i)).toHaveCount(0);
   });
 });

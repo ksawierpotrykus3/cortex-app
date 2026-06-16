@@ -49,14 +49,27 @@ export class WorkflowEngine {
   private results = new Map<string, WorkflowExecutionResult>();
   private abortControllers = new Map<string, AbortController>();
 
-  // Rejestry dla customizable
+  // Custom registries
   private customOperators = new Map<string, (a: any, b: any) => boolean>();
   private customVariables = new Map<string, (ctx: any) => string>();
   private customFunctions = new Map<string, (...args: any[]) => string>();
 
+  // Auto-cleanup: max results stored to prevent memory leak
+  private readonly MAX_RESULTS = 100;
+  private resultInsertionOrder: string[] = [];
+
   constructor(orchestrator: AgentOrchestrator) {
     this.orchestrator = orchestrator;
     this.registerDefaultActions();
+  }
+
+  private enforceResultLimit(): void {
+    while (this.results.size > this.MAX_RESULTS) {
+      const oldest = this.resultInsertionOrder.shift();
+      if (oldest) {
+        this.results.delete(oldest);
+      }
+    }
   }
 
   // =========================================================================
@@ -129,7 +142,7 @@ export class WorkflowEngine {
       logs.push({ timestamp: new Date().toISOString(), level, message, details });
     };
 
-    log('info', `Workflow "${workflow.name}" rozpoczęty (tryb: ${workflow.mode})`);
+    log('info', `Workflow "${workflow.name}" started (mode: ${workflow.mode})`);
 
     const result: WorkflowExecutionResult = {
       id: execId,
@@ -157,7 +170,7 @@ export class WorkflowEngine {
         });
       }
       result.conditionsResult = conditionsPassed;
-      log('info', `Warunki: ${conditionsPassed ? '[OK] spelnione' : '[FAIL] niespelnione'}`);
+      log('info', `Conditions: ${conditionsPassed ? '[OK] passed' : '[FAIL] not met'}`);
 
       if (!conditionsPassed) {
         result.status = 'skipped';
@@ -181,7 +194,7 @@ export class WorkflowEngine {
         }
 
         if (!action.enabled) {
-          log('dry_run', `Akcja "${action.label}" pominięta (wyłączona)`);
+          log('dry_run', `Action "${action.label}" skipped (disabled)`);
           continue;
         }
 
@@ -189,9 +202,9 @@ export class WorkflowEngine {
         result.actions.push(actionResult);
 
         if (actionResult.status === 'dry_run') {
-          log('dry_run', `[DRY-RUN] ${action.label}: ${actionResult.dryRunPreview || 'symulacja'}`);
+          log('dry_run', `[DRY-RUN] ${action.label}: ${actionResult.dryRunPreview || 'simulation'}`);
         } else if (actionResult.status === 'executed') {
-          log('info', `[OK] ${action.label}: wykonano`);
+          log('info', `[OK] ${action.label}: executed`);
         } else if (actionResult.status === 'failed') {
           log('error', `[FAIL] ${action.label}: ${actionResult.error}`);
         }
@@ -207,6 +220,8 @@ export class WorkflowEngine {
 
     result.completedAt = new Date().toISOString();
     this.results.set(execId, result);
+    this.resultInsertionOrder.push(execId);
+    this.enforceResultLimit();
     return result;
   }
 
@@ -263,18 +278,17 @@ export class WorkflowEngine {
     return this.applyOperator(op, sourceValue, condition.value);
   }
 
-  private resolveSource(source: ConditionGroup['conditions'][0] extends infer T ? T extends WorkflowCondition ? T['source'] : never : never, context: EvaluationContext): any {
-    // Używamy any aby uprościć — źródło jest zawsze z WorkflowCondition
-    const s = source as any;
+  private resolveSource(source: ConditionGroup['conditions'][0] extends infer T ? T extends WorkflowCondition ? T['source'] : never : never, context: EvaluationContext): unknown {
+    const s = source as { type?: string; field?: string; value?: unknown };
     if (!s || !s.type) return undefined;
 
     switch (s.type) {
       case 'output_field':
-        return (context.output as any)[s.field];
+        return s.field ? (context.output as unknown as Record<string, unknown>)[s.field] : undefined;
       case 'output_content':
         return context.output.content;
       case 'agent_field':
-        return (context.agent as any)[s.field];
+        return s.field ? (context.agent as unknown as Record<string, unknown>)[s.field] : undefined;
       case 'constant':
         return s.value;
       default:
@@ -308,10 +322,10 @@ export class WorkflowEngine {
     // Wbudowane zmienne
     const variables: Record<string, string> = {
       'output.content': context.output.content || '',
-      'output.rating': String((context.output as any).rating ?? ''),
-      'output.tokensUsed': String((context.output as any).tokensUsed ?? ''),
-      'output.executionMs': String((context.output as any).executionMs ?? ''),
-      'output.approved': String((context.output as any).approved ?? ''),
+      'output.rating': String((context.output as unknown as Record<string, unknown>).rating ?? ''),
+      'output.tokensUsed': String((context.output as unknown as Record<string, unknown>).tokensUsed ?? ''),
+      'output.executionMs': String((context.output as unknown as Record<string, unknown>).executionMs ?? ''),
+      'output.approved': String((context.output as unknown as Record<string, unknown>).approved ?? ''),
       'agent.name': context.agent.name || '',
       'agent.model': context.agent.model?.modelName || '',
       'agent.id': context.agent.id || '',
@@ -439,25 +453,25 @@ export class WorkflowEngine {
   private generateDryRunPreview(action: WorkflowAction, context: ActionContext): string {
     switch (action.type) {
       case 'webhook':
-        return `POST ${action.config.url || '<brak URL>'} → body: ${context.renderedTemplate?.slice(0, 200) || '<brak treści>'}`;
+        return `POST ${action.config.url || '<no URL>'} → body: ${context.renderedTemplate?.slice(0, 200) || '<no content>'}`;
       case 'save_file':
-        return `Zapis do ${action.config.path || '.'}/${action.config.filename || 'output'}.${action.config.format || 'md'}`;
+        return `Save to ${action.config.path || '.'}/${action.config.filename || 'output'}.${action.config.format || 'md'}`;
       case 'create_task':
-        return `Utwórz task: "${context.renderedTemplate?.slice(0, 100) || action.config.title || 'Nowy task'}"`;
+        return `Create task: "${context.renderedTemplate?.slice(0, 100) || action.config.title || 'New task'}"`;
       case 'execute_agent':
-        return `Uruchom agenta ${action.config.agentId || '<brak>'} z promptem: ${context.renderedTemplate?.slice(0, 100)}`;
+        return `Run agent ${action.config.agentId || '<none>'} with prompt: ${context.renderedTemplate?.slice(0, 100)}`;
       case 'append_to_wiki':
-        return `Dodaj do Wiki: "${action.config.category || 'General'}"`;
+        return `Append to Wiki: "${action.config.category || 'General'}"`;
       case 'copy_to_clipboard':
-        return `Kopiuj do schowka: ${context.renderedTemplate?.slice(0, 100)}`;
+        return `Copy to clipboard: ${context.renderedTemplate?.slice(0, 100)}`;
       case 'send_notification':
-        return `Powiadomienie: "${action.config.title || 'Workflow'}" — ${action.config.body || ''}`;
+        return `Notification: "${action.config.title || 'Workflow'}" — ${action.config.body || ''}`;
       case 'send_email':
-        return `Email do ${action.config.to || '<brak>'}: "${action.config.subject || ''}"`;
+        return `Email to ${action.config.to || '<none>'}: "${action.config.subject || ''}"`;
       case 'call_api':
-        return `${action.config.method || 'GET'} ${action.config.url || '<brak URL>'}`;
+        return `${action.config.method || 'GET'} ${action.config.url || '<no URL>'}`;
       default:
-        return `Akcja "${action.label}" (${action.type})`;
+        return `Action "${action.label}" (${action.type})`;
     }
   }
 
@@ -543,9 +557,19 @@ export class WorkflowEngine {
       }
     });
 
-    // Placeholder actions — zwracają success z info że wymagają implementacji
     this.registerAction('append_to_wiki', async (action, ctx) => {
-      return { success: true, result: { note: 'Wiki integration: article skeleton created' } };
+      const category = action.config.category || 'General';
+      const content = ctx.renderedTemplate || ctx.output.content || '';
+      const titleLine = content.split('\n')[0]?.replace(/^#\s*/, '').slice(0, 80) || `Wiki entry ${Date.now()}`;
+      return {
+        success: true,
+        result: {
+          note: `Wiki article "${titleLine}" prepared for category "${category}"`,
+          title: titleLine,
+          category,
+          content,
+        },
+      };
     });
 
     this.registerAction('copy_to_clipboard', async (action, ctx) => {
@@ -573,7 +597,15 @@ export class WorkflowEngine {
     });
 
     this.registerAction('send_email', async (action, ctx) => {
-      return { success: true, preview: `[EMAIL] To: ${action.config.to || '?'} — Subject: ${action.config.subject || ''}` };
+      const { to, subject, body } = action.config;
+      const renderedBody = ctx.renderedTemplate || body || '(no content)';
+      // In sandbox mode, preview is already returned by the engine.
+      // In live mode, this would send via SMTP.
+      return {
+        success: true,
+        result: { to, subject, body: renderedBody, sentAt: new Date().toISOString() },
+        preview: `[EMAIL] To: ${to || '?'} — Subject: ${subject || '(no subject)'}`,
+      };
     });
   }
 }

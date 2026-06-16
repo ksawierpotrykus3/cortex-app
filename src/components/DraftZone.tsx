@@ -242,27 +242,13 @@ export function DraftZone({
   // ============================================================
   // sendViaIPC — wysyłka przez Electron IPC
   //
-  // Próbuje wysłać przez window.electron (preload) lub
-  // przez ipcRenderer (nodeIntegration). W przeglądarce
-  // symuluje udany zapis (development mode).
+  // Wysyła przez nexusBridge (contextBridge). W przeglądarce symuluje.
   // ============================================================
   async function sendViaIPC(channel: string, data: unknown): Promise<boolean> {
     try {
-      // Prefer: nexusBridge (contextBridge API)
       const bridge = (window as any).nexusBridge;
       if (bridge?.sendMutation) {
         bridge.sendMutation(data);
-        return true;
-      }
-      // Legacy: window.electron (preload contextIsolation fallback)
-      if (typeof window !== 'undefined' && (window as any).electron?.ipcRenderer?.send) {
-        (window as any).electron.ipcRenderer.send(channel, data);
-        return true;
-      }
-      // Legacy: nodeIntegration fallback
-      if (typeof window !== 'undefined' && (window as any).require) {
-        const { ipcRenderer } = (window as any).require('electron');
-        ipcRenderer.send(channel, data);
         return true;
       }
       // Fallback: symulacja (development / test)
@@ -295,19 +281,10 @@ export function DraftZone({
       const bridge = (window as any).nexusBridge;
       if (bridge?.sendLog) {
         bridge.sendLog(logLine);
-      } else if (typeof window !== 'undefined' && (window as any).electron?.ipcRenderer?.send) {
-        (window as any).electron.ipcRenderer.send(IPC_LOG_CHANNEL, logLine);
-      } else if (typeof window !== 'undefined' && (window as any).require) {
-        try {
-          const { ipcRenderer } = (window as any).require('electron');
-          ipcRenderer.send(IPC_LOG_CHANNEL, logLine);
-        } catch { /* noop */ }
       }
-
       // Console fallback
       console.debug('[RLHF-TELEMETRY]', logLine);
     } catch (err) {
-      // Flatted nie powinno rzucać, ale na wszelki wypadek
       console.error('[RLHF-TELEMETRY] Flatted stringify failed:', err);
     }
   }
@@ -434,7 +411,7 @@ export function DraftZone({
       {validationErrors.length > 0 && (
         <div className="draft-zone-errors">
           {validationErrors.map((err, i) => (
-            <div key={i} className="draft-zone-error-item">{err}</div>
+            <div key={`err-${i}`} className="draft-zone-error-item">{err}</div>
           ))}
         </div>
       )}
