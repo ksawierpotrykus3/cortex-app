@@ -12,6 +12,7 @@ import { AgentOrchestrator } from './core/AgentOrchestrator';
 import { StorageEngine } from './storage/StorageEngine';
 import { ElectronIpcBridge } from './ipc/ElectronIpcBridge';
 import { ProviderRegistry } from './ai/ProviderRegistry';
+import { AiHealthMonitor } from './ai/AiHealthMonitor';
 import { AgentOutput, AgentStatus } from '../shared/types/schema';
 
 // === Constants =============================================================
@@ -164,7 +165,12 @@ async function bootstrap(): Promise<void> {
   await storage.init();
 
   // === Provider Registry ===
-  providerRegistry = new ProviderRegistry();
+  const healthMonitor = new AiHealthMonitor(DATA_DIR);
+  await healthMonitor.init();
+  providerRegistry = new ProviderRegistry(healthMonitor);
+  providerRegistry.setIpcSender((channel, data) => {
+    mainWindow?.webContents.send(channel, data);
+  });
   // console.log('[NEXUS] ProviderRegistry:', providerRegistry.getConfigs().map(c => c.label).join(', '));
 
   // === Agent Orchestrator ===

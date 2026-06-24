@@ -14,11 +14,13 @@ import { saveChatSessions, loadChatSessions, deleteChatSession } from "../utils/
 import { AtMentionAutocomplete, MentionableItem, resolveAtReferences } from "./AtMentionAutocomplete";
 
 interface FloatingMessage {
-  role: 'user' | 'assistant' | 'system' | 'approval_request' | 'approval_response' | 'action';
+  role: 'user' | 'assistant' | 'system' | 'approval_request' | 'approval_response' | 'action' | 'failover_proposal' | 'recovery_proposal';
   content: string;
   timestamp: string;
   capability?: CapabilityCategory;
+  proposalId?: string;
   onApprove?: () => void;
+  onReject?: () => void;
 }
 
 interface FloatingAgent {
@@ -88,6 +90,116 @@ export function FloatingAgentPanel(props: FloatingAgentPanelProps) {
       setIsLoaded(true);
     }).catch(() => setIsLoaded(true));
   }, [isOpen, isLoaded]);
+
+  // Failover Interactive Listeners
+  useEffect(() => {
+    const bridge = window.nexusBridge;
+    if (!bridge) return;
+
+    if (bridge.onFailoverProposal) {
+      const unsub = bridge.onFailoverProposal((data) => {
+        setAgents(prev => prev.map(a => {
+          const isMatch = a.model === data.modelName || a.model.includes(data.modelName);
+          if (!isMatch) return a;
+
+          const proposalMessage: FloatingMessage = {
+            role: 'failover_proposal',
+            content: `⚠️ Darmowy model ${data.modelName.includes('pro') ? 'DeepSeek v4 Pro' : 'DeepSeek v4 Flash'} nie odpowiada. Czy chcesz przełączyć się na płatny odpowiednik? (Limit czasu: ${data.timeoutSeconds}s)`,
+            timestamp: new Date().toISOString(),
+            proposalId: data.proposalId,
+            onApprove: () => {
+              bridge.respondFailover({ proposalId: data.proposalId, approved: true });
+              setAgents(curr => curr.map(currA => {
+                if (currA.id !== a.id) return currA;
+                return {
+                  ...currA,
+                  messages: currA.messages.map(m => m.proposalId === data.proposalId ? {
+                    role: 'action',
+                    content: '✓ Przełączono na płatny model zapasowy.',
+                    timestamp: new Date().toISOString()
+                  } : m)
+                };
+              }));
+            },
+            onReject: () => {
+              bridge.respondFailover({ proposalId: data.proposalId, approved: false });
+              setAgents(curr => curr.map(currA => {
+                if (currA.id !== a.id) return currA;
+                return {
+                  ...currA,
+                  messages: currA.messages.map(m => m.proposalId === data.proposalId ? {
+                    role: 'action',
+                    content: '✗ Odrzucono przełączenie. Zapytanie zakończy się błędem.',
+                    timestamp: new Date().toISOString()
+                  } : m)
+                };
+              }));
+            }
+          };
+
+          return {
+            ...a,
+            messages: [...a.messages, proposalMessage]
+          };
+        }));
+      });
+      return unsub;
+    }
+  }, []);
+
+  useEffect(() => {
+    const bridge = window.nexusBridge;
+    if (!bridge) return;
+
+    if (bridge.onRecoveryProposal) {
+      const unsub = bridge.onRecoveryProposal((data) => {
+        setAgents(prev => prev.map(a => {
+          const isMatch = a.model === data.modelName || a.model.includes(data.modelName);
+          if (!isMatch) return a;
+
+          const recoveryMessage: FloatingMessage = {
+            role: 'recovery_proposal',
+            content: `💡 Wykryto stabilną darmową wersję ${data.modelName.includes('pro') ? 'DeepSeek v4 Pro' : 'DeepSeek v4 Flash'}. Czy chcesz wrócić na wersję darmową?`,
+            timestamp: new Date().toISOString(),
+            onApprove: () => {
+              bridge.respondRecovery({ modelName: data.modelName, approved: true });
+              setAgents(curr => curr.map(currA => {
+                if (currA.id !== a.id) return currA;
+                return {
+                  ...currA,
+                  messages: currA.messages.map(m => m.content === recoveryMessage.content ? {
+                    role: 'action',
+                    content: '✓ Przywrócono darmowy model.',
+                    timestamp: new Date().toISOString()
+                  } : m)
+                };
+              }));
+            },
+            onReject: () => {
+              bridge.respondRecovery({ modelName: data.modelName, approved: false });
+              setAgents(curr => curr.map(currA => {
+                if (currA.id !== a.id) return currA;
+                return {
+                  ...currA,
+                  messages: currA.messages.map(m => m.content === recoveryMessage.content ? {
+                    role: 'action',
+                    content: 'Zostano przy wersji płatnej.',
+                    timestamp: new Date().toISOString()
+                  } : m)
+                };
+              }));
+            }
+          };
+
+          return {
+            ...a,
+            messages: [...a.messages, recoveryMessage]
+          };
+        }));
+      });
+      return unsub;
+    }
+  }, []);
 
   // 🔁 Auto-zapis przy każdej zmianie agentów (debounced)
   useEffect(() => {
@@ -438,38 +550,60 @@ function AgentCard({ agent, tracker, onSend, onRemove, onToggleCollapse, mention
         <div className="flex-1 flex flex-col min-h-0 px-4 pb-3 pt-2">
           {/* Messages */}
           <div className="flex-1 overflow-y-auto space-y-2 mb-2 text-[11px] custom-scrollbar min-h-[100px]">
-            {agent.messages.filter(m => m.role !== 'system').map((msg, i) => (
-              <div
-                key={i}
-                className={`p-2 rounded-lg ${
-                  msg.role === 'user'
-                    ? 'bg-[rgb(var(--accent))]/10 ml-6'
-                    : msg.role === 'approval_request'
-                    ? 'bg-amber-500/10 border border-amber-500/20'
-                    : msg.role === 'action'
-                    ? 'bg-emerald-500/10 border border-emerald-500/20'
-                    : 'bg-[rgb(var(--background))]/50 mr-6'
-                }`}
-              >
-                <div className="text-[10px] font-medium text-[rgb(var(--text-tertiary))] mb-0.5">
-                  {msg.role === 'user' ? 'Ty' : msg.role === 'assistant' ? agent.name : msg.role === 'approval_request' ? 'Zadanie: Zatwierdz' : msg.role === 'action' ? 'Wykonano' : 'System'}
-                </div>
-                <div className="text-[rgb(var(--text-secondary))] leading-relaxed whitespace-pre-wrap">{msg.content}</div>
-                {msg.capability && (
-                  <div className="flex gap-2 mt-1.5">
-                    <button
-                      onClick={msg.onApprove}
-                      className="px-2.5 py-1 text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded hover:bg-emerald-500/30 transition-colors cursor-pointer"
-                    >
-                      Zezwol
-                    </button>
-                    <button className="px-2.5 py-1 text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors cursor-pointer">
-                      Odrzuc
-                    </button>
+            {agent.messages.filter(m => m.role !== 'system').map((msg, i) => {
+              const isFailover = msg.role === 'failover_proposal';
+              const isRecovery = msg.role === 'recovery_proposal';
+
+              return (
+                <div
+                  key={i}
+                  className={`p-3 rounded-lg border transition-all ${
+                    msg.role === 'user'
+                      ? 'bg-[rgb(var(--accent))]/10 border-transparent ml-6'
+                      : msg.role === 'approval_request' || isFailover
+                      ? 'bg-amber-500/10 border-amber-500/30 mr-6'
+                      : msg.role === 'action'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 mr-6'
+                      : isRecovery
+                      ? 'bg-blue-500/10 border-blue-500/30 mr-6'
+                      : 'bg-[rgb(var(--background))]/50 mr-6'
+                  }`}
+                >
+                  <div className="text-[10px] font-medium text-[rgb(var(--text-tertiary))] mb-0.5">
+                    {msg.role === 'user'
+                      ? 'Ty'
+                      : msg.role === 'assistant'
+                      ? agent.name
+                      : isFailover
+                      ? 'Router AI: Propozycja Failoveru'
+                      : isRecovery
+                      ? 'Router AI: Powrót do Darmowego'
+                      : msg.role === 'approval_request'
+                      ? 'Zadanie: Zatwierdź'
+                      : msg.role === 'action'
+                      ? 'Status'
+                      : 'System'}
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="text-[rgb(var(--text-secondary))] leading-relaxed whitespace-pre-wrap">{msg.content}</div>
+                  {(msg.capability || isFailover || isRecovery) && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={msg.onApprove}
+                        className="px-2.5 py-1 text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded hover:bg-emerald-500/30 transition-colors cursor-pointer"
+                      >
+                        Zezwól
+                      </button>
+                      <button
+                        onClick={msg.onReject || (() => {})}
+                        className="px-2.5 py-1 text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors cursor-pointer"
+                      >
+                        Odrzuć
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {agent.messages.filter(m => m.role !== 'system').length === 0 && (
               <div className="text-center text-[rgb(var(--text-tertiary))] py-6 text-[11px]">
                 {agent.name} gotowy. Zadaj pytanie.

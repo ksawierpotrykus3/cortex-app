@@ -5,7 +5,7 @@
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Key, Check, AlertCircle, RefreshCw, Plus, Trash2, Save, Circle } from 'lucide-react';
+import { X, Key, Check, AlertCircle, RefreshCw, Plus, Trash2, Save, Circle, Shield } from 'lucide-react';
 import { ProviderAuthConfig, AIProvider } from '../../../shared/types/schema';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
@@ -41,12 +41,66 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyValue, setNewKeyValue] = useState('');
 
+  // Failover Router State
+  const [failoverMode, setFailoverMode] = useState<'strict' | 'interactive' | 'automatic'>('automatic');
+  const [timeoutSeconds, setTimeoutSeconds] = useState<number>(60);
+  const [healthStatus, setHealthStatus] = useState<Record<string, { status: 'ONLINE' | 'OFFLINE'; ping: number }>>({});
+  const [activeFailovers, setActiveFailovers] = useState<string[]>([]);
+  const [checkingHealth, setCheckingHealth] = useState(false);
+
   // Load configs on mount
   useEffect(() => {
     if (!isOpen) return;
     loadConfigs();
     loadNvidiaKeys();
+    loadFailoverSettings();
+    loadFailoverStatus();
+
+    const bridge = window.nexusBridge;
+    if (bridge?.onAiStatusChanged) {
+      const unsub = bridge.onAiStatusChanged((data) => {
+        setHealthStatus(data.status);
+        setActiveFailovers(data.activeFailovers);
+      });
+      return unsub;
+    }
   }, [isOpen]);
+
+  const loadFailoverSettings = async () => {
+    const bridge = window.nexusBridge;
+    if (bridge?.getFailoverSettings) {
+      const settings = await bridge.getFailoverSettings();
+      setFailoverMode(settings.mode);
+      setTimeoutSeconds(settings.timeoutSeconds);
+    }
+  };
+
+  const loadFailoverStatus = async () => {
+    const bridge = window.nexusBridge;
+    if (bridge?.getFailoverStatus) {
+      const data = await bridge.getFailoverStatus();
+      setHealthStatus(data.status);
+      setActiveFailovers(data.activeFailovers);
+    }
+  };
+
+  const handleSaveFailoverSettings = async (mode: any, seconds: number) => {
+    const bridge = window.nexusBridge;
+    if (bridge?.saveFailoverSettings) {
+      await bridge.saveFailoverSettings({ settings: { mode, timeoutSeconds: seconds } });
+    }
+  };
+
+  const triggerHealth = async () => {
+    setCheckingHealth(true);
+    const bridge = window.nexusBridge;
+    if (bridge?.triggerHealthCheck) {
+      const data = await bridge.triggerHealthCheck();
+      setHealthStatus(data.status);
+      setActiveFailovers(data.activeFailovers);
+    }
+    setCheckingHealth(false);
+  };
 
   const loadConfigs = async () => {
     const bridge = window.nexusBridge;
@@ -454,6 +508,106 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
             <p className="text-[9px] text-[rgb(var(--text-secondary))] opacity-50">
               Dodaj klucze API NVIDIA. Proxy automatycznie wykryje zmiany i będzie rotować klucze przy każdym zapytaniu. Każdy klucz ma limit ~40 RPM.
             </p>
+          </div>
+
+          {/* === Failover Router AI === */}
+          <div className="p-4 bg-[rgb(var(--bg-elevated))] rounded-lg border border-[rgb(var(--border))] space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-medium text-[rgb(var(--text))] flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-[rgb(var(--accent))]" /> Inteligentny Router AI (Circuit Breaker)
+              </span>
+              <button
+                onClick={triggerHealth}
+                disabled={checkingHealth}
+                className="px-2.5 py-1 text-[10px] font-medium bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))] rounded hover:bg-[rgb(var(--accent))]/25 transition-colors cursor-pointer flex items-center gap-1 shrink-0 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${checkingHealth ? 'animate-spin' : ''}`} />
+                {checkingHealth ? 'Badanie...' : 'Testuj stabilność darmowych modeli'}
+              </button>
+            </div>
+
+            {/* Model status list */}
+            <div className="grid grid-cols-2 gap-3 bg-[rgb(var(--bg-surface))] p-3 rounded-lg border border-[rgb(var(--border))]">
+              {[
+                { id: 'deepseek-ai/deepseek-v4-pro', label: 'DeepSeek v4 Pro' },
+                { id: 'deepseek-ai/deepseek-v4-flash', label: 'DeepSeek v4 Flash' },
+              ].map((model) => {
+                const stat = healthStatus[model.id];
+                const isFailedOver = activeFailovers.includes(model.id);
+                const isOnline = stat?.status === 'ONLINE';
+
+                return (
+                  <div key={model.id} className="flex flex-col gap-1">
+                    <span className="text-[10px] font-medium text-[rgb(var(--text))]">{model.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${
+                        isFailedOver ? 'bg-amber-400' : isOnline ? 'bg-emerald-400' : 'bg-red-400'
+                      }`} />
+                      <span className="text-[11px] text-[rgb(var(--text-secondary))] font-mono">
+                        {isFailedOver ? 'ZAPASOWY (Paid)' : isOnline ? `Online (${stat.ping}ms)` : 'Offline'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Failover mode radio group */}
+            <div className="space-y-2">
+              <label className="block text-[10px] text-[rgb(var(--text-secondary))]">
+                Tryb Przełączania (Failover Mode)
+              </label>
+              <div className="flex flex-col gap-1.5">
+                {[
+                  { value: 'strict', label: 'Strict (Brak przełączania - darmowy lub błąd)', desc: 'Brak automatycznego przechodzenia na płatne klucze.' },
+                  { value: 'interactive', label: 'Interactive (Zaproponuj na czacie użycie płatnego)', desc: 'System wstrzymuje zapytanie i wyświetla przycisk zgody.' },
+                  { value: 'automatic', label: 'Automatic (Cichy fallback tam i z powrotem)', desc: 'Automatycznie przekierowuje zapytania do wersji płatnej i wraca do darmowej gdy ożyje.' }
+                ].map((modeOpt) => (
+                  <label key={modeOpt.value} className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      name="failoverMode"
+                      value={modeOpt.value}
+                      checked={failoverMode === modeOpt.value}
+                      onChange={(e) => {
+                        const m = e.target.value as any;
+                        setFailoverMode(m);
+                        handleSaveFailoverSettings(m, timeoutSeconds);
+                      }}
+                      className="mt-0.5 accent-[rgb(var(--accent))]"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] text-[rgb(var(--text))]">{modeOpt.label}</span>
+                      <span className="text-[9px] text-[rgb(var(--text-secondary))] opacity-60 leading-normal">{modeOpt.desc}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Timeout settings */}
+            <div className="space-y-1.5 pt-2 border-t border-[rgb(var(--border))]/50">
+              <label className="block text-[10px] text-[rgb(var(--text-secondary))]">
+                Czas oczekiwania na decyzję / Timeout (sekundy)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="5"
+                  max="300"
+                  value={timeoutSeconds}
+                  onChange={(e) => {
+                    const sec = Math.max(5, parseInt(e.target.value) || 0);
+                    setTimeoutSeconds(sec);
+                    handleSaveFailoverSettings(failoverMode, sec);
+                  }}
+                  className="w-20 px-3 py-1 text-[12px] bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text))] outline-none focus:border-[rgb(var(--accent))]/50"
+                />
+                <span className="text-[10px] text-[rgb(var(--text-secondary))] opacity-60">
+                  Maksymalny czas (w sek.) oczekiwania na akceptację karty failover w trybie Interactive przed przerwaniem zapytania.
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

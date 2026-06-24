@@ -8,6 +8,7 @@ import { OpenAIApiAdapter } from './OpenAIApiAdapter';
 import { GeminiAdapter } from './GeminiAdapter';
 import { AIProvider, ProviderAuthConfig, ModelConfig, DEFAULT_PROVIDERS } from '../../shared/types/schema';
 import { rateLimiter } from './RateLimiter';
+import { AiHealthMonitor } from './AiHealthMonitor';
 
 // === Provider Factory ======================================================
 function createAdapter(config: ProviderAuthConfig): IAIProvider | null {
@@ -32,6 +33,11 @@ function createAdapter(config: ProviderAuthConfig): IAIProvider | null {
 export class ProviderRegistry {
   private providers: Map<string, IAIProvider> = new Map();
   private configs: ProviderAuthConfig[] = [];
+  public healthMonitor?: AiHealthMonitor;
+
+  private activeFailovers: Set<string> = new Set();
+  private pendingProposals: Map<string, (approved: boolean) => void> = new Map();
+  private ipcSender?: (channel: string, data: any) => void;
 
   /** Zwraca domyślny limit RPM dla danego providera */
   private static getDefaultRpmLimit(label: string): number {
@@ -41,7 +47,9 @@ export class ProviderRegistry {
     return 30; // domyślny bezpieczny limit
   }
 
-  constructor() {
+  constructor(healthMonitor?: AiHealthMonitor) {
+    this.healthMonitor = healthMonitor;
+
     // Load defaults
     for (const cfg of DEFAULT_PROVIDERS) {
       this.configs.push({ ...cfg });
@@ -51,6 +59,110 @@ export class ProviderRegistry {
       }
       rateLimiter.setLimit(cfg.label, ProviderRegistry.getDefaultRpmLimit(cfg.label));
     }
+
+    if (this.healthMonitor) {
+      this.healthMonitor.onStatusChange = (modelName, status) => {
+        if (status === 'ONLINE' && this.activeFailovers.has(modelName)) {
+          const settings = this.healthMonitor!.getSettings();
+          if (settings.mode === 'automatic') {
+            console.log(`[ProviderRegistry] Automatic recovery to free model "${modelName}"`);
+            this.activeFailovers.delete(modelName);
+            if (this.ipcSender) {
+              this.ipcSender('ai:status-changed', {
+                status: this.healthMonitor!.getStatus(),
+                activeFailovers: Array.from(this.activeFailovers),
+              });
+            }
+          } else if (settings.mode === 'interactive') {
+            console.log(`[ProviderRegistry] Sending recovery proposal for "${modelName}"`);
+            if (this.ipcSender) {
+              this.ipcSender('ai:recovery-proposal', { modelName });
+            }
+          }
+        }
+        if (this.ipcSender) {
+          this.ipcSender('ai:status-changed', {
+            status: this.healthMonitor!.getStatus(),
+            activeFailovers: Array.from(this.activeFailovers),
+          });
+        }
+      };
+    }
+  }
+
+  setIpcSender(sender: (channel: string, data: any) => void): void {
+    this.ipcSender = sender;
+    // Emit initial status
+    if (this.healthMonitor && this.ipcSender) {
+      this.ipcSender('ai:status-changed', {
+        status: this.healthMonitor.getStatus(),
+        activeFailovers: Array.from(this.activeFailovers),
+      });
+    }
+  }
+
+  // =========================================================================
+  // Failover Interactive Handler
+  // =========================================================================
+
+  resolveProposal(proposalId: string, approved: boolean): void {
+    const resolve = this.pendingProposals.get(proposalId);
+    if (resolve) {
+      resolve(approved);
+      this.pendingProposals.delete(proposalId);
+    }
+  }
+
+  resolveRecovery(modelName: string, approved: boolean): void {
+    if (approved && this.activeFailovers.has(modelName)) {
+      console.log(`[ProviderRegistry] User approved recovery to free model "${modelName}"`);
+      this.activeFailovers.delete(modelName);
+      if (this.ipcSender && this.healthMonitor) {
+        this.ipcSender('ai:status-changed', {
+          status: this.healthMonitor.getStatus(),
+          activeFailovers: Array.from(this.activeFailovers),
+        });
+      }
+    }
+  }
+
+  private async askUserForFailover(modelName: string, timeoutSeconds: number): Promise<boolean> {
+    const proposalId = Math.random().toString(36).substring(2, 9);
+    return new Promise<boolean>((resolve) => {
+      this.pendingProposals.set(proposalId, resolve);
+
+      if (this.ipcSender) {
+        this.ipcSender('ai:failover-proposal', {
+          proposalId,
+          modelName,
+          timeoutSeconds,
+        });
+      }
+
+      setTimeout(() => {
+        if (this.pendingProposals.has(proposalId)) {
+          console.log(`[ProviderRegistry] Interactive failover proposal ${proposalId} timed out after ${timeoutSeconds}s`);
+          resolve(false);
+          this.pendingProposals.delete(proposalId);
+        }
+      }, timeoutSeconds * 1000);
+    });
+  }
+
+  private getPaidAdapter(modelName: string): { label: string; adapter: IAIProvider } | null {
+    for (const cfg of this.configs) {
+      // Paid provider is not the Nvidia proxy
+      if (cfg.baseUrl?.includes('localhost:3456') || cfg.label.includes('NVIDIA')) {
+        continue;
+      }
+      if (cfg.models.includes(modelName) && cfg.apiKey && cfg.apiKey !== 'not-needed') {
+        const adapter = this.providers.get(cfg.label);
+        if (adapter && adapter.isConfigured()) {
+          return { label: cfg.label, adapter };
+        }
+      }
+    }
+    return null;
   }
 
   // =========================================================================
@@ -109,8 +221,59 @@ export class ProviderRegistry {
   // Resolve adapter for a model config
   // =========================================================================
 
-  getAdapter(modelConfig: ModelConfig): IAIProvider {
+  async getAdapter(modelConfig: ModelConfig, options?: { isPipeline?: boolean }): Promise<IAIProvider> {
     const label = modelConfig.providerLabel;
+    const modelName = modelConfig.modelName;
+
+    // Check if this is a free model on the local Nvidia proxy
+    const isFreeModel = (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA')) &&
+      (modelName === 'deepseek-ai/deepseek-v4-pro' || modelName === 'deepseek-ai/deepseek-v4-flash');
+
+    if (isFreeModel && this.healthMonitor) {
+      const settings = this.healthMonitor.getSettings();
+      const status = this.healthMonitor.getStatus()[modelName];
+      const isOffline = status ? status.status === 'OFFLINE' : false;
+
+      // If offline or already failed over
+      if (isOffline || this.activeFailovers.has(modelName)) {
+        if (settings.mode === 'strict') {
+          throw new Error(`Model darmowy "${modelName}" jest niedostępny w trybie Strict.`);
+        } else if (settings.mode === 'automatic' || options?.isPipeline) {
+          const paid = this.getPaidAdapter(modelName);
+          if (!paid) {
+            throw new Error(`Darmowy model "${modelName}" nie odpowiada, a w systemie nie skonfigurowano żadnego płatnego klucza API dla tego modelu.`);
+          }
+          console.log(`[ProviderRegistry] Failover (Auto/Pipeline) to paid provider "${paid.label}" for model "${modelName}"`);
+          this.activeFailovers.add(modelName);
+          return paid.adapter;
+        } else if (settings.mode === 'interactive') {
+          // If already active failover, continue using it
+          if (this.activeFailovers.has(modelName)) {
+            const paid = this.getPaidAdapter(modelName);
+            if (paid) return paid.adapter;
+          }
+
+          // Check if paid adapter exists before asking
+          const paidExists = this.getPaidAdapter(modelName) !== null;
+          if (!paidExists) {
+            throw new Error(`Darmowy model "${modelName}" nie odpowiada, a w systemie nie skonfigurowano żadnego płatnego klucza API dla tego modelu.`);
+          }
+
+          // Ask user
+          console.log(`[ProviderRegistry] Failover (Interactive) proposal for "${modelName}"`);
+          const approved = await this.askUserForFailover(modelName, settings.timeoutSeconds);
+          if (approved) {
+            const paid = this.getPaidAdapter(modelName);
+            if (paid) {
+              this.activeFailovers.add(modelName);
+              return paid.adapter;
+            }
+          }
+          throw new Error(`Model darmowy "${modelName}" nie odpowiada (użytkownik odrzucił/zignorował propozycję użycia płatnego).`);
+        }
+      }
+    }
+
     const adapter = this.providers.get(label);
     if (!adapter) {
       throw new Error(`Provider "${label}" nie jest skonfigurowany. Dodaj klucz API w ustawieniach.`);
@@ -127,7 +290,14 @@ export class ProviderRegistry {
   }
 
   /** Rejestruje udane wysłanie zapytania do RateLimiter */
-  recordSend(label: string): void {
+  recordSend(label: string, modelName?: string): void {
+    if (modelName && this.activeFailovers.has(modelName) && (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA'))) {
+      const paid = this.getPaidAdapter(modelName);
+      if (paid) {
+        rateLimiter.recordSend(paid.label);
+        return;
+      }
+    }
     rateLimiter.recordSend(label);
   }
 

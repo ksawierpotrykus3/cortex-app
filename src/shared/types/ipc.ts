@@ -247,4 +247,16 @@ export interface NexusBridge {
 
   // RPM Usage (RateLimiter)
   getRpmUsage: () => Promise<{ totalUsed: number; totalLimit: number; keys: { key: string; used: number; limit: number }[] }>;
+
+  // Failover Router
+  getFailoverSettings: () => Promise<import('./schema').FailoverSettings>;
+  saveFailoverSettings: (payload: { settings: Partial<import('./schema').FailoverSettings> }) => Promise<{ success: boolean; error?: string }>;
+  getFailoverStatus: () => Promise<{ status: Record<string, { status: 'ONLINE' | 'OFFLINE'; ping: number }>; activeFailovers: string[] }>;
+  respondFailover: (payload: { proposalId: string; approved: boolean }) => Promise<{ success: boolean; error?: string }>;
+  respondRecovery: (payload: { modelName: string; approved: boolean }) => Promise<{ success: boolean; error?: string }>;
+  triggerHealthCheck: () => Promise<{ success: boolean; status: Record<string, { status: 'ONLINE' | 'OFFLINE'; ping: number }>; activeFailovers: string[]; error?: string }>;
+
+  onFailoverProposal: (callback: (data: { proposalId: string; modelName: string; timeoutSeconds: number }) => void) => () => void;
+  onRecoveryProposal: (callback: (data: { modelName: string }) => void) => () => void;
+  onAiStatusChanged: (callback: (data: { status: Record<string, { status: 'ONLINE' | 'OFFLINE'; ping: number }>; activeFailovers: string[] }) => void) => () => void;
 }

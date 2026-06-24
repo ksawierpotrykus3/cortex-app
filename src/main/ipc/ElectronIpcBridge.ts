@@ -511,6 +511,67 @@ export class ElectronIpcBridge {
       }
     });
 
+    this.ipc.handle('provider:get-failover-settings', () => {
+      try {
+        return this.providerRegistry.healthMonitor?.getSettings() || { mode: 'automatic', timeoutSeconds: 60 };
+      } catch (err) {
+        return { mode: 'automatic', timeoutSeconds: 60 };
+      }
+    });
+
+    this.ipc.handle('provider:save-failover-settings', (_event, payload: { settings: any }) => {
+      try {
+        this.providerRegistry.healthMonitor?.saveSettings(payload.settings);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    });
+
+    this.ipc.handle('provider:get-failover-status', () => {
+      try {
+        return {
+          status: this.providerRegistry.healthMonitor?.getStatus() || {},
+          activeFailovers: Array.from(this.providerRegistry['activeFailovers'] || []),
+        };
+      } catch (err) {
+        return { status: {}, activeFailovers: [] };
+      }
+    });
+
+    this.ipc.handle('provider:respond-failover', (_event, payload: { proposalId: string; approved: boolean }) => {
+      try {
+        this.providerRegistry.resolveProposal(payload.proposalId, payload.approved);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    });
+
+    this.ipc.handle('provider:respond-recovery', (_event, payload: { modelName: string; approved: boolean }) => {
+      try {
+        this.providerRegistry.resolveRecovery(payload.modelName, payload.approved);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    });
+
+    this.ipc.handle('provider:trigger-health-check', async () => {
+      try {
+        if (this.providerRegistry.healthMonitor) {
+          await (this.providerRegistry.healthMonitor as any).runChecks();
+        }
+        return {
+          success: true,
+          status: this.providerRegistry.healthMonitor?.getStatus() || {},
+          activeFailovers: Array.from(this.providerRegistry['activeFailovers'] || []),
+        };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    });
+
     // Browser operations (#27 Playwright)
     this.ipc.handle('browser:extract-dom', async (_event, payload: { url: string }) => {
       try {
@@ -1518,6 +1579,9 @@ export class ElectronIpcBridge {
       'provider:get-configs', 'provider:set-api-key',
       'provider:test-connection', 'provider:get-models',
       'provider:upsert-config',
+      'provider:get-failover-settings', 'provider:save-failover-settings',
+      'provider:get-failover-status', 'provider:respond-failover',
+      'provider:respond-recovery', 'provider:trigger-health-check',
 
       // Context Builder (F6.2)
       'context:get-options', 'context:fetch', 'context:search-nodes', 'context:search-tasks',

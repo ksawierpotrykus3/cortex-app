@@ -635,3 +635,11 @@ export const IPC_EVENTS = {
   BROWSER_GET_DOWNLOADED_FILES: 'browser:get-downloaded-files',
   BROWSER_DELETE_FILE: 'browser:delete-file',
 } as const;
+
+export type FailoverMode = 'strict' | 'interactive' | 'automatic';
+
+export interface FailoverSettings {
+  mode: FailoverMode;
+  timeoutSeconds: number;
+}
+

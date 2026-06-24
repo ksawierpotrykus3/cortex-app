@@ -38,6 +38,13 @@ const nexusBridge: NexusBridge = {
   getAvailableModels: () => ipcRenderer.invoke('provider:get-models'),
   upsertProviderConfig: (payload) => ipcRenderer.invoke('provider:upsert-config', payload),
 
+  getFailoverSettings: () => ipcRenderer.invoke('provider:get-failover-settings'),
+  saveFailoverSettings: (payload) => ipcRenderer.invoke('provider:save-failover-settings', payload),
+  getFailoverStatus: () => ipcRenderer.invoke('provider:get-failover-status'),
+  respondFailover: (payload) => ipcRenderer.invoke('provider:respond-failover', payload),
+  respondRecovery: (payload) => ipcRenderer.invoke('provider:respond-recovery', payload),
+  triggerHealthCheck: () => ipcRenderer.invoke('provider:trigger-health-check'),
+
   // ========================================================================
   // Agent Status Listeners (Main → Renderer)
   // ========================================================================
@@ -59,6 +66,27 @@ const nexusBridge: NexusBridge = {
   onAgentStream: (callback) => {
     const channel = 'agent:stream';
     const handler = (_event: Electron.IpcRendererEvent, data: { agentId: string; token: string }) => callback(data);
+    ipcRenderer.on(channel, handler);
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
+
+  onFailoverProposal: (callback) => {
+    const channel = 'ai:failover-proposal';
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on(channel, handler);
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
+
+  onRecoveryProposal: (callback) => {
+    const channel = 'ai:recovery-proposal';
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on(channel, handler);
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
+
+  onAiStatusChanged: (callback) => {
+    const channel = 'ai:status-changed';
+    const handler = (_event: any, data: any) => callback(data);
     ipcRenderer.on(channel, handler);
     return () => { ipcRenderer.removeListener(channel, handler); };
   },

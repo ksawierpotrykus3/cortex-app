@@ -144,7 +144,7 @@ export class AgentOrchestrator {
    * Sprawdza stan, permisje, budget, CircuitBreaker.
    * Emituje output przez callback events.
    */
-  async executeAgent(agentId: string, context?: string, triggerType?: TriggerType): Promise<AgentOutput> {
+  async executeAgent(agentId: string, context?: string, triggerType?: TriggerType, isPipeline?: boolean): Promise<AgentOutput> {
     const state = this.agents.get(agentId);
     if (!state) {
       throw new Error(`Agent ${agentId} nie istnieje`);
@@ -282,7 +282,7 @@ export class AgentOrchestrator {
         content = sandboxResult.output?.content || '';
       } else {
         // === Standard Execution (live) ======================================
-        content = await this.callAIStreaming(state.agent, finalContext, agentId);
+        content = await this.callAIStreaming(state.agent, finalContext, agentId, isPipeline);
       }
 
       // === Output ==========================================================
@@ -460,7 +460,7 @@ export class AgentOrchestrator {
    * Emituje każdy token przez onStream callback (live do changeloga).
    * Na końcu zwraca pełny skumulowany tekst.
    */
-  private async callAIStreaming(agent: Agent, context: string, agentId: string): Promise<string> {
+  private async callAIStreaming(agent: Agent, context: string, agentId: string, isPipeline?: boolean): Promise<string> {
     const prompt = agent.promptTemplate
       .replace(/\{\{SCHOWEK\}\}/g, context || '(brak zawartości schowka)')
       .replace(/\{\{DATA\}\}/g, new Date().toLocaleDateString('pl-PL'))
@@ -469,7 +469,7 @@ export class AgentOrchestrator {
     const systemPrompt = `Jesteś agentem "${agent.name}" w systemie NEXUS.\n${agent.description ? `Opis: ${agent.description}` : ''}`;
 
     try {
-      const adapter = this.providerRegistry.getAdapter(agent.model);
+      const adapter = await this.providerRegistry.getAdapter(agent.model, { isPipeline });
       const request = { prompt, model: agent.model, systemPrompt, contextSize: prompt.length };
 
       // Try streaming first
@@ -491,7 +491,7 @@ export class AgentOrchestrator {
           }
         }
 
-        this.providerRegistry.recordSend(agent.model.providerLabel);
+        this.providerRegistry.recordSend(agent.model.providerLabel, agent.model.modelName);
         return fullContent;
       }
 
@@ -499,11 +499,14 @@ export class AgentOrchestrator {
       const response = await adapter.complete(request);
       // Emit whole content as one chunk
       this.events.onStream(agentId, response.content);
-      this.providerRegistry.recordSend(agent.model.providerLabel);
+      this.providerRegistry.recordSend(agent.model.providerLabel, agent.model.modelName);
       return response.content;
 
     } catch (error) {
       console.error(`[AgentOrchestrator] AI call failed for "${agent.name}":`, error);
+      if (this.providerRegistry.healthMonitor && (agent.model.providerLabel === 'NVIDIA (DeepSeek / Kimi / Qwen)' || agent.model.providerLabel.includes('NVIDIA'))) {
+        this.providerRegistry.healthMonitor.recordFailure(agent.model.modelName);
+      }
       throw error;
     }
   }

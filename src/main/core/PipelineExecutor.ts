@@ -221,7 +221,8 @@ export class PipelineExecutor {
               const output = await this.orchestrator.executeAgent(
                 node.agentId,
                 prompt,
-                TriggerType.MANUAL
+                TriggerType.MANUAL,
+                true
               );
               runState.nodeResults.set(node.id, output);
             } catch (err) {
