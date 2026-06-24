@@ -4,6 +4,7 @@
 // ============================================================================
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -48,7 +49,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           padding: '40px',
           textAlign: 'center',
         }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠</div>
+          <AlertTriangle size={48} className="text-[rgb(var(--warning))] mb-4" />
           <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>Something went wrong</h1>
           <p style={{ fontSize: '14px', color: '#999', marginBottom: '24px', maxWidth: '500px' }}>
             {this.state.error?.message || 'An unexpected error occurred'}

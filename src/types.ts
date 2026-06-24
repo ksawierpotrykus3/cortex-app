@@ -1,5 +1,5 @@
-export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'draft' | 'agents' | 'changes' | 'wiki' | 'git' | 'pipeline' | 'workflows';
-export type RightPanelState = 'none' | 'axioms' | 'properties';
+export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'draft' | 'agents' | 'mermaid-plan' | 'changes' | 'wiki' | 'git' | 'feedback';
+export type RightPanelState = 'none' | 'properties';
 export type ModalState = 'none' | 'export' | 'settings';
 
 export type ThoughtMarker = 'certain' | 'hypothesis' | 'question' | 'answer';
@@ -33,6 +33,7 @@ export interface FeedbackEntry {
   id: string;
   title: string;
   context?: string;
+  feedbackType?: 'idea' | 'problem';
   suggestion?: string;
   timestamp: string;
   entityType: 'agent' | 'node' | 'task' | 'manuscript' | 'general';
@@ -175,80 +176,3 @@ export const DEFAULT_EXPORT_SCOPE: ExportScope = {
 // --- NXS-ENG-001 (Node-Based AI Engine Types) ---
 
 export type AgentRole = 'writer' | 'researcher' | 'critic' | 'auditor' | 'tool-executor';
-export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'system-reader' | 'system-writer' | 'condition' | 'browser-automate';
-
-export interface PipelinePayload<T = unknown> {
-  data: T; // Structured JSON object passed between nodes
-  metadata: {
-    hopCount: number;
-    tokensUsed: number;
-    correlationId: string;
-    sourceNodeId: string;
-  };
-  contextSelection?: {
-    tags: string[];
-    specificNoteIds: string[];
-  };
-}
-
-export interface WorkflowNode {
-  id: string;
-  type: NodeType;
-  name: string;
-  role?: AgentRole;
-  agentId?: string;
-  systemPrompt?: string;
-  config: Record<string, any>;
-  position: { x: number; y: number };
-  condition?: {
-    expression: string;
-    mode: 'skip-when-false' | 'skip-when-true' | 'always';
-  };
-}
-
-export interface PortConnection {
-  id: string;
-  sourceNodeId: string;
-  sourcePort: string;
-  targetNodeId: string;
-  targetPort: string;
-  condition?: string; // Optional evaluation expression for routers
-}
-
-export interface Pipeline {
-  id: string;
-  name: string;
-  description: string;
-  nodes: WorkflowNode[];
-  connections: PortConnection[];
-  createdAt: string;
-  updatedAt: string;
-  isHeadless: boolean; // true if running via EventBus (Zbrojownia)
-}
-
-// Time Travel & IndexedDB Types
-export interface NodeSnapshot {
-  id: string;             // Primary Key (UUIDv7)
-  pipelineId: string;
-  parentId: string | null; // For DAG Pruner (Fork and Resume)
-  nodeId: string;
-  state: PipelinePayload;
-  timestamp: number;
-  logs: string[];
-}
-
-// HitL Communication Protocol
-export interface HitLPayload {
-  targetPath: string;
-  originalSource: string;
-  proposedSource: string;
-  diffSummary?: string;
-}
-
-export interface HitLMessage {
-  type: 'HITL_FILE_EDIT_REQUEST' | 'HITL_RESPONSE';
-  correlationId: string;
-  payload?: HitLPayload;
-  status?: 'APPROVED' | 'DENIED' | 'TIMEOUT';
-  error?: string;
-}

@@ -59,9 +59,9 @@ export function ExportModal({
     .filter((k) => k !== "onlySelected")
     .some((k) => exportScope[k] === true);
 
-  if (state !== "export") return null;
-
   const focusTrapRef = useFocusTrap(state === "export");
+
+  if (state !== "export") return null;
 
   const handleSave = () => {
     if (!hasAnySelected) return;

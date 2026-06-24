@@ -35,10 +35,9 @@ export function CustomCommandsManager() {
   const { manageOpen, closeManage, customCommands, addCustomCommand, updateCustomCommand, removeCustomCommand } = useCommandStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CustomCommandData>(defaultForm());
+  const focusTrapRef = useFocusTrap(manageOpen);
 
   if (!manageOpen) return null;
-
-  const focusTrapRef = useFocusTrap(manageOpen);
 
   function defaultForm(): CustomCommandData {
     return {

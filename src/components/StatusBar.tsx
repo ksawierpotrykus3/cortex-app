@@ -8,6 +8,7 @@ import {
   CircleDot, HardDrive, GitBranch, Activity,
 } from "lucide-react";
 import { ViewMode } from "../types";
+import { RpmIndicator } from "./RpmIndicator";
 
 interface StatusBarProps {
   activeView: ViewMode;
@@ -36,8 +37,9 @@ export function StatusBar({
     changes: "Zmiany",
     wiki: "Wiki",
     git: "Git",
-    pipeline: "Pipeline",
-    workflows: "Workflows",
+
+    "mermaid-plan": "Diagram Mermaid",
+    feedback: "Feedback",
   };
 
   return (
@@ -62,6 +64,9 @@ export function StatusBar({
 
       {/* Right: status indicators */}
       <div className="flex items-center gap-4 text-[11px]">
+        {/* RPM indicator */}
+        <RpmIndicator />
+
         {/* FS status */}
         <div className="flex items-center gap-1.5">
           <HardDrive className={`w-3 h-3 ${fsConnected ? 'text-[rgb(var(--success))]' : 'text-[rgb(var(--text-tertiary))]'}`} />

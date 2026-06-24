@@ -4,7 +4,7 @@
 // Inicjalizuje AgentOrchestrator + StorageEngine + ElectronIpcBridge
 // ============================================================================
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn, ChildProcess } from 'child_process';
@@ -16,8 +16,14 @@ import { AgentOutput, AgentStatus } from '../shared/types/schema';
 
 // === Constants =============================================================
 const IS_DEV = !app.isPackaged;
+// ROOT_DIR zawsze względem __dirname — w dev to src/main/, w production to asar/out/main/
 const ROOT_DIR = path.join(__dirname, '..', '..');
-const DATA_DIR = path.join(ROOT_DIR, 'data');
+const RESOURCE_DIR = !IS_DEV
+  ? path.join(process.resourcesPath, 'app.asar.unpacked')
+  : ROOT_DIR;
+const DATA_DIR = !IS_DEV
+  ? path.join(app.getPath('userData'), 'NexusData')
+  : path.join(ROOT_DIR, 'data');
 
 // === State =================================================================
 let mainWindow: BrowserWindow | null = null;
@@ -25,68 +31,56 @@ let orchestrator: AgentOrchestrator | null = null;
 let storage: StorageEngine | null = null;
 let ipcBridge: ElectronIpcBridge | null = null;
 let providerRegistry: ProviderRegistry | null = null;
-let bridgeProcess: ChildProcess | null = null;
+let nvidiaProcess: ChildProcess | null = null;
 
-// === Trae-Bridge (darmowe modele AI) =========================================
-const TRAE_BRIDGE_PORT = 3458;
-const TRAE_BRIDGE_BASE_URL = `http://localhost:${TRAE_BRIDGE_PORT}/v1`;
+// === NVIDIA-Bridge (własne proxy z rotacją kluczy) ===========================
+const NVIDIA_BRIDGE_PORT = 3456;
+const NVIDIA_BRIDGE_BASE_URL = `http://localhost:${NVIDIA_BRIDGE_PORT}/v1`;
+const NVIDIA_KEYS_DIR = path.join(DATA_DIR, 'nvidia-keys');
+const NVIDIA_KEYS_PATH = path.join(NVIDIA_KEYS_DIR, 'keys.json');
+const NVIDIA_PROXY_SCRIPT = path.join(__dirname, 'services', 'nvidia-bridge', 'proxy.cjs');
 
-/** Uruchamia serwer trae-bridge (jeśli nie jest już uruchomiony) */
-async function startTraeBridge(): Promise<void> {
-  const bridgeScript = path.join(ROOT_DIR, '..', 'trae', 'server.mjs');
-  if (!fs.existsSync(bridgeScript)) {
-    console.debug('[Trae-Bridge] server.mjs nie znaleziony — pomijam');
+async function startNvidiaBridge(): Promise<void> {
+  if (!fs.existsSync(NVIDIA_PROXY_SCRIPT)) {
+    console.debug('[NVIDIA-Bridge] proxy.js nie znaleziony — pomijam');
     return;
   }
+  // Upewnij się że katalog na klucze istnieje
+  if (!fs.existsSync(NVIDIA_KEYS_DIR)) {
+    fs.mkdirSync(NVIDIA_KEYS_DIR, { recursive: true });
+  }
+  // Inicjalizuj pusty keys.json jeśli nie istnieje
+  if (!fs.existsSync(NVIDIA_KEYS_PATH)) {
+    fs.writeFileSync(NVIDIA_KEYS_PATH, '[]', 'utf-8');
+  }
 
-  // Sprawdź czy już działa
   try {
-    const resp = await fetch(`${TRAE_BRIDGE_BASE_URL}/models`);
-    if (resp.ok) {
-      console.debug('[Trae-Bridge] już uruchomiony na', TRAE_BRIDGE_BASE_URL);
-      return;
-    }
-  } catch { /* nie działa — trzeba uruchomić */ }
+    const resp = await fetch(`${NVIDIA_BRIDGE_BASE_URL}/models`);
+    if (resp.ok) { /* console.debug('[NVIDIA-Bridge] już działa'); */ return; }
+  } catch { /* ok */ }
 
-  console.debug('[Trae-Bridge] Uruchamianie...');
-  bridgeProcess = spawn('node', [bridgeScript], {
+  // Kopiuj proxy.js do data/nvidia-keys żeby czytało keys.json z tego samego folderu
+  const proxyInData = path.join(NVIDIA_KEYS_DIR, 'proxy.cjs');
+  if (!fs.existsSync(proxyInData) || fs.statSync(NVIDIA_PROXY_SCRIPT).mtimeMs > fs.statSync(proxyInData).mtimeMs) {
+    fs.copyFileSync(NVIDIA_PROXY_SCRIPT, proxyInData);
+  }
+
+  console.debug('[NVIDIA-Bridge] Uruchamianie...');
+  nvidiaProcess = spawn('node', [proxyInData], {
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: false,
-    windowsHide: true,
+    detached: false, windowsHide: true,
   });
-
-  bridgeProcess.stdout?.on('data', (data: Buffer) => {
-    console.debug('[Trae-Bridge]', data.toString().trim());
-  });
-  bridgeProcess.stderr?.on('data', (data: Buffer) => {
-    console.debug('[Trae-Bridge:err]', data.toString().trim());
-  });
-  bridgeProcess.on('exit', (code) => {
-    console.debug(`[Trae-Bridge] Zakończony (kod ${code})`);
-    bridgeProcess = null;
-  });
-
-  // Poczekaj aż odpali — healthcheck przez max 5s
-  for (let i = 0; i < 10; i++) {
+  nvidiaProcess.stdout?.on('data', (d: Buffer) => { /* console.debug('[NVIDIA-Bridge]', d.toString().trim()); */ });
+  nvidiaProcess.stderr?.on('data', (d: Buffer) => { /* console.debug('[NVIDIA-Bridge:err]', d.toString().trim()); */ });
+  nvidiaProcess.on('exit', (code) => { /* console.debug(`[NVIDIA-Bridge] exit ${code}`); */ nvidiaProcess = null; });
+  for (let i = 0; i < 20; i++) {
     await new Promise(r => setTimeout(r, 500));
-    try {
-      const resp = await fetch(`${TRAE_BRIDGE_BASE_URL}/models`);
-      if (resp.ok) {
-        console.debug('[Trae-Bridge] Gotowy!');
-        return;
-      }
-    } catch { /* czekamy */ }
+    try { const r = await fetch(`${NVIDIA_BRIDGE_BASE_URL}/models`); if (r.ok) { /* console.debug('[NVIDIA-Bridge] Gotowy!'); */ return; } } catch { /* wait */ }
   }
-  console.warn('[Trae-Bridge] Nie odpowiada po 5s — kontynuuję bez');
+  // console.warn('[NVIDIA-Bridge] Nie odpowiada po 10s');
 }
-
-/** Zatrzymuje trae-bridge */
-function stopTraeBridge(): void {
-  if (bridgeProcess) {
-    console.debug('[Trae-Bridge] Zatrzymywanie...');
-    bridgeProcess.kill('SIGTERM');
-    bridgeProcess = null;
-  }
+function stopNvidiaBridge(): void {
+  if (nvidiaProcess) { console.debug('[NVIDIA-Bridge] Stop'); nvidiaProcess.kill('SIGTERM'); nvidiaProcess = null; }
 }
 
 // ============================================================================
@@ -95,8 +89,8 @@ function stopTraeBridge(): void {
 function createMainWindow(): BrowserWindow {
   const preloadPath = path.join(__dirname, '..', 'preload', 'index.js');
 
-  console.log('[NEXUS] preload path:', preloadPath);
-  console.log('[NEXUS] preload exists:', fs.existsSync(preloadPath));
+  // console.log('[NEXUS] preload path:', preloadPath);
+  // console.log('[NEXUS] preload exists:', fs.existsSync(preloadPath));
 
   const win = new BrowserWindow({
     width: 1400,
@@ -162,8 +156,8 @@ async function bootstrap(): Promise<void> {
   console.log('  Phase 1: Agents + UI');
   console.log('====================================================\n');
 
-  // === Trae-Bridge (darmowe modele) ===
-  await startTraeBridge();
+  // === AI Bridge ===
+  await startNvidiaBridge(); // NVIDIA key rotator proxy
 
   // === Storage ===
   storage = new StorageEngine(DATA_DIR);
@@ -171,7 +165,7 @@ async function bootstrap(): Promise<void> {
 
   // === Provider Registry ===
   providerRegistry = new ProviderRegistry();
-  console.log('[NEXUS] ProviderRegistry:', providerRegistry.getConfigs().map(c => c.label).join(', '));
+  // console.log('[NEXUS] ProviderRegistry:', providerRegistry.getConfigs().map(c => c.label).join(', '));
 
   // === Agent Orchestrator ===
   orchestrator = new AgentOrchestrator({
@@ -190,13 +184,13 @@ async function bootstrap(): Promise<void> {
       console.error(`[Orchestrator] Error ${agentId}:`, error);
       storage?.appendLog({ level: 'error', agentId, message: error });
     },
-  }, providerRegistry, storage);
+  }, providerRegistry, storage, clipboard);
 
   // === IPC Bridge ===
-  ipcBridge = new ElectronIpcBridge(ipcMain, orchestrator, storage, providerRegistry, ROOT_DIR);
+  ipcBridge = new ElectronIpcBridge(ipcMain, orchestrator, storage, providerRegistry, ROOT_DIR, NVIDIA_KEYS_PATH);
   ipcBridge.registerHandlers();
 
-  console.log('[NEXUS] System gotowy — AI Providers:', providerRegistry.getConfigs().length);
+  // console.log('[NEXUS] System gotowy — AI Providers:', providerRegistry.getConfigs().length);
 }
 
 // ============================================================================
@@ -234,5 +228,5 @@ app.on('before-quit', () => {
   orchestrator?.destroy();
   storage?.destroy();
   ipcBridge?.destroy();
-  stopTraeBridge();
+  stopNvidiaBridge();
 });

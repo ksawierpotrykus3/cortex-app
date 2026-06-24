@@ -9,8 +9,6 @@ export function RightPanel({
   selectedNode,
   onNodeDelete,
   onNodeUpdate,
-  axioms,
-  setAxioms,
   allNodes,
   allLinks,
   onLinkDelete,
@@ -21,8 +19,6 @@ export function RightPanel({
   selectedNode?: NexusNode;
   onNodeDelete?: (id: string) => void;
   onNodeUpdate?: (id: string, updates: Partial<NexusNode>) => void;
-  axioms?: {id: string, text: string}[];
-  setAxioms?: (axioms: {id: string, text: string}[]) => void;
   allNodes?: NexusNode[];
   allLinks?: NexusLink[];
   onLinkDelete?: (linkId: { source: string; target: string }) => void;
@@ -34,7 +30,7 @@ export function RightPanel({
     <div className="w-[400px] border-l border-[rgb(var(--border))] flex flex-col h-full bg-[rgb(var(--background))] shrink-0 z-40 shadow-xl absolute right-0 top-0 bottom-0">
       <div className="p-4 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--panel))]/50">
         <h3 className="text-[15px] font-medium text-[rgb(var(--text-main))]">
-          {state === "axioms" ? "Nexus Axioms" : "Properties"}
+          Properties
         </h3>
         <button onClick={onClose} aria-label="Zamknij panel" className="text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--border))] p-1 rounded transition-colors cursor-pointer">
           <X className="w-4 h-4" />
@@ -42,78 +38,16 @@ export function RightPanel({
       </div>
 
       <div className="flex-1 relative flex flex-col min-h-0 bg-[rgb(var(--background))]">
-        {state === "axioms" && axioms && setAxioms && <AxiomsPanelContent axioms={axioms} setAxioms={setAxioms} />}
-        {state === "properties" && (
-            <PropertiesPanelContent 
-                selectedNode={selectedNode} 
-                onNodeDelete={onNodeDelete} 
-                onNodeUpdate={onNodeUpdate} 
-                allNodes={allNodes}
-                allLinks={allLinks}
-                onLinkDelete={onLinkDelete}
-                onMoveToProject={onMoveToProject}
-            />
-        )}
+        <PropertiesPanelContent 
+            selectedNode={selectedNode} 
+            onNodeDelete={onNodeDelete} 
+            onNodeUpdate={onNodeUpdate} 
+            allNodes={allNodes}
+            allLinks={allLinks}
+            onLinkDelete={onLinkDelete}
+            onMoveToProject={onMoveToProject}
+        />
       </div>
-    </div>
-  );
-}
-
-function AxiomsPanelContent({ 
-  axioms = [], 
-  setAxioms 
-}: { 
-  axioms: {id: string, text: string}[], 
-  setAxioms: (axioms: {id: string, text: string}[]) => void 
-}) {
-
-  const handleAddAxiom = () => {
-    setAxioms([...axioms, { id: uid(), text: "" }]);
-  };
-
-  const handleUpdateAxiom = (id: string, text: string) => {
-    setAxioms(axioms.map(a => a.id === id ? { ...a, text } : a));
-  };
-
-  const handleDeleteAxiom = (id: string) => {
-    setAxioms(axioms.filter(a => a.id !== id));
-  };
-
-  return (
-    <div className="flex flex-1 flex-col p-5 bg-[rgb(var(--background))] overflow-hidden">
-       <div className="text-[14px] text-[rgb(var(--text-muted))] mb-4 leading-relaxed shrink-0">
-           Define core axioms and rules for the system logic. These principles guide operations block evaluation.
-       </div>
-       
-       <div className="shrink-0 mb-4 bg-[rgb(var(--background))]">
-           <button onClick={handleAddAxiom} aria-label="Utwórz nowy aksjomat" className="w-full py-2.5 rounded-xl text-[rgb(var(--background))] bg-[rgb(var(--text-main))] hover:bg-[rgb(var(--text-muted))] transition-colors shadow-sm text-[13px] font-medium flex items-center justify-center gap-2 cursor-pointer tracking-wide">
-             <Plus className="w-4 h-4" />
-             Create New Axiom
-           </button>
-       </div>
-
-       <div className="flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 pb-4">
-         {axioms.map((axiom, idx) => (
-           <div key={axiom.id} className="flex flex-col gap-2 bg-[rgb(var(--panel))] border border-[rgb(var(--border))] rounded-2xl p-4 relative group hover:border-[rgb(var(--text-muted))]/30 transition-all shadow-sm shrink-0">
-             <div className="flex items-center justify-between text-[13px] font-medium text-[rgb(var(--text-main))] mb-1">
-               <span className="bg-[rgb(var(--border))]/50 px-2 py-0.5 rounded text-[11px] tracking-wide uppercase text-[rgb(var(--text-muted))]">Rule #{idx + 1}</span>
-               <button 
-                 onClick={() => handleDeleteAxiom(axiom.id)}
-                 aria-label="Usuń aksjomat"
-                 className="text-[rgb(var(--text-muted))] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 rounded-md hover:bg-[rgb(var(--background))]"
-               >
-                 <X className="w-3.5 h-3.5" />
-               </button>
-             </div>
-             <textarea
-                value={axiom.text}
-                onChange={(e) => handleUpdateAxiom(axiom.id, e.target.value)}
-                placeholder="Logic rule..."
-                className="w-full bg-transparent text-[14px] leading-relaxed text-[rgb(var(--text-main))] focus:outline-none custom-scrollbar resize-none min-h-[60px]"
-             />
-           </div>
-         ))}
-       </div>
     </div>
   );
 }

@@ -16,13 +16,10 @@ export function SettingsModal({
   geminiKey?: string;
   setGeminiKey?: (key: string) => void;
 }) {
-  const focusTrapRef = useFocusTrap(state === "settings");
-
-  if (state !== "settings") return null;
-
   const [activeTab, setActiveTab] = useState<'general' | 'git'>('general');
   const [saved, setSaved] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusTrapRef = useFocusTrap(state === "settings");
 
   // Cleanup timer na wypadek odmontowania
   useEffect(() => {
@@ -30,6 +27,8 @@ export function SettingsModal({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  if (state !== "settings") return null;
 
   const handleSaveClick = () => {
     setSaved(true);

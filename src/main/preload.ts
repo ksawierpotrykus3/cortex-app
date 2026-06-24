@@ -115,6 +115,13 @@ const nexusBridge: NexusBridge = {
   // Logs pagination (A7 fix)
   getLogs: (payload) => ipcRenderer.invoke('logs:get', payload || {}),
 
+  // Bridge Health
+  bridgeHealth: (payload) => ipcRenderer.invoke('bridge:health', payload || {}),
+
+  // Network Management (AI Bridges + Keys)
+  getNvidiaKeys: () => ipcRenderer.invoke('nvidia:get-keys'),
+  setNvidiaKeys: (payload) => ipcRenderer.invoke('nvidia:set-keys', payload),
+
   // ========================================================================
   // Context Builder (F6.2)
   // ========================================================================
@@ -186,6 +193,9 @@ const nexusBridge: NexusBridge = {
   executeWorkflow: (payload) => ipcRenderer.invoke('workflow:execute', payload),
   getWorkflowResult: (payload) => ipcRenderer.invoke('workflow:result', payload),
   getWorkflowLogs: (payload) => ipcRenderer.invoke('workflow:logs', payload),
+
+  // RPM Usage (RateLimiter)
+  getRpmUsage: () => ipcRenderer.invoke('rpm:usage'),
 };
 
 // ============================================================================

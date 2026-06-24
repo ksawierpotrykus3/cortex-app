@@ -10,7 +10,14 @@ import {
   TriggerType,
   OutputDestinationType,
 } from '../../../shared/types/schema';
+import {
+  ALL_CAPABILITIES,
+  CapabilityCategory,
+  CapabilityEntry,
+  ApprovalLevel,
+} from '../../../shared/types/capabilities';
 import { ToggleSwitch } from '../ui/ToggleSwitch';
+import { FolderPicker } from '../../../components/FolderPicker';
 
 // === Props =================================================================
 interface ModelOption {
@@ -20,8 +27,12 @@ interface ModelOption {
 }
 
 interface PermissionPanelProps {
-  value?: PermissionSet;
-  onChange: (permissions: PermissionSet) => void;
+  permissions?: PermissionSet;
+  capabilities?: CapabilityEntry[];
+  allowedFolders?: string[];
+  onChangePermissions: (perms: PermissionSet) => void;
+  onChangeCapabilities: (caps: CapabilityEntry[]) => void;
+  onChangeFolders: (folders: string[]) => void;
   availableModels?: ModelOption[];
 }
 
@@ -46,17 +57,70 @@ const DEST_LABELS: Record<OutputDestinationType, string> = {
   [OutputDestinationType.KNOWLEDGE]: 'Baza Wiedzy',
 };
 
+// === Helpers ===============================================================
+function capBadge(level: ApprovalLevel | null) {
+  if (level === 'none') return 'R';
+  if (level === 'notify') return 'N';
+  if (level === 'approve') return 'A';
+  return null;
+}
+
+function nextApprovalLevel(current: ApprovalLevel | null): ApprovalLevel | null {
+  if (current === null) return 'none';
+  if (current === 'none') return 'notify';
+  if (current === 'notify') return 'approve';
+  return null;
+}
+
 // === Component =============================================================
-export function PermissionPanel({ value, onChange, availableModels = [] }: PermissionPanelProps) {
-  const perms = value || DEFAULT_PERMISSION_SET;
+export function PermissionPanel({
+  permissions,
+  capabilities = [],
+  allowedFolders = [],
+  onChangePermissions,
+  onChangeCapabilities,
+  onChangeFolders,
+  availableModels = [],
+}: PermissionPanelProps) {
+  const perms = permissions || DEFAULT_PERMISSION_SET;
   const [customModelInput, setCustomModelInput] = useState('');
+
+  const toggleCap = (cap: CapabilityCategory) => {
+    const exists = capabilities.find(c => c.capability === cap);
+    if (exists) {
+      const newLevel = nextApprovalLevel(exists.approvalLevel);
+      if (newLevel === null) {
+        onChangeCapabilities(capabilities.filter(c => c.capability !== cap));
+      } else {
+        onChangeCapabilities(
+          capabilities.map(c => c.capability === cap ? { ...c, approvalLevel: newLevel } : c)
+        );
+      }
+    } else {
+      onChangeCapabilities([...capabilities, { capability: cap, approvalLevel: 'none' as ApprovalLevel }]);
+    }
+  };
+
+  const setAllCapabilities = (level: ApprovalLevel) => {
+    const result: CapabilityEntry[] = [];
+    for (const group of ALL_CAPABILITIES) {
+      for (const item of group.items) {
+        result.push({ capability: item.value, approvalLevel: level });
+      }
+    }
+    onChangeCapabilities(result);
+  };
+
+  const clearAllCapabilities = () => {
+    onChangeCapabilities([]);
+  };
 
   const toggleTrigger = (t: TriggerType) => {
     const current = perms.allowedTriggers;
     const next = current.includes(t)
       ? current.filter((x) => x !== t)
       : [...current, t];
-    onChange({ ...perms, allowedTriggers: next });
+    onChangePermissions({ ...perms, allowedTriggers: next });
   };
 
   const toggleDestination = (d: OutputDestinationType) => {
@@ -64,7 +128,7 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
     const next = current.includes(d)
       ? current.filter((x) => x !== d)
       : [...current, d];
-    onChange({ ...perms, allowedDestinations: next });
+    onChangePermissions({ ...perms, allowedDestinations: next });
   };
 
   const toggleModel = (modelName: string) => {
@@ -72,14 +136,14 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
     const next = current.includes(modelName)
       ? current.filter((x) => x !== modelName)
       : [...current, modelName];
-    onChange({ ...perms, allowedModels: next });
+    onChangePermissions({ ...perms, allowedModels: next });
   };
 
   const addCustomModel = () => {
     const val = customModelInput.trim();
     if (!val) return;
     if (!perms.allowedModels.includes(val)) {
-      onChange({ ...perms, allowedModels: [...perms.allowedModels, val] });
+      onChangePermissions({ ...perms, allowedModels: [...perms.allowedModels, val] });
     }
     setCustomModelInput('');
   };
@@ -92,6 +156,77 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
 
   return (
     <div className="space-y-5">
+      {/* === Capabilities === */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-[11px] font-medium text-[rgb(var(--text-secondary))] uppercase tracking-wider">
+            Capabilities (pozwolenia)
+          </label>
+          <span className="text-[10px] text-[rgb(var(--text-tertiary))]">
+            R(czytaj) / N(powiadom) / A(zatwierdz)
+          </span>
+        </div>
+        <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar mb-2">
+          {ALL_CAPABILITIES.map(group => (
+            <div key={group.category}>
+              <div className="text-[9px] font-mono font-medium text-[rgb(var(--text-tertiary))] uppercase mb-1">
+                {group.label}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {group.items.map(item => {
+                  const cap = capabilities.find(c => c.capability === item.value);
+                  const level = cap?.approvalLevel || null;
+                  return (
+                    <button
+                      key={item.value}
+                      onClick={() => toggleCap(item.value)}
+                      className={`text-[10px] font-medium px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                        level === 'none'
+                          ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                          : level === 'notify'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                          : level === 'approve'
+                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                          : 'bg-transparent border-[rgb(var(--border))] text-[rgb(var(--text-tertiary))] hover:text-[rgb(var(--text-muted))]'
+                      }`}
+                      title={`${item.label}: ${item.description}`}
+                    >
+                      {capBadge(level) && (
+                        <span className="mr-0.5">{capBadge(level)}</span>
+                      )}
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAllCapabilities('none')}
+            className="px-2.5 py-1 text-[10px] font-medium bg-green-500/10 text-green-400 border border-green-500/30 rounded-lg hover:bg-green-500/20 transition-colors cursor-pointer"
+          >
+            Ustaw wszystkie jako R (czytaj)
+          </button>
+          <button
+            onClick={() => setAllCapabilities('approve')}
+            className="px-2.5 py-1 text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/20 transition-colors cursor-pointer"
+          >
+            Ustaw wszystkie jako A (zatwierdz)
+          </button>
+          <button
+            onClick={clearAllCapabilities}
+            className="px-2.5 py-1 text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors cursor-pointer"
+          >
+            Odznacz wszystko
+          </button>
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-[rgb(var(--border))]" />
+
       {/* Allowed Triggers */}
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -224,7 +359,7 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
             type="number"
             min={0}
             value={perms.maxTokensPerRun}
-            onChange={(e) => onChange({ ...perms, maxTokensPerRun: parseInt(e.target.value) || 0 })}
+            onChange={(e) => onChangePermissions({ ...perms, maxTokensPerRun: parseInt(e.target.value) || 0 })}
             className="w-full px-2 py-1 text-[12px] bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--border))] rounded text-[rgb(var(--text))] outline-none"
           />
           <span className="text-[9px] text-[rgb(var(--text-secondary))]">0 = brak limitu</span>
@@ -237,7 +372,7 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
             type="number"
             min={0}
             value={perms.maxRunsPerMinute}
-            onChange={(e) => onChange({ ...perms, maxRunsPerMinute: parseInt(e.target.value) || 0 })}
+            onChange={(e) => onChangePermissions({ ...perms, maxRunsPerMinute: parseInt(e.target.value) || 0 })}
             className="w-full px-2 py-1 text-[12px] bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--border))] rounded text-[rgb(var(--text))] outline-none"
           />
           <span className="text-[9px] text-[rgb(var(--text-secondary))]">0 = brak limitu</span>
@@ -256,7 +391,7 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
           </div>
           <ToggleSwitch
             checked={perms.requireApproval}
-            onChange={() => onChange({ ...perms, requireApproval: !perms.requireApproval })}
+            onChange={() => onChangePermissions({ ...perms, requireApproval: !perms.requireApproval })}
             ariaLabel="Przełącz wymagaj akceptacji outputu"
           />
         </div>
@@ -268,7 +403,7 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
           </div>
           <ToggleSwitch
             checked={perms.gitAccess}
-            onChange={() => onChange({ ...perms, gitAccess: !perms.gitAccess })}
+            onChange={() => onChangePermissions({ ...perms, gitAccess: !perms.gitAccess })}
             ariaLabel="Przełącz Git Access"
           />
         </div>
@@ -280,10 +415,21 @@ export function PermissionPanel({ value, onChange, availableModels = [] }: Permi
           </div>
           <ToggleSwitch
             checked={perms.gitWrite}
-            onChange={() => onChange({ ...perms, gitWrite: !perms.gitWrite })}
+            onChange={() => onChangePermissions({ ...perms, gitWrite: !perms.gitWrite })}
             ariaLabel="Przełącz Git Write"
           />
         </div>
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-[rgb(var(--border))]" />
+
+      {/* Foldery */}
+      <div>
+        <label className="block text-[11px] font-medium text-[rgb(var(--text-secondary))] uppercase tracking-wider mb-2">
+          Dozwolone foldery
+        </label>
+        <FolderPicker value={allowedFolders} onChange={onChangeFolders} />
       </div>
     </div>
   );

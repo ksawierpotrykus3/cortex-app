@@ -52,13 +52,23 @@ export default defineConfig({
           format: 'es',
         },
       },
+      // Don't add crossorigin attribute — Electron loads from file://
+      modulePreload: false,
+      cssCodeSplit: false,
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'remove-crossorigin',
+        transformIndexHtml: (html) => html.replace(/\bcrossorigin\b/g, ''),
+      },
+    ],
     server: {
       port: 3000,
     },

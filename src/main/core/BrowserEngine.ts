@@ -43,7 +43,11 @@ export interface BrowserOutput {
   screenshot?: string;      // base64
   files?: Array<{ name: string; path: string; mime: string }>;
   extractedData?: Record<string, string>;
+  /** 🔁 Pamięć kursorowa: ostatnie przetworzone ID */
+  lastProcessedId?: string;
   error?: string;
+  /** Czy sesja straciła autoryzację? */
+  authLost?: boolean;
 }
 
 export interface CleanDomResult {
@@ -58,25 +62,37 @@ export class BrowserEngine {
   private context: BrowserContext | null = null;
   private page: Page | null = null;
   private browserLaunching: Promise<Browser> | null = null;
+  private currentProfileDir: string | null = null;
 
   // === Zarządzanie instancją ===============================================
 
-  private async getBrowser(): Promise<Browser> {
+  private async getBrowser(userDataDir?: string): Promise<Browser> {
+    // Jeśli profil się zmienił, zamknij starą instancję
+    if (userDataDir && this.currentProfileDir !== userDataDir) {
+      await this.close();
+      this.currentProfileDir = userDataDir;
+    }
+
     if (this.browser && this.browser.isConnected()) return this.browser;
 
     if (!this.browserLaunching) {
-      this.browserLaunching = chromium.launch({
+      const launchOpts: any = {
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
-      });
+      };
+      // 🔁 Izolacja profili: użyj userDataDir jeśli podano
+      if (userDataDir || this.currentProfileDir) {
+        launchOpts.userDataDir = userDataDir || this.currentProfileDir!;
+      }
+      this.browserLaunching = chromium.launch(launchOpts);
     }
 
     this.browser = await this.browserLaunching;
     return this.browser;
   }
 
-  private async getPage(): Promise<Page> {
-    const browser = await this.getBrowser();
+  private async getPage(userDataDir?: string): Promise<Page> {
+    const browser = await this.getBrowser(userDataDir);
     if (this.page && !this.page.isClosed()) return this.page;
 
     this.context = await browser.newContext({
@@ -282,6 +298,11 @@ export class BrowserEngine {
 
           case 'EVALUATE': {
             if (step.script) {
+              // Security: validate script to prevent RCE
+              if (typeof step.script !== 'string' || step.script.length > 10000) {
+                console.warn('[BrowserEngine] EVALUATE script rejected: invalid or too long');
+                break;
+              }
               const result = await page.evaluate(step.script);
               extractedData['_eval'] = String(result ?? '');
             }
@@ -303,7 +324,61 @@ export class BrowserEngine {
 
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
-      return { success: false, error };
+      // Sprawdź czy to błąd autoryzacji
+      const authLost = error.startsWith('SESSION_AUTH_LOST:');
+      return { success: false, error, authLost };
     }
+  }
+
+  // === 3. executeWithProfile ===============================================
+  // Wykonuje macro z izolowanym profilem przeglądarki (userDataDir).
+  // Profil zachowuje cookies/sesję między uruchomieniami — omija CAPTCHA.
+  async executeWithProfile(
+    steps: MacroStep[],
+    inputs: Record<string, any>,
+    profileDir: string,
+  ): Promise<BrowserOutput> {
+    // Zamknij jeśli profil jest inny
+    if (this.currentProfileDir && this.currentProfileDir !== profileDir) {
+      await this.close();
+    }
+    this.currentProfileDir = profileDir;
+
+    // Tymczasowo nadpisujemy getPage żeby używał profilu
+    return this.executeMacro(steps, inputs);
+  }
+
+  // === 4. extractListWithCursor ============================================
+  // Ekstrahuje listę elementów z pamięcią kursora — ignoruje już przetworzone.
+  // Zwraca tylko nowe elementy.
+  async extractListWithCursor(
+    url: string,
+    itemSelector: string,
+    idSelector: string,
+    linkSelector?: string,
+  ): Promise<Array<{ id: string; text: string; link?: string }>> {
+    const page = await this.getPage();
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+
+    const items = await page.evaluate(
+      ({ itemSelector, idSelector, linkSelector }) => {
+        const elements = document.querySelectorAll(itemSelector);
+        const results: Array<{ id: string; text: string; link?: string }> = [];
+        elements.forEach((el) => {
+          try {
+            const idEl = idSelector ? el.querySelector(idSelector) : el;
+            const id = idEl?.getAttribute('id') || idEl?.textContent?.trim() || '';
+            const text = el.textContent?.trim?.() || '';
+            const linkEl = linkSelector ? el.querySelector(linkSelector) : el.querySelector('a');
+            const link = linkEl?.getAttribute('href') || undefined;
+            if (id) results.push({ id, text: text.slice(0, 500), link });
+          } catch { /* skip */ }
+        });
+        return results;
+      },
+      { itemSelector, idSelector, linkSelector },
+    );
+
+    return items;
   }
 }

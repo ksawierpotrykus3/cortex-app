@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { screen, fireEvent, waitFor } from "@testing-library/dom";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { GitPanel } from "./GitPanel";
 import { GitLogEntry, GitBranchInfo } from "../shared/types/schema";

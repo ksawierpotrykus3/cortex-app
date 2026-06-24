@@ -85,6 +85,9 @@ export interface CommandChannels {
 
   // Logs pagination
   'logs:get': { payload: { cursor?: string | null; limit?: number }; response: { entries: Array<{ id: string; timestamp: number; payload: any; size: number }>; nextCursor: string | null; hasMore: boolean } };
+
+  // RPM Usage (RateLimiter)
+  'rpm:usage': { payload: void; response: { totalUsed: number; totalLimit: number; keys: { key: string; used: number; limit: number }[] } };
 }
 
 // ============================================================================
@@ -190,6 +193,13 @@ export interface NexusBridge {
   // Logs pagination (A7 fix)
   getLogs: (payload?: { cursor?: string | null; limit?: number }) => Promise<{ entries: Array<{ id: string; timestamp: number; payload: any; size: number }>; nextCursor: string | null; hasMore: boolean }>;
 
+  // NVIDIA Key Management
+  getNvidiaKeys: () => Promise<string[]>;
+  setNvidiaKeys: (payload: { keys: string[] }) => Promise<{ success: boolean; count?: number; error?: string }>;
+
+  // Bridge Health Status
+  bridgeHealth: (payload: { port: number }) => Promise<{ alive: boolean; model: string; port: number }>;
+
   // Context Builder (F6.2)
   getContextOptions: (payload: { agentId: string }) => Promise<ContextSource[]>;
   fetchContext: (payload: { agentId: string; contextConfig: ContextConfig }) => Promise<{ context: string; tokensUsed: number; sourceBreakdown: { sourceId: string; chars: number; tokens: number }[] }>;
@@ -234,4 +244,7 @@ export interface NexusBridge {
   executeWorkflow: (payload: { id: string; mode?: WorkflowMode }) => Promise<WorkflowExecutionResult>;
   getWorkflowResult: (payload: { executionId: string }) => Promise<WorkflowExecutionResult | null>;
   getWorkflowLogs: (payload: { workflowId: string }) => Promise<WorkflowLogEntry[]>;
+
+  // RPM Usage (RateLimiter)
+  getRpmUsage: () => Promise<{ totalUsed: number; totalLimit: number; keys: { key: string; used: number; limit: number }[] }>;
 }

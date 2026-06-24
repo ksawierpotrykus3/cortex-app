@@ -404,7 +404,7 @@ export function GitPanel() {
                     className="text-gray-500 hover:text-white transition-colors cursor-pointer text-xs"
                     aria-label="Zamknij diff"
                   >
-                    ✕
+                    <span className="text-xs leading-none">&times;</span>
                   </button>
                 </div>
                 <pre className="p-3 text-[11px] font-mono overflow-x-auto max-h-64 overflow-y-auto text-gray-300 leading-relaxed">

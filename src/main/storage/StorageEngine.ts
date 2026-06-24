@@ -55,11 +55,14 @@ interface Statement {
 // === StorageEngine =========================================================
 export class StorageEngine {
   private db: Database | null = null;
-  private basePath: string;
+  private _basePath: string;
   private ready: boolean = false;
 
+  /** Publiczny getter — pozwala AgentOrchestrator bezpiecznie sprawdzić ścieżkę bez `as any` */
+  get basePath(): string { return this._basePath; }
+
   constructor(basePath: string) {
-    this.basePath = basePath;
+    this._basePath = basePath;
   }
 
   // =========================================================================

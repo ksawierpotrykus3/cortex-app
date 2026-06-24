@@ -19,3 +19,6 @@ _documents/nieaktualne/
 
 # Data directory (runtime)
 data/
+
+# API keys (security)
+**/keys.json

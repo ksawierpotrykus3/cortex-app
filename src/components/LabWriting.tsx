@@ -906,7 +906,7 @@ const NoteEntry: React.FC<{
                           marker === 'question' ? 'bg-blue-400' : 'bg-green-400'
                         }`} />
                         <span className="capitalize">{marker}</span>
-                        {hasMarker && <span className="ml-auto text-[rgb(var(--accent))]">✓</span>}
+                        {hasMarker && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[rgb(var(--accent))]" />}
                       </button>
                     );
                   })}

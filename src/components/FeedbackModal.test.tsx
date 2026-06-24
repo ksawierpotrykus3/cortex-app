@@ -62,7 +62,7 @@ describe('FeedbackModal — Happy path', () => {
     render(<FeedbackModal {...defaultProps} onSave={onSave} />);
 
     // Open the modal
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     // Select entity type: Agent AI
     fireEvent.click(screen.getByLabelText('Agent AI'));
@@ -139,7 +139,7 @@ describe('FeedbackModal — Validation', () => {
     render(<FeedbackModal {...defaultProps} />);
 
     // Open
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     // Button should be disabled initially (no title, no description)
     const saveButton = screen.getByText('Zapisz');
@@ -163,7 +163,7 @@ describe('FeedbackModal — Validation', () => {
   it('przycisk Zapisz jest disabled gdy brak opisu', () => {
     render(<FeedbackModal {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     const saveButton = screen.getByText('Zapisz');
     expect(saveButton).toBeDisabled();
@@ -190,7 +190,7 @@ describe('FeedbackModal — Error handling', () => {
     const onSave = vi.fn().mockResolvedValue({ success: false, error: 'IPC failure' });
     render(<FeedbackModal {...defaultProps} onSave={onSave} />);
 
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     // Fill required fields
     fireEvent.change(screen.getByPlaceholderText('Krótki tytuł zgłoszenia'), {
@@ -211,7 +211,7 @@ describe('FeedbackModal — Error handling', () => {
     const onSave = vi.fn().mockRejectedValue(new Error('Network error'));
     render(<FeedbackModal {...defaultProps} onSave={onSave} />);
 
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     fireEvent.change(screen.getByPlaceholderText('Krótki tytuł zgłoszenia'), {
       target: { value: 'Tytuł' },
@@ -231,7 +231,7 @@ describe('FeedbackModal — Error handling', () => {
     const onSave = vi.fn().mockResolvedValue({ success: false, error: 'Fail' });
     render(<FeedbackModal {...defaultProps} onSave={onSave} />);
 
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     fireEvent.change(screen.getByPlaceholderText('Krótki tytuł zgłoszenia'), {
       target: { value: 'Tytuł' },
@@ -269,7 +269,7 @@ describe('FeedbackModal — Context snapshot', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     // Verify context block shows the right info
     expect(screen.getByText('Widok:')).toBeInTheDocument();
@@ -311,7 +311,7 @@ describe('FeedbackModal — Context snapshot', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Przekaż pomysł'));
+    fireEvent.click(screen.getByTitle('Przekaż pomysł'));
 
     // Verify project context
     expect(screen.getByText('Q3 Planning')).toBeInTheDocument();

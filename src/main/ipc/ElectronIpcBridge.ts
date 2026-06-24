@@ -25,6 +25,7 @@ import { SearchEngine } from '../core/SearchEngine';
 import { StorageEngine } from '../storage/StorageEngine';
 import { ProviderRegistry } from '../ai/ProviderRegistry';
 import { IAIProvider } from '../ai/IAIProvider';
+import { rateLimiter } from '../ai/RateLimiter';
 
 /** Zastępuje access token w URL-u placeholderem [REDACTED] */
 function sanitizeUrl(url: string, token: string | undefined): string {
@@ -92,6 +93,7 @@ export class ElectronIpcBridge {
   private searchEngine: SearchEngine;
   private gitConfig: GitConfig = { ...DEFAULT_GIT_CONFIG };
   private repoPath: string = '';
+  private nvidiaKeysPath: string = '';
 
   // Git Scheduler timers (#23)
   private pullTimer: ReturnType<typeof setInterval> | null = null;
@@ -105,7 +107,8 @@ export class ElectronIpcBridge {
     orchestrator: AgentOrchestrator,
     storage: StorageEngine,
     providerRegistry: ProviderRegistry,
-    repoPath?: string
+    repoPath?: string,
+    nvidiaKeysPath?: string
   ) {
     this.ipc = ipcInstance;
     this.orchestrator = orchestrator;
@@ -116,14 +119,17 @@ export class ElectronIpcBridge {
     this.killSwitch = new KillSwitch();
     this.searchEngine = new SearchEngine(this.getPrimaryAIProvider() ?? undefined);
     if (repoPath) { this.repoPath = repoPath; }
+    this.nvidiaKeysPath = nvidiaKeysPath || path.join(repoPath || process.cwd(), 'src', 'main', 'services', 'nvidia-bridge', 'keys.json');
   }
 
   // =========================================================================
   // Git Helpers
   // =========================================================================
 
-  /** Wykonuje komendę git w repozytorium przez spawn — BRAK shell injection */
-  private async gitExec(args: string[]): Promise<{ stdout: string; stderr: string }> {
+  /** Wykonuje komendę git w repozytorium przez spawn — BRAK shell injection.
+   *  Opcjonalny `accessToken` jest przekazywany przez http.extraHeader zamiast w URL-u,
+   *  dzięki czemu nie trafia do logów procesu / menedżera zadań. */
+  private async gitExec(args: string[], accessToken?: string): Promise<{ stdout: string; stderr: string }> {
     const opts: { cwd?: string; env?: Record<string, string> } = {};
     if (this.repoPath) { opts.cwd = this.repoPath; }
 
@@ -132,6 +138,11 @@ export class ElectronIpcBridge {
     if (this.gitConfig.authorName) { env.GIT_AUTHOR_NAME = this.gitConfig.authorName; env.GIT_COMMITTER_NAME = this.gitConfig.authorName; }
     if (this.gitConfig.authorEmail) { env.GIT_AUTHOR_EMAIL = this.gitConfig.authorEmail; env.GIT_COMMITTER_EMAIL = this.gitConfig.authorEmail; }
     if (Object.keys(env).length > 0) opts.env = env;
+
+    // Inject access token via http.extraHeader instead of URL to avoid credential leakage
+    if (accessToken) {
+      args = ['-c', `http.extraHeader=Authorization: Bearer ${accessToken}`, ...args];
+    }
 
     const stdout = await gitSpawn(args, opts);
     return { stdout, stderr: '' };
@@ -206,7 +217,7 @@ export class ElectronIpcBridge {
         JSON.stringify(this.gitConfig, null, 2),
         'utf8'
       );
-      console.debug('[GitConfig] Persisted to disk');
+      // console.debug('[GitConfig] Persisted to disk');
     } catch { /* ignore */ }
   }
 
@@ -596,6 +607,16 @@ export class ElectronIpcBridge {
 
     console.debug('[ElectronIpcBridge] Registered all IPC handlers');
 
+    // Register RPM usage handler
+    this.ipc.handle('rpm:usage', () => {
+      try {
+        return rateLimiter.getGlobalUsage();
+      } catch (err) {
+        console.error('[rpm:usage]', err);
+        return { totalUsed: 0, totalLimit: 0, keys: [] };
+      }
+    });
+
     // Register pipeline handlers
     this.registerPipelineHandlers();
     // Register workflow handlers
@@ -683,7 +704,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.debug('[ElectronIpcBridge] Registered Pipeline DAG handlers (F6.12)');
+    // console.debug('[ElectronIpcBridge] Registered Pipeline DAG handlers (F6.12)');
   }
 
   // =========================================================================
@@ -869,7 +890,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.debug('[ElectronIpcBridge] Registered Workspace handlers (F6.2)');
+    // console.debug('[ElectronIpcBridge] Registered Workspace handlers (F6.2)');
   }
 
   // =========================================================================
@@ -975,7 +996,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.debug('[ElectronIpcBridge] Registered Semantic Search handlers (AI)');
+    // console.debug('[ElectronIpcBridge] Registered Semantic Search handlers (AI)');
   }
 
   // =========================================================================
@@ -1127,11 +1148,7 @@ export class ElectronIpcBridge {
         if (!this.repoPath) {
           return { success: false, error: 'Brak ścieżki repozytorium.' };
         }
-        // Build remote URL with token
-        const url = this.gitConfig.accessToken
-          ? this.gitConfig.remoteUrl.replace('https://', `https://oauth2:${this.gitConfig.accessToken}@`)
-          : this.gitConfig.remoteUrl;
-        await this.gitExec(['ls-remote', '--heads', url]);
+        await this.gitExec(['ls-remote', '--heads', this.gitConfig.remoteUrl], this.gitConfig.accessToken);
         return { success: true };
       } catch (err: any) {
         return { success: false, error: sanitizeUrl(err.message || 'Connection failed', this.gitConfig.accessToken) };
@@ -1217,12 +1234,8 @@ export class ElectronIpcBridge {
         if (!remoteUrl) {
           return { success: false, error: 'Brak URL remote. Skonfiguruj w ustawieniach.' };
         }
-        // Build remote URL with token
-        const url = this.gitConfig.accessToken
-          ? remoteUrl.replace('https://', `https://oauth2:${this.gitConfig.accessToken}@`)
-          : remoteUrl;
-        const args = ['push', url, branch].filter(Boolean);
-        await this.gitExec(args);
+        const args = ['push', remoteUrl, branch].filter(Boolean);
+        await this.gitExec(args, this.gitConfig.accessToken);
         return { success: true, error: undefined };
       } catch (err: any) {
         return { success: false, error: sanitizeUrl(err.message, this.gitConfig.accessToken) };
@@ -1238,10 +1251,7 @@ export class ElectronIpcBridge {
           return { success: false, error: 'Brak URL remote. Skonfiguruj w ustawieniach.' };
         }
         const branch = payload?.branch || '';
-        const url = this.gitConfig.accessToken
-          ? remoteUrl.replace('https://', `https://oauth2:${this.gitConfig.accessToken}@`)
-          : remoteUrl;
-        await this.gitExec(['pull', url, branch].filter(Boolean));
+        await this.gitExec(['pull', remoteUrl, branch].filter(Boolean), this.gitConfig.accessToken);
         return { success: true, error: undefined };
       } catch (err: any) {
         return { success: false, error: sanitizeUrl(err.message || 'Pull failed', this.gitConfig.accessToken) };
@@ -1278,6 +1288,44 @@ export class ElectronIpcBridge {
         return { success: true };
       } catch (err: any) {
         return { success: false, error: err.message };
+      }
+    });
+
+    // === NVIDIA Keys Management ==========================================
+    this.ipc.handle('nvidia:get-keys', async () => {
+      try {
+        if (!fs.existsSync(this.nvidiaKeysPath)) return [];
+        const raw = fs.readFileSync(this.nvidiaKeysPath, 'utf-8');
+        return JSON.parse(raw);
+      } catch { return []; }
+    });
+
+    this.ipc.handle('nvidia:set-keys', async (_event, payload: { keys: string[] }) => {
+      try {
+        if (!Array.isArray(payload.keys)) return { success: false, error: 'Invalid payload: keys must be an array' };
+        // Walidacja: każdy klucz musi być stringiem
+        const validKeys = payload.keys.filter(k => typeof k === 'string' && k.trim().length > 0);
+        // Upewnij się że katalog istnieje
+        const keysDir = path.dirname(this.nvidiaKeysPath);
+        if (!fs.existsSync(keysDir)) fs.mkdirSync(keysDir, { recursive: true });
+        fs.writeFileSync(this.nvidiaKeysPath, JSON.stringify(validKeys, null, 2), 'utf-8');
+        return { success: true, count: validKeys.length };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    });
+
+    // === Bridge Health Checks ============================================
+    this.ipc.handle('bridge:health', async (_event, payload: { port: number }) => {
+      try {
+        const resp = await fetch(`http://localhost:${payload.port}/v1/models`, { signal: AbortSignal.timeout(3000) });
+        const ok = resp.ok;
+        // Spróbuj odczytać model z odpowiedzi
+        let modelName = '';
+        try { const json = await resp.json(); if (json?.data?.[0]?.id) modelName = json.data[0].id; } catch {}
+        return { alive: ok, model: modelName, port: payload.port };
+      } catch {
+        return { alive: false, model: '', port: payload.port };
       }
     });
 
@@ -1356,14 +1404,11 @@ export class ElectronIpcBridge {
         }
         const remoteUrl = this.gitConfig.remoteUrl;
         if (!remoteUrl) return;
-        const url = this.gitConfig.accessToken
-          ? remoteUrl.replace('https://', `https://oauth2:${this.gitConfig.accessToken}@`)
-          : remoteUrl;
-        const args = ['pull', url, this.scheduleOnlyBranch].filter(Boolean);
-        await this.gitExec(args);
+        const args = ['pull', remoteUrl, this.scheduleOnlyBranch].filter(Boolean);
+        await this.gitExec(args, this.gitConfig.accessToken);
         console.debug('[GitScheduler] Pull wykonany');
       } catch (err: any) {
-        console.warn('[GitScheduler] Pull failed:', sanitizeUrl(err.message || 'unknown error', this.gitConfig.accessToken));
+        // console.warn('[GitScheduler] Pull failed:', sanitizeUrl(err.message || 'unknown error', this.gitConfig.accessToken));
       }
     }, ms);
     console.debug(`[GitScheduler] Pull schedule started: every ${ms}ms`);
@@ -1390,17 +1435,14 @@ export class ElectronIpcBridge {
         }
         const remoteUrl = this.gitConfig.remoteUrl;
         if (!remoteUrl) return;
-        const url = this.gitConfig.accessToken
-          ? remoteUrl.replace('https://', `https://oauth2:${this.gitConfig.accessToken}@`)
-          : remoteUrl;
         // Auto-commit before push if autoCommit enabled
         if (this.gitConfig.autoCommit) {
           await this.gitExec(['add', '-A']);
           await this.gitExec(['commit', '-m', `Nexus AI: auto-sync ${new Date().toISOString()}`]);
         }
-        const args = ['push', url, this.scheduleOnlyBranch].filter(Boolean);
-        await this.gitExec(args);
-        console.debug('[GitScheduler] Push wykonany');
+        const args = ['push', remoteUrl, this.scheduleOnlyBranch].filter(Boolean);
+        await this.gitExec(args, this.gitConfig.accessToken);
+        // console.debug('[GitScheduler] Push wykonany');
       } catch (err: any) {
         console.warn('[GitScheduler] Push failed:', sanitizeUrl(err.message || 'unknown error', this.gitConfig.accessToken));
       }
@@ -1461,7 +1503,7 @@ export class ElectronIpcBridge {
       }
     });
 
-    console.debug('[ElectronIpcBridge] Registered Git Scheduler handlers');
+    // console.debug('[ElectronIpcBridge] Registered Git Scheduler handlers');
   }
 
   destroy(): void {
@@ -1501,6 +1543,12 @@ export class ElectronIpcBridge {
       'git:merge', 'git:diff',
       'git:schedule-status', 'git:schedule-toggle',
 
+      // NVIDIA
+      'nvidia:get-keys', 'nvidia:set-keys',
+
+      // Bridge Health
+      'bridge:health',
+
       // Pipeline
       'pipeline:save', 'pipeline:delete', 'pipeline:get-all',
       'pipeline:execute', 'pipeline:dry-run', 'pipeline:status',
@@ -1518,6 +1566,9 @@ export class ElectronIpcBridge {
 
       // Search
       'search:query', 'search:update-config', 'search:get-config',
+
+      // RPM Usage
+      'rpm:usage',
     ];
 
     // Stop all git schedulers
@@ -1530,6 +1581,6 @@ export class ElectronIpcBridge {
     this.ipc.removeAllListeners('changelog:approve');
     this.ipc.removeAllListeners('changelog:reject');
 
-    console.debug('[ElectronIpcBridge] Destroyed');
+    // console.debug('[ElectronIpcBridge] Destroyed');
   }
 }

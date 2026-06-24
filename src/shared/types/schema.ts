@@ -87,23 +87,14 @@ export const DEFAULT_PROVIDERS: ProviderAuthConfig[] = [
   },
   {
     provider: AIProvider.OPENROUTER,
-    label: 'DeepSeek v4 Flash (darmowy)',
-    apiKey: '',
-    baseUrl: 'http://localhost:3458/v1',
-    models: ['deepseek-v4-flash-free', 'deepseek-v4-flash'],
-    isBuiltin: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    provider: AIProvider.OPENROUTER,
-    label: 'OpenRouter BYOK (Claude Opus)',
-    apiKey: '',
-    baseUrl: 'https://openrouter.ai/api/v1',
+    label: 'NVIDIA (DeepSeek / Kimi / Qwen)',
+    apiKey: 'not-needed',  // proxy zarządza kluczami
+    baseUrl: 'http://localhost:3456/v1',
     models: [
-      'anthropic/claude-opus-4.6', 'anthropic/claude-sonnet-4.6',
-      'anthropic/claude-3.5-sonnet', 'openai/gpt-4o',
-      'deepseek/deepseek-chat', 'meta-llama/llama-3.3-70b-instruct',
+      'deepseek-ai/deepseek-v4-flash',
+      'deepseek-ai/deepseek-v4-pro',
+      'moonshotai/kimi-k2.6',
+      'qwen/qwen3.5-397b-a17b',
     ],
     isBuiltin: true,
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -168,8 +159,12 @@ export interface Agent {
   // Context Config (F6.2)
   contextConfig?: ContextConfig;
 
-  // Permissions (F6.1)
+  // Permissions (F6.1) — stare PermissionSet, rozszerzone o capabilities
   permissions?: PermissionSet;
+  // Nowe: lista capability z poziomem approve — zastępuje stare permissions
+  capabilities?: import('./capabilities').CapabilityEntry[];
+  // Wybrane foldery do read:files / write:files
+  allowedFolders?: string[];
 
   // Execution Mode (#7 MicroVM)
   executionMode?: 'live' | 'sandbox';  // Domyślnie 'live'
@@ -182,7 +177,7 @@ export enum OutputDestinationType {
   WEBHOOK = 'WEBHOOK',         // Wyślij na zewnętrzny URL
   AGENT = 'AGENT',             // Przekaż do innego agenta
   CLIPBOARD = 'CLIPBOARD',     // Kopiuj do schowka
-  KNOWLEDGE = 'KNOWLEDGE',     // Dodaj do bazy wiedzy
+  KNOWLEDGE = 'KNOWLEDGE',     // Baza wiedzy (usunięte przez solo agenta)
 }
 
 // === Context Config (F6.2) ==================================================
@@ -535,12 +530,10 @@ export const DEFAULT_GIT_CONFIG: GitConfig = {
 export interface FeedbackEntry {
   id: string;
   title: string;
-  context?: string;
-  suggestion?: string;
+  context: string;
+  feedbackType?: 'idea' | 'problem';
   timestamp: string;
-  entityType: 'agent' | 'node' | 'task' | 'manuscript' | 'general';
-  entityId?: string;
-  entityLabel?: string;
+  entityType: 'general';
   contextSnapshot?: {
     viewMode: string;
     selectedAgentId: string | null;
@@ -550,7 +543,6 @@ export interface FeedbackEntry {
     projectId: string | null;
     lastAction: string;
   };
-  rating?: number;
   status: 'new' | 'read' | 'in-progress' | 'done';
 }
 

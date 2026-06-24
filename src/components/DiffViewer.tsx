@@ -39,28 +39,28 @@ export function DiffViewer({
       {/* Header */}
       <div className="px-4 py-2 border-b border-[rgb(var(--border))] flex items-center gap-3 shrink-0">
         {onClose && (
-          <button onClick={onClose} className="p-1 hover:bg-[rgb(var(--border))]/50 rounded cursor-pointer">
+          <button onClick={onClose} className="p-1 hover:bg-[rgb(var(--border))]/50 rounded cursor-pointer" aria-label="Zamknij widok diffa">
             <ArrowLeft size={16} />
           </button>
         )}
 
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-[rgb(var(--accent))] font-medium">{oldTitle}</span>
-          <span className="text-[rgb(var(--text-secondary))]">→</span>
-          <span className="text-green-400 font-medium">{newTitle}</span>
+          <span className="text-[rgb(var(--accent))] font-medium" aria-label={`Wersja stara: ${oldTitle}`}>{oldTitle}</span>
+          <span className="text-[rgb(var(--text-secondary))]" aria-hidden="true">→</span>
+          <span className="text-green-400 font-medium" aria-label={`Wersja nowa: ${newTitle}`}>{newTitle}</span>
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] text-[rgb(var(--text-secondary))] ml-4">
+        <div className="flex items-center gap-3 text-[11px] text-[rgb(var(--text-secondary))] ml-4" role="status" aria-label={`Zmiany: ${diff.additions} dodane, ${diff.deletions} usunięte, ${diff.unchanged} bez zmian`}>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true" />
             +{diff.additions}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="w-2 h-2 rounded-full bg-red-500" aria-hidden="true" />
             -{diff.deletions}
           </span>
           <span className="flex items-center gap-1 opacity-50">
-            <FileText size={12} />
+            <FileText size={12} aria-hidden="true" />
             {diff.unchanged}
           </span>
         </div>
@@ -75,9 +75,12 @@ export function DiffViewer({
         <div className="flex-1" />
 
         {/* View mode toggle */}
-        <div className="flex items-center bg-[rgb(var(--bg-surface))] rounded-lg border border-[rgb(var(--border))] p-0.5">
+        <div className="flex items-center bg-[rgb(var(--bg-surface))] rounded-lg border border-[rgb(var(--border))] p-0.5" role="tablist" aria-label="Tryb widoku diff">
           <button
             onClick={() => setViewMode('inline')}
+            role="tab"
+            aria-selected={viewMode === 'inline'}
+            aria-label="Widok inline"
             className={`px-2.5 py-1 rounded text-[11px] cursor-pointer transition-colors ${
               viewMode === 'inline'
                 ? 'bg-[rgb(var(--accent))] text-white'
@@ -88,6 +91,9 @@ export function DiffViewer({
           </button>
           <button
             onClick={() => setViewMode('side_by_side')}
+            role="tab"
+            aria-selected={viewMode === 'side_by_side'}
+            aria-label="Widok obok siebie"
             className={`px-2.5 py-1 rounded text-[11px] cursor-pointer transition-colors flex items-center gap-1 ${
               viewMode === 'side_by_side'
                 ? 'bg-[rgb(var(--accent))] text-white'
@@ -102,6 +108,7 @@ export function DiffViewer({
         {onRevert && hasChanges && (
           <button
             onClick={onRevert}
+            aria-label="Cofnij zmiany do poprzedniej wersji"
             className="flex items-center gap-1 px-3 py-1.5 bg-yellow-500/20 text-yellow-400 rounded-lg text-xs font-medium hover:bg-yellow-500/30 transition-colors cursor-pointer"
           >
             <RotateCcw size={14} />

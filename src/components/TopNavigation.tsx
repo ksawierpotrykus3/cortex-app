@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Download, Settings, FileText, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Sparkles, Tags, ChevronDown } from "lucide-react";
+import { Download, Settings, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Tags, ChevronDown, MessageSquareMore } from "lucide-react";
 import { ViewMode, RightPanelState, ModalState } from "../types";
 
 export function TopNavigation({
@@ -74,17 +74,7 @@ export function TopNavigation({
           >
             Knowledge Base
           </button>
-          <button
-            onClick={() => setActiveView("agents")}
-            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
-              activeView === "agents"
-                ? "text-violet-400 border-violet-400"
-                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
-            }`}
-          >
-            <Bot className="w-3.5 h-3.5" />
-            Agents
-          </button>
+
           <div className="w-px h-6 bg-[rgb(var(--border))] mx-1" />
           <NavGroup label="More" activeView={activeView} setActiveView={setActiveView} />
         </div>
@@ -122,26 +112,6 @@ export function TopNavigation({
         
         {/* KillSwitch button — only icon, full banner in App.tsx */}
         <KillSwitchTopButton />
-
-        {/* Semantic Search trigger — wysyła custom event do SemanticSearch */}
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('nx:toggle-search', { detail: {} }))}
-          aria-label="Szukaj AI"
-          className="p-2 text-[rgb(var(--text-muted))] hover:text-purple-400 hover:bg-[rgb(var(--background))] transition-colors cursor-pointer rounded-lg"
-          title="Szukaj AI (Ctrl+Shift+F)"
-        >
-          <Sparkles size={16} />
-        </button>
-
-        <div className="w-px h-6 bg-[rgb(var(--border))]" />
-
-        <button
-          onClick={() => setRightPanel(rightPanel === "axioms" ? "none" : "axioms")}
-           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${rightPanel === "axioms" ? "bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))] border border-[rgb(var(--accent))]/20" : "bg-[rgb(var(--background))] border border-[rgb(var(--border))] text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:border-[rgb(var(--text-muted))]"}`}
-        >
-          <FileText className="w-4 h-4" />
-          Axioms
-        </button>
       </div>
     </div>
   );
@@ -166,11 +136,11 @@ function NavGroup({ label, activeView, setActiveView }: { label: string; activeV
     { id: 'logs', label: 'Agent Logs', icon: <ScrollText className="w-3.5 h-3.5" /> },
     { id: 'raw-fragments', label: 'Raw Fragments', icon: <PenSquare className="w-3.5 h-3.5" /> },
     { id: 'draft', label: 'RLHF Draft', icon: <PenSquare className="w-3.5 h-3.5" /> },
+    { id: 'mermaid-plan', label: 'Diagram (Mermaid)', icon: <Workflow className="w-3.5 h-3.5" /> },
     { id: 'changes', label: 'Changes', icon: <History className="w-3.5 h-3.5" /> },
     { id: 'wiki', label: 'Wiki', icon: <BookOpen className="w-3.5 h-3.5" /> },
-    { id: 'pipeline', label: 'Pipeline', icon: <Network className="w-3.5 h-3.5" /> },
-    { id: 'workflows', label: 'Workflows', icon: <Workflow className="w-3.5 h-3.5" /> },
     { id: 'git', label: 'Git', icon: <GitBranch className="w-3.5 h-3.5" /> },
+    { id: 'feedback', label: 'Feedback', icon: <MessageSquareMore className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -227,8 +197,20 @@ function KillSwitchTopButton() {
       } catch (e) { console.warn('[KillSwitch] Failed to check status', e); }
     };
     check();
-    const interval = setInterval(check, 3000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      // Pause polling when window is not visible to save resources
+      if (!document.hidden) check();
+    }, 3000);
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) check();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   const toggle = async () => {

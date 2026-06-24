@@ -54,9 +54,9 @@ const SHORTCUTS = [
 ];
 
 export function KeyboardShortcuts({ open, onClose }: KeyboardShortcutsProps) {
-  if (!open) return null;
-
   const focusTrapRef = useFocusTrap(open);
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center" onClick={onClose}>

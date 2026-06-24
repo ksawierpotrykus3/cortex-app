@@ -64,7 +64,7 @@ export interface DraftExport {
 export function generateAIExport(
   nodes: NexusNode[],
   links: NexusLink[],
-  axioms: string,
+  _axioms: string,
   scope?: Partial<ExportScope>,
   tasks?: TaskExport[],
   drafts?: DraftExport[]
@@ -72,10 +72,6 @@ export function generateAIExport(
   const s: ExportScope = { ...DEFAULT_EXPORT_SCOPE, ...scope };
 
   const exportObject: Record<string, unknown> = {};
-
-  if (s.axioms && axioms.trim()) {
-    exportObject.axioms = axioms;
-  }
 
   if (s.nodes) {
     exportObject.nodes = nodes.map((n) => ({
@@ -111,6 +107,10 @@ export function generateAIExport(
 
   if (s.drafts && drafts && drafts.length > 0) {
     exportObject.drafts = drafts;
+  }
+
+  if (s.axioms && _axioms) {
+    exportObject.axioms = _axioms;
   }
 
   exportObject._meta = {

@@ -186,10 +186,10 @@ export function FeedbackModal({
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-50 bg-[rgb(var(--accent))] text-white px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all text-sm font-medium flex items-center gap-2 cursor-pointer"
+        className="fixed bottom-4 right-4 z-50 bg-[rgb(var(--accent))] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center cursor-pointer group"
+        title="Przekaż pomysł"
       >
-        <MessageSquareMore size={16} />
-        Przekaż pomysł
+        <MessageSquareMore size={20} />
       </button>
     );
   }

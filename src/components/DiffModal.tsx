@@ -38,9 +38,9 @@ export function DiffModal({
     return () => onRevert(latestSnapshot);
   }, [onRevert, latestSnapshot]);
 
-  if (!open) return null;
-
   const focusTrapRef = useFocusTrap(open);
+
+  if (!open) return null;
 
   return (
     <div ref={focusTrapRef} role="dialog" aria-modal="true" aria-label={`Porównanie wersji: ${title}`} className="fixed inset-0 z-[100] flex flex-col bg-[rgb(var(--background))]">

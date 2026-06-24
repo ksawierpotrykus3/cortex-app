@@ -256,7 +256,7 @@ export function GitSettingsPanel() {
       {/* Test Result */}
       {testResult && (
         <div className={`p-3 rounded-lg text-sm ${testResult.ok ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-          {testResult.ok ? '✓ ' : '✗ '}{testResult.msg}
+          {testResult.msg}
         </div>
       )}
     </div>

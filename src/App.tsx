@@ -16,24 +16,20 @@ import { ChangesPanel } from "./components/ChangesPanel";
 import { WikiPanel } from "./components/WikiPanel";
 import { GitPanel } from "./components/GitPanel";
 import { FeedbackModal } from "./components/FeedbackModal";
+import { FeedbackPanel } from "./components/FeedbackPanel";
+import { FloatingAgentPanel } from "./components/FloatingAgentPanel";
 import { ChangeLog } from "./changelog";
-import { NexusState, defaultState } from "./fs";
+import { NexusState } from "./fs";
 import { ExportModal } from "./components/ExportModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { LogViewer } from "./components/LogViewer";
 import { DraftZone } from "./components/DraftZone";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { ViewMode, RightPanelState, ModalState, NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, FeedbackEntry, WikiArticle, Pipeline } from "./types";
+import { ViewMode, RightPanelState, ModalState, NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, FeedbackEntry, WikiArticle } from "./types";
 import { uid } from "./utils/ids";
 import { useFileSystemWatcher } from "./fs";
 
-// Phase 1: Agents UI
-import { AgentListPanel } from "./renderer/components/agents/AgentListPanel";
-import { AgentConfigPanel } from "./renderer/components/agents/AgentConfigPanel";
-import { ChangelogPanel } from "./renderer/components/changelog/ChangelogPanel";
-import { PipelineEditor } from "./components/PipelineEditor";
-import { WorkflowList } from "./components/WorkflowList";
-import { WorkflowEditor } from "./components/WorkflowEditor";
+// Phase 1: Agents UI (stores & support, views moved to workflow-studio)
 import { DiffModal } from "./components/DiffModal";
 import { CommandPalette } from "./components/CommandPalette";
 import { useAgentStore } from "./renderer/store/agentStore";
@@ -43,7 +39,7 @@ import { useDiffStore } from "./renderer/store/diffStore";
 import { useCommandStore } from "./renderer/store/commandStore";
 import { setGlobalActions } from "./renderer/store/commandStore";
 import { registerAllCommands, GlobalActions } from "./commands";
-import { ChangelogEntry, AgentStatus } from "./shared/types/schema";
+import { ChangelogEntry, Pipeline } from "./shared/types/schema";
 import { WorkflowDefinition } from "./shared/types/workflow";
 import { NexusBridge } from "./shared/types/ipc";
 import { CustomCommandsManager } from "./components/CustomCommandsManager";
@@ -57,18 +53,22 @@ import { TagSuggestDialog } from "./components/TagSuggestDialog";
 import { useKeydirStore, createKeydirHandler } from "./renderer/store/keydirStore";
 import { registerDefaultKeybindings } from "./keydir";
 import { EntitySnapshot } from "./utils/diffEngine";
+import { SplashScreen } from "./components/SplashScreen";
 
-declare global {
-  interface Window {
-    nexusBridge?: NexusBridge;
-  }
-}
+// Workflow Studio 2.0 (usunięto)
+
+// Mermaid Plan
+import { MermaidPlanPanel, MermaidDraft, parseMermaidToSVG } from "./components/MermaidPlanPanel";
+// AtMention
+import { MentionableItem } from "./components/AtMentionAutocomplete";
 
 export function App() {
+  const [initError, setInitError] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [activeView, setActiveView] = useState<ViewMode>("nexus");
   const [rightPanel, setRightPanel] = useState<RightPanelState>("none");
   const [modal, setModal] = useState<ModalState>("none");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // DatabaseExplorer always
 
   const [nodes, setNodes] = useState<NexusNode[]>([]);
   const [links, setLinks] = useState<NexusLink[]>([]);
@@ -81,13 +81,11 @@ export function App() {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
   const [draggedProject, setDraggedProject] = useState<string | null>(null);
-  const [axioms, setAxioms] = useState<{id: string, text: string}[]>([]);
   const [geminiKey, setGeminiKey] = useState<string>("");
   const [fsConnected, setFsConnected] = useState(false);
   const [hasStoredFS, setHasStoredFS] = useState(false);
   
   const canvasRef = useRef<NexusCanvasHandle>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
   const changeLogRef = useRef<ChangeLog>(new ChangeLog());
   const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
   const [wikiArticles, setWikiArticles] = useState<WikiArticle[]>([]);
@@ -95,6 +93,12 @@ export function App() {
   const [runningPipelineId, setRunningPipelineId] = useState<string | null>(null);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+
+  // Workflow Studio 2.0 (usunięto)
+
+  // Mermaid Plan
+  const [mermaidDrafts, setMermaidDrafts] = useState<MermaidDraft[]>([]);
+  const [mermaidSystemPrompt, setMermaidSystemPrompt] = useState<string | null>(null);
 
   // Shared workflow creation logic
   const handleCreateWorkflow = useCallback(() => {
@@ -120,18 +124,44 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showTagDialog, setShowTagDialog] = useState(false);
+
+  // 🔁 Mentionable items dla @ wstrzykiwania w czatach
+  const mentionableItems = useMemo(() => {
+    const items: MentionableItem[] = [];
+    // Wiki
+    wikiArticles.forEach(a => items.push({
+      id: a.id, type: 'wiki', label: a.title,
+      subtitle: a.category, content: a.content?.slice(0, 2000),
+    }));
+    // Agenci
+    useAgentStore.getState().agents.forEach(a => items.push({
+      id: a.id, type: 'agent', label: a.name,
+      subtitle: a.model.modelName, content: '',
+    }));
+    // Notatki
+    nodes.forEach(n => items.push({
+      id: n.id, type: 'note', label: n.title || 'Bez tytułu',
+      subtitle: n.projectId, content: n.content,
+    }));
+    // Taski
+    tasks.forEach(t => items.push({
+      id: t.id, type: 'task', label: t.title,
+      subtitle: t.status,
+    }));
+    return items;
+  }, [wikiArticles, nodes, tasks]);
   const [tagFilter, setTagFilter] = useState('');
 
   // Refs to keep latest state for callbacks (avoids stale closures in useEffects with [])
-  const stateRef = useRef({ nodes, links, tasks, drafts, axioms, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles, pipelines, workflows });
-  stateRef.current = { nodes, links, tasks, drafts, axioms, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles, pipelines, workflows };
+  const stateRef = useRef({ nodes, links, tasks, drafts, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles, pipelines, workflows, mermaidDrafts });
+  stateRef.current = { nodes, links, tasks, drafts, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles, pipelines, workflows, mermaidDrafts };
 
   // Helper to build workspace state object (DRY)
   const buildWorkspaceState = useCallback(() => {
     const s = stateRef.current;
     return {
       nodes: s.nodes, links: s.links, tasks: s.tasks, drafts: s.drafts,
-      axioms: s.axioms, geminiKey: s.geminiKey,
+      geminiKey: s.geminiKey,
       manuscriptFolders: s.manuscriptFolders, manuscriptTabs: s.manuscriptTabs,
       manuscriptMetas: s.manuscriptMetas,
       changelog: changeLogRef.current?.toJSON(),
@@ -140,6 +170,7 @@ export function App() {
       snapshots: useDiffStore.getState().snapshots,
       customCommands: useCommandStore.getState().customCommands,
       shortcutOverrides: useKeydirStore.getState().overrides,
+      mermaidDrafts: s.mermaidDrafts,
     };
   }, []);
 
@@ -293,36 +324,46 @@ export function App() {
   }, [activeView]);
 
   useEffect(() => {
+    let cancelled = false;
     import('./fs').then(async ({ initFS, loadWorkspace, isConnected, hasStoredHandle }) => {
-      await initFS();
-      setFsConnected(isConnected());
-      setHasStoredFS(await hasStoredHandle());
-      
-      let state = await loadWorkspace();
-      const isEmpty = !state.nodes?.length && !state.links?.length;
-      
-      if (isEmpty) {
-        // First run: onboarding will be triggered by the overlay timer (500ms)
-        // No default data needed — user starts with a clean workspace
+      try {
+        await initFS();
+        if (cancelled) return;
+        setFsConnected(isConnected());
+        setHasStoredFS(await hasStoredHandle());
+
+        let state = await loadWorkspace();
+        if (cancelled) return;
+        
+        setNodes(state.nodes || []);
+        setLinks(state.links || []);
+        setTasks(state.tasks || []);
+        setDrafts(state.drafts || []);
+        setManuscriptFolders(state.manuscriptFolders || []);
+        setManuscriptTabs(state.manuscriptTabs || []);
+        setManuscriptMetas(state.manuscriptMetas || []);
+        setGeminiKey(state.geminiKey || "");
+        setWikiArticles(state.wiki || []);
+        setPipelines(state.pipelines || []);
+        setWorkflows(state.workflows || []);
+        useDiffStore.getState().setSnapshots(state.snapshots || []);
+        useCommandStore.getState().setCustomCommands(state.customCommands || []);
+        useKeydirStore.getState().setOverrides(state.shortcutOverrides || []);
+        if (state.mermaidDrafts) setMermaidDrafts(state.mermaidDrafts);
+        setIsLoaded(true);
+      } catch (err) {
+        if (!cancelled) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setInitError(msg);
+        }
       }
-      
-      setNodes(state.nodes || []);
-      setLinks(state.links || []);
-      setTasks(state.tasks || []);
-      setDrafts(state.drafts || []);
-      setManuscriptFolders(state.manuscriptFolders || []);
-      setManuscriptTabs(state.manuscriptTabs || []);
-      setManuscriptMetas(state.manuscriptMetas || []);
-      setAxioms(state.axioms || []);
-      setGeminiKey(state.geminiKey || "");
-      setWikiArticles(state.wiki || []);
-      setPipelines(state.pipelines || []);
-      setWorkflows(state.workflows || []);
-      useDiffStore.getState().setSnapshots(state.snapshots || []);
-      useCommandStore.getState().setCustomCommands(state.customCommands || []);
-      useKeydirStore.getState().setOverrides(state.shortcutOverrides || []);
-      setIsLoaded(true);
+    }).catch((err) => {
+      if (!cancelled) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setInitError(`Failed to load workspace module: ${msg}`);
+      }
     });
+    return () => { cancelled = true; };
   }, []);
 
   useFileSystemWatcher((newState) => {
@@ -333,11 +374,11 @@ export function App() {
     setManuscriptFolders(newState.manuscriptFolders || []);
     setManuscriptTabs(newState.manuscriptTabs || []);
     setManuscriptMetas(newState.manuscriptMetas || []);
-    setAxioms(newState.axioms || []);
     setGeminiKey(newState.geminiKey || "");
     if (newState.changelog) changeLogRef.current = new ChangeLog(newState.changelog);
     if (newState.feedback) setFeedback(newState.feedback);
     if (newState.wiki) setWikiArticles(newState.wiki);
+    if (newState.mermaidDrafts) setMermaidDrafts(newState.mermaidDrafts);
   });
 
   useEffect(() => {
@@ -350,9 +391,10 @@ export function App() {
       return () => clearTimeout(timer);
     }
   }, [
-    nodes, links, tasks, drafts, axioms, geminiKey,
+    nodes, links, tasks, drafts, geminiKey,
     manuscriptFolders, manuscriptTabs, manuscriptMetas,
     feedback, wikiArticles, isLoaded,
+    mermaidDrafts,
   ]);
 
   const setLabMode = (mode: "todo" | "writing") => {
@@ -521,7 +563,19 @@ export function App() {
     };
   }, []);
 
-  if (!isLoaded) return null;
+  if (!isLoaded) {
+    return (
+      <SplashScreen
+        error={initError}
+        onRetry={initError ? () => {
+          setInitError(null);
+          // Re-trigger the init effect by toggling a key or similar mechanism.
+          // For simplicity, reload the page.
+          window.location.reload();
+        } : undefined}
+      />
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -539,7 +593,7 @@ export function App() {
       <KillSwitchBanner />
 
       <div className="flex flex-1 overflow-hidden relative">
-        {(activeView === "nexus" && isSidebarOpen) && (
+        {activeView === "nexus" && isSidebarOpen && (
           <LeftSidebar 
             nodes={nodes} 
             selectedNodeId={selectedNodeId} 
@@ -652,15 +706,20 @@ export function App() {
           {activeView === "draft" && (
             <div className="flex items-start justify-center pt-8 h-full overflow-y-auto">
               <DraftZone
-                onSaved={(mutation) => console.debug('[NEXUS] Mutation saved:', mutation)}
-                onValidationError={(errors) => console.warn('[NEXUS] Validation errors:', errors)}
+                onSaved={(mutation) => { /* console.debug('[NEXUS] Mutation saved:', mutation); */ }}
+                onValidationError={(errors) => { /* console.warn('[NEXUS] Validation errors:', errors); */ }}
               />
             </div>
           )}
 
-          {/* Phase 1: Agents View — 3-kolumnowy layout */}
+          {/* Phase 1: Agents View */}
           {activeView === "agents" && (
-            <AgentsView />
+            <div className="flex items-center justify-center h-full text-[rgb(var(--text-muted))]">
+              <div className="text-center">
+                <div className="text-4xl mb-3 opacity-30">🤖</div>
+                <p className="text-sm">Agenci AI (W przebudowie)</p>
+              </div>
+            </div>
           )}
 
           {/* F4: Tablica Zmian */}
@@ -725,105 +784,69 @@ export function App() {
             <GitPanel />
           )}
 
-          {/* F6.12: Pipeline DAG */}
-          {activeView === "pipeline" && (
-            <PipelineEditor
-              pipelines={pipelines}
-              onSavePipeline={(pipeline) => {
-                setPipelines((prev) => {
-                  const idx = prev.findIndex((p) => p.id === pipeline.id);
-                  if (idx >= 0) {
-                    const next = [...prev];
-                    next[idx] = pipeline;
-                    return next;
-                  }
-                  return [...prev, pipeline];
-                });
-                // Persist via IPC if bridge available
-                const bridge = window.nexusBridge;
-                if (bridge?.savePipeline) {
-                  bridge.savePipeline({ pipeline });
+          {/* #26: Feedback Panel */}
+          {activeView === "feedback" && (
+            <FeedbackPanel
+              feedback={feedback}
+              onDelete={(id) => {
+                setFeedback((prev) => prev.filter((e) => e.id !== id));
+                if (changeLogRef.current) {
+                  changeLogRef.current.add("delete", "node", id, "Usunięto feedback");
                 }
               }}
-              onDeletePipeline={(id) => {
-                setPipelines((prev) => prev.filter((p) => p.id !== id));
-                const bridge = window.nexusBridge;
-                if (bridge?.deletePipeline) {
-                  bridge.deletePipeline({ id });
-                }
+              onStatusChange={(id, status) => {
+                setFeedback((prev) =>
+                  prev.map((e) => (e.id === id ? { ...e, status } : e))
+                );
               }}
-              onExecutePipeline={async (id) => {
-                setRunningPipelineId(id);
-                try {
-                  const bridge = window.nexusBridge;
-                  if (bridge?.executePipeline) {
-                    const result = await bridge.executePipeline({ id });
-                    if (!result.success) {
-                      console.error('[Pipeline] Execution failed:', result.error);
-                    }
-                  }
-                } finally {
-                  setRunningPipelineId(null);
-                }
-              }}
-              runningPipelineId={runningPipelineId}
             />
           )}
 
-          {/* #1: Workflows */}
-          {activeView === "workflows" && (
-            <div className="h-full flex">
-              <div className="w-64 shrink-0">
-                <WorkflowList
-                  workflows={workflows}
-                  selectedId={selectedWorkflowId}
-                  onSelect={setSelectedWorkflowId}
-                  onCreateNew={handleCreateWorkflow}
-                />
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <WorkflowEditor
-                  workflows={workflows}
-                  selectedWorkflowId={selectedWorkflowId}
-                  onSelectWorkflow={setSelectedWorkflowId}
-                  onSaveWorkflow={(workflow) => {
-                    setWorkflows((prev) => {
-                      const idx = prev.findIndex((w) => w.id === workflow.id);
-                      if (idx >= 0) {
-                        const next = [...prev];
-                        next[idx] = workflow;
-                        return next;
-                      }
-                      return [...prev, workflow];
-                    });
-                    const bridge = window.nexusBridge;
-                    if (bridge?.saveWorkflow) {
-                      bridge.saveWorkflow({ workflow });
-                    }
-                  }}
-                  onDeleteWorkflow={(id) => {
-                    setWorkflows((prev) => prev.filter((w) => w.id !== id));
-                    if (selectedWorkflowId === id) setSelectedWorkflowId(null);
-                    const bridge = window.nexusBridge;
-                    if (bridge?.deleteWorkflow) {
-                      bridge.deleteWorkflow({ id });
-                    }
-                  }}
-                  onExecuteWorkflow={async (id) => {
-                    try {
-                      const bridge = window.nexusBridge;
-                      if (bridge?.executeWorkflow) {
-                        const result = await bridge.executeWorkflow({ id });
-                        console.debug('[Workflow] Result:', result);
-                      }
-                    } catch (err) {
-                      console.error('[Workflow] Error:', err);
-                    }
-                  }}
-                  onCreateNew={handleCreateWorkflow}
-                />
-              </div>
-            </div>
+          {/* F6.12: Pipeline DAG + #1: Workflows — zastąpione przez Workflow Studio */}
+
+          {/* Mermaid Plan — Środowisko Planowania */}
+          {activeView === "mermaid-plan" && (
+            <MermaidPlanPanel
+              drafts={mermaidDrafts}
+              onSaveDraft={(draft) => {
+                setMermaidDrafts(prev => {
+                  const idx = prev.findIndex(d => d.id === draft.id);
+                  return idx >= 0 ? prev.map(d => d.id === draft.id ? draft : d) : [...prev, draft];
+                });
+              }}
+              onDeleteDraft={(id) => setMermaidDrafts(prev => prev.filter(d => d.id !== id))}
+              onGenerateMermaid={async (draft, customPrompt) => {
+                const bridge = window.nexusBridge as any;
+                if (!bridge?.executeAgent) return draft.mermaidCode;
+                try {
+                  // Try to use searchQuery or similar to generate Mermaid via AI
+                  const prompt = customPrompt
+                    ? `${customPrompt}\n\nWygeneruj diagram Mermaid na temat: ${draft.description || draft.title}`
+                    : `Wygeneruj diagram Mermaid na temat: ${draft.description || draft.title}`;
+                  const results = await bridge.searchQuery({ query: prompt, entities: [] });
+                  // Extract mermaid code from response
+                  const text = Array.isArray(results) ? results.map((r: any) => r.snippet || '').join('\n') : String(results);
+                  const match = text.match(/```mermaid\s*\n([\s\S]*?)```/);
+                  return match ? match[1].trim() : text.trim().split('\n').filter(Boolean).join('\n');
+                } catch {
+                  return draft.mermaidCode;
+                }
+              }}
+
+              onPromoteToWiki={(draft) => {
+                setWikiArticles(prev => [...prev, {
+                  id: `wiki_mermaid_${draft.id}`,
+                  title: draft.title,
+                  content: `# ${draft.title}\n\n${draft.description}\n\n\`\`\`mermaid\n${draft.mermaidCode}\n\`\`\``,
+                  tags: ['mermaid', 'diagram'],
+                  category: 'planning',
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                }]);
+              }}
+              mermaidSystemPrompt={mermaidSystemPrompt || undefined}
+              onSaveMermaidPrompt={setMermaidSystemPrompt}
+            />
           )}
         </div>
 
@@ -843,8 +866,6 @@ export function App() {
               }
               setNodes(nodes.map(n => n.id === id ? { ...n, ...updates } : n));
             }}
-            axioms={axioms}
-            setAxioms={setAxioms}
             allNodes={nodes}
             allLinks={links}
             onLinkDelete={(link) => setLinks(links.filter(l => !(l.source === link.source && l.target === link.target) && !(l.source === link.target && l.target === link.source)))}
@@ -852,7 +873,7 @@ export function App() {
         />
       </div>
 
-      <ExportModal state={modal} onClose={() => setModal("none")} nodes={nodes} links={links} axioms={axioms.map(a => a.text).join('\n')} scopeFromView={activeView} selectedNodeIds={selectedNodeIds} tasks={tasks} drafts={drafts} />
+      <ExportModal state={modal} onClose={() => setModal("none")} nodes={nodes} links={links} axioms="" scopeFromView={activeView} selectedNodeIds={selectedNodeIds} tasks={tasks} drafts={drafts} />
       <SettingsModal 
           state={modal} 
           onClose={() => setModal("none")} 
@@ -860,7 +881,7 @@ export function App() {
           setGeminiKey={setGeminiKey}
       />
 
-      {/* Feedback button — #26 Universal Feedback z kontekstem */}
+      {/* #26: Feedback button — z kontekstem */}
       <FeedbackModal
         viewMode={activeView}
         selectedAgentId={feedbackSelectedAgentId}
@@ -874,39 +895,69 @@ export function App() {
         manuscripts={drafts.map(d => ({ id: d.id, title: d.content.slice(0, 80) }))}
         onSave={async (entry) => {
           try {
-            // Save via IPC if bridge available
             const bridge = window.nexusBridge;
-            if (bridge?.saveFeedback) {
-              const newEntry: FeedbackEntry = {
-                ...entry,
-                id: uid(),
-                timestamp: new Date().toISOString(),
-              };
-              const result = await bridge.saveFeedback({ feedback: newEntry });
-              if (result.success) {
-                setFeedback((prev) => [...prev, newEntry]);
-                if (changeLogRef.current) {
-                  changeLogRef.current.add("create", "node", newEntry.id, `Feedback: ${newEntry.title}`, undefined, "user");
-                }
-              }
-              return result;
-            }
-
-            // Fallback: save locally only
-            const fallbackEntry: FeedbackEntry = {
+            const newEntry = {
+              context: '',
               ...entry,
               id: uid(),
               timestamp: new Date().toISOString(),
+            } as FeedbackEntry;
+            if (bridge?.saveFeedback) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (bridge as any).saveFeedback({ feedback: newEntry });
+            }
+            setFeedback((prev) => [...prev, newEntry]);
+            // Dodaj feedback jako notatke na mapie mysli (widoczna w nexus + dokumenty)
+            const fbTitle = entry.title?.trim() || (entry.feedbackType === 'idea' ? 'Pomysl' : 'Problem');
+            const newNode: NexusNode = {
+              id: uid(),
+              title: `[${entry.feedbackType === 'idea' ? 'Pomysl' : 'Problem'}] ${fbTitle}`,
+              content: entry.context || '',
+              x: Math.random() * 400,
+              y: Math.random() * 300,
+              tags: [entry.feedbackType === 'idea' ? 'pomysl' : 'problem'],
+              projectId: selectedNode?.projectId,
             };
-            setFeedback((prev) => [...prev, fallbackEntry]);
+            setNodes((prev) => [...prev, newNode]);
             if (changeLogRef.current) {
-              changeLogRef.current.add("create", "node", fallbackEntry.id, `Feedback: ${fallbackEntry.title}`, undefined, "user");
+              changeLogRef.current.add("create", "node", newEntry.id, `Feedback: ${newEntry.title}`, undefined, "user");
             }
             return { success: true };
           } catch (err) {
             return { success: false, error: err instanceof Error ? err.message : String(err) };
           }
         }}
+      />
+
+      {/* Floating Agent Panel */}
+      <FloatingAgentPanel
+        viewMode={activeView}
+        selectedNodeId={selectedNodeId}
+        selectedAgentId={feedbackSelectedAgentId}
+        selectedTaskId={null}
+        selectedManuscriptId={null}
+        projectId={selectedNode?.projectId || null}
+        lastAction={lastFeedbackAction}
+        onSendToAgent={async (agentId, message) => {
+          // Use the IPC bridge to send a raw chat to any AI model
+          const bridge = window.nexusBridge;
+          if (bridge?.searchQuery) {
+            try {
+              const results = await bridge.searchQuery({
+                query: message,
+                entities: [],
+              });
+              if (results && results.length > 0) {
+                return results.map(r => r.snippet).join('\n\n');
+              }
+              return 'Brak odpowiedzi od modelu.';
+            } catch (err) {
+              return `Błąd: ${err instanceof Error ? err.message : String(err)}`;
+            }
+          }
+          return 'Most IPC nie jest dostępny. Skonfiguruj klucz API w ustawieniach.';
+        }}
+        mentionableItems={mentionableItems}
       />
 
       {/* #5: Diff Viewer Modal */}
@@ -968,53 +1019,4 @@ export function App() {
   );
 }
 
-// ===========================================================================
-// Phase 1: Agents View — 3-kolumnowy layout (Lista | Konfiguracja | Changelog)
-// ===========================================================================
-function AgentsView() {
-  const { agents, selectAgent } = useAgentStore();
 
-  const handleExecuteAgent = async (agentId: string) => {
-    const bridge = window.nexusBridge;
-    if (!bridge) {
-      console.warn('[AgentsView] No IPC bridge — cannot execute agent without main process');
-      return;
-    }
-
-    // Add streaming entry
-    const entry: ChangelogEntry = {
-      id: `entry_${Date.now()}`,
-      agentId,
-      agentName: useAgentStore.getState().agents.find(a => a.id === agentId)?.name || 'Agent',
-      isStreaming: true,
-      streamedContent: '',
-      createdAt: new Date().toISOString(),
-    };
-    useChangelogStore.getState().addEntry(entry);
-
-    // Execute via IPC
-    const result = await bridge.executeAgent({ id: agentId });
-    if (!result.success) {
-      useChangelogStore.getState().setEntryError(agentId, (result as any).error || 'Unknown error');
-    }
-  };
-
-  const handleStopAgent = async (agentId: string) => {
-    const bridge = window.nexusBridge;
-    if (bridge) {
-      await bridge.stopAgent({ id: agentId });
-    }
-    useAgentStore.getState().updateAgentStatus(agentId, AgentStatus.ACTIVE);
-  };
-
-  return (
-    <div className="flex flex-1 overflow-hidden">
-      <AgentListPanel
-        onExecuteAgent={handleExecuteAgent}
-        onStopAgent={handleStopAgent}
-      />
-      <AgentConfigPanel onExecute={handleExecuteAgent} />
-      <ChangelogPanel />
-    </div>
-  );
-}

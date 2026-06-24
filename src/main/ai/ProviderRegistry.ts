@@ -7,6 +7,7 @@ import { IAIProvider } from './IAIProvider';
 import { OpenAIApiAdapter } from './OpenAIApiAdapter';
 import { GeminiAdapter } from './GeminiAdapter';
 import { AIProvider, ProviderAuthConfig, ModelConfig, DEFAULT_PROVIDERS } from '../../shared/types/schema';
+import { rateLimiter } from './RateLimiter';
 
 // === Provider Factory ======================================================
 function createAdapter(config: ProviderAuthConfig): IAIProvider | null {
@@ -32,6 +33,14 @@ export class ProviderRegistry {
   private providers: Map<string, IAIProvider> = new Map();
   private configs: ProviderAuthConfig[] = [];
 
+  /** Zwraca domyślny limit RPM dla danego providera */
+  private static getDefaultRpmLimit(label: string): number {
+    if (label.includes('Gemini')) return 60;
+    if (label.includes('DeepSeek') || label.includes('NVIDIA')) return 40;
+    if (label.includes('Ollama')) return 0; // lokalny — bez limitu
+    return 30; // domyślny bezpieczny limit
+  }
+
   constructor() {
     // Load defaults
     for (const cfg of DEFAULT_PROVIDERS) {
@@ -40,6 +49,7 @@ export class ProviderRegistry {
       if (adapter) {
         this.providers.set(cfg.label, adapter);
       }
+      rateLimiter.setLimit(cfg.label, ProviderRegistry.getDefaultRpmLimit(cfg.label));
     }
   }
 
@@ -68,6 +78,8 @@ export class ProviderRegistry {
     if (adapter) {
       this.providers.set(config.label, adapter);
     }
+
+    rateLimiter.setLimit(config.label, ProviderRegistry.getDefaultRpmLimit(config.label));
   }
 
   removeConfig(label: string): void {
@@ -89,6 +101,8 @@ export class ProviderRegistry {
     if (adapter) {
       this.providers.set(label, adapter);
     }
+
+    rateLimiter.setLimit(label, ProviderRegistry.getDefaultRpmLimit(label));
   }
 
   // =========================================================================
@@ -104,7 +118,17 @@ export class ProviderRegistry {
     if (!adapter.isConfigured()) {
       throw new Error(`Provider "${label}" nie ma klucza API. Skonfiguruj go w ustawieniach.`);
     }
+    // Sprawdź limit RPM przed wysłaniem
+    if (!rateLimiter.canSend(label)) {
+      const usage = rateLimiter.getUsage(label);
+      throw new Error(`Przekroczono limit RPM dla "${label}" (${usage.used}/${usage.limit}). Odczekaj przed następnym zapytaniem.`);
+    }
     return adapter;
+  }
+
+  /** Rejestruje udane wysłanie zapytania do RateLimiter */
+  recordSend(label: string): void {
+    rateLimiter.recordSend(label);
   }
 
   // =========================================================================

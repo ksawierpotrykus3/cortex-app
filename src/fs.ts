@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { get, set } from 'idb-keyval';
-import { NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, ChangeEntry, FeedbackEntry, WikiArticle, Pipeline } from './types';
+import { NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, ChangeEntry, FeedbackEntry, WikiArticle } from './types';
+import { Pipeline } from './shared/types/schema';
 import { WorkflowDefinition } from './shared/types/workflow';
 import { EntitySnapshot } from './utils/diffEngine';
 import { CustomCommandData } from './renderer/store/commandStore';
@@ -15,7 +16,6 @@ export interface NexusState {
   links: NexusLink[];
   tasks: Task[];
   drafts: WritingDraft[];
-  axioms: {id: string, text: string}[];
   geminiKey: string;
   manuscriptFolders?: ManuscriptFolder[];
   manuscriptTabs?: ManuscriptTab[];
@@ -28,6 +28,8 @@ export interface NexusState {
   snapshots?: EntitySnapshot[];
   customCommands?: CustomCommandData[];
   shortcutOverrides?: ShortcutOverride[];
+  studioCanvas?: any;
+  mermaidDrafts?: any[];
 }
 
 export const defaultState: NexusState = {
@@ -35,7 +37,6 @@ export const defaultState: NexusState = {
   links: [],
   tasks: [],
   drafts: [],
-  axioms: [],
   geminiKey: "",
   manuscriptFolders: [],
   manuscriptTabs: [],

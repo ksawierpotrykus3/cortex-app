@@ -25,7 +25,7 @@ describe('PermissionPanel', () => {
 
   // === Happy Path ==========================================================
   it('renders all trigger types with labels', () => {
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={vi.fn()} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     expect(screen.getByText('Ręczne (Manual)')).toBeTruthy();
     expect(screen.getByText('Skrót klawiszowy (Hotkey)')).toBeTruthy();
@@ -40,7 +40,7 @@ describe('PermissionPanel', () => {
     const onChange = vi.fn();
     const perms: PermissionSet = { ...DEFAULT_PERMISSION_SET, allowedTriggers: [] };
 
-    render(<PermissionPanel value={perms} onChange={onChange} />);
+    render(<PermissionPanel permissions={perms} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     fireEvent.click(screen.getByText('Ręczne (Manual)'));
 
@@ -56,7 +56,7 @@ describe('PermissionPanel', () => {
       allowedTriggers: [TriggerType.MANUAL],
     };
 
-    render(<PermissionPanel value={perms} onChange={onChange} />);
+    render(<PermissionPanel permissions={perms} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     fireEvent.click(screen.getByText('Ręczne (Manual)'));
 
@@ -66,7 +66,7 @@ describe('PermissionPanel', () => {
 
   it('shows warning badge when no triggers allowed', () => {
     const perms: PermissionSet = { ...DEFAULT_PERMISSION_SET, allowedTriggers: [] };
-    render(<PermissionPanel value={perms} onChange={vi.fn()} />);
+    render(<PermissionPanel permissions={perms} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     expect(screen.getByText(/Brak — agent nie może być uruchomiony/)).toBeTruthy();
   });
@@ -78,7 +78,7 @@ describe('PermissionPanel', () => {
       { label: 'Google Gemini → gemini-1.5-pro', modelName: 'gemini-1.5-pro', providerLabel: 'Google Gemini' },
     ];
 
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={vi.fn()} availableModels={models} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} availableModels={models} />);
 
     expect(screen.getByText('gemini-2.0-flash')).toBeTruthy();
     expect(screen.getByText('gemini-1.5-pro')).toBeTruthy();
@@ -90,7 +90,7 @@ describe('PermissionPanel', () => {
       { label: 'Test → test-model', modelName: 'test-model', providerLabel: 'Test' },
     ];
 
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={onChange} availableModels={models} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} availableModels={models} />);
 
     fireEvent.click(screen.getByText('test-model'));
 
@@ -101,7 +101,7 @@ describe('PermissionPanel', () => {
   it('allows adding custom model via input', () => {
     const onChange = vi.fn();
 
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={onChange} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     const input = screen.getByPlaceholderText(/Wpisz własny model/);
     fireEvent.change(input, { target: { value: 'custom-model-123' } });
@@ -113,7 +113,7 @@ describe('PermissionPanel', () => {
 
   // === Allowed Destinations ================================================
   it('renders all destination types', () => {
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={vi.fn()} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     expect(screen.getByText('Changelog')).toBeTruthy();
     expect(screen.getByText('Plik (File)')).toBeTruthy();
@@ -125,7 +125,7 @@ describe('PermissionPanel', () => {
     const onChange = vi.fn();
     const perms: PermissionSet = { ...DEFAULT_PERMISSION_SET, allowedDestinations: [] };
 
-    render(<PermissionPanel value={perms} onChange={onChange} />);
+    render(<PermissionPanel permissions={perms} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     fireEvent.click(screen.getByText('Changelog'));
 
@@ -135,13 +135,13 @@ describe('PermissionPanel', () => {
 
   // === Limits ==============================================================
   it('renders maxTokensPerRun input', () => {
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={vi.fn()} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     expect(screen.getByText('Max tokenów / uruchomienie')).toBeTruthy();
   });
 
   it('renders maxRunsPerMinute input', () => {
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={vi.fn()} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     expect(screen.getByText('Max uruchomień / minutę')).toBeTruthy();
   });
@@ -149,7 +149,7 @@ describe('PermissionPanel', () => {
   // === Toggles =============================================================
   it('toggles requireApproval', () => {
     const onChange = vi.fn();
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={onChange} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     fireEvent.click(screen.getByLabelText('Przełącz wymagaj akceptacji outputu'));
 
@@ -159,7 +159,7 @@ describe('PermissionPanel', () => {
 
   it('toggles gitAccess', () => {
     const onChange = vi.fn();
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={onChange} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     fireEvent.click(screen.getByLabelText('Przełącz Git Access'));
 
@@ -169,7 +169,7 @@ describe('PermissionPanel', () => {
 
   it('toggles gitWrite', () => {
     const onChange = vi.fn();
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={onChange} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={onChange} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     fireEvent.click(screen.getByLabelText('Przełącz Git Write'));
 
@@ -178,8 +178,8 @@ describe('PermissionPanel', () => {
   });
 
   // === Edge Cases ==========================================================
-  it('uses DEFAULT_PERMISSION_SET when value is undefined', () => {
-    render(<PermissionPanel onChange={vi.fn()} />);
+  it('uses DEFAULT_PERMISSION_SET when permissions is undefined', () => {
+    render(<PermissionPanel onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     // Default has no triggers, so warning should show
     expect(screen.getByText(/Brak — agent nie może być uruchomiony/)).toBeTruthy();
@@ -187,7 +187,7 @@ describe('PermissionPanel', () => {
 
   it('shows message when no triggers added', () => {
     const perms: PermissionSet = { ...DEFAULT_PERMISSION_SET, allowedTriggers: [] };
-    render(<PermissionPanel value={perms} onChange={vi.fn()} />);
+    render(<PermissionPanel permissions={perms} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     expect(screen.getByText(/Dodaj co najmniej jeden trigger/)).toBeTruthy();
   });
@@ -198,7 +198,7 @@ describe('PermissionPanel', () => {
       allowedModels: ['gemini-2.0-flash', 'custom-model'],
     };
 
-    render(<PermissionPanel value={perms} onChange={vi.fn()} />);
+    render(<PermissionPanel permissions={perms} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     expect(screen.getByText('gemini-2.0-flash')).toBeTruthy();
     expect(screen.getByText('custom-model')).toBeTruthy();
@@ -215,7 +215,7 @@ describe('PermissionPanel', () => {
       { label: 'C → m2', modelName: 'm2', providerLabel: 'C' },
     ];
 
-    render(<PermissionPanel value={DEFAULT_PERMISSION_SET} onChange={vi.fn()} availableModels={models} />);
+    render(<PermissionPanel permissions={DEFAULT_PERMISSION_SET} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} availableModels={models} />);
 
     // m1 should appear only once
     const m1Buttons = screen.getAllByText('m1');
@@ -223,8 +223,8 @@ describe('PermissionPanel', () => {
   });
 
   // === Error Case ==========================================================
-  it('does not crash with null value', () => {
-    render(<PermissionPanel value={null as unknown as PermissionSet} onChange={vi.fn()} />);
+  it('does not crash with null permissions', () => {
+    render(<PermissionPanel permissions={null as unknown as PermissionSet} onChangePermissions={vi.fn()} onChangeCapabilities={vi.fn()} onChangeFolders={vi.fn()} />);
 
     // Should use DEFAULT_PERMISSION_SET as fallback
     expect(screen.getByText(/Brak — agent nie może być uruchomiony/)).toBeTruthy();

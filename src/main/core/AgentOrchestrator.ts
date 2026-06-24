@@ -40,17 +40,24 @@ export class AgentOrchestrator {
   private providerRegistry: ProviderRegistry;
   private storage?: StorageEngine;
   private sandboxRunner?: SandboxRunner;
+  private clipboard: { readText: () => string; readImage: () => { isEmpty: () => boolean; toPNG: () => Buffer } } | null;
 
   // Config
   private readonly DEFAULT_MAX_RETRIES = 3;
   private readonly DEFAULT_COOLDOWN_MS = 30_000;  // 30s
   private readonly HEARTBEAT_INTERVAL_MS = 5_000; // co 5s
 
-  constructor(events: AgentOrchestratorEvents, providerRegistry: ProviderRegistry, storage?: StorageEngine) {
+  constructor(
+    events: AgentOrchestratorEvents,
+    providerRegistry: ProviderRegistry,
+    storage?: StorageEngine,
+    clipboard?: { readText: () => string; readImage: () => { isEmpty: () => boolean; toPNG: () => Buffer } } | null
+  ) {
     this.events = events;
     this.providerRegistry = providerRegistry;
     this.storage = storage;
     this.sandboxRunner = new SandboxRunner();
+    this.clipboard = clipboard ?? null;
   }
 
   // =========================================================================
@@ -107,7 +114,7 @@ export class AgentOrchestrator {
     }
 
     state.agent = { ...state.agent, ...updates };
-    console.log(`[AgentOrchestrator] Agent ${agentId} zaktualizowany`);
+    // console.log(`[AgentOrchestrator] Agent ${agentId} zaktualizowany`);
   }
 
   /**
@@ -268,6 +275,7 @@ export class AgentOrchestrator {
           timeoutMs: 120_000,
           memoryLimitMb: 256,
         });
+        this.providerRegistry.recordSend(state.agent.model.providerLabel);
         if (!sandboxResult.success) {
           throw new Error(`[Sandbox] ${sandboxResult.error}`);
         }
@@ -436,7 +444,7 @@ export class AgentOrchestrator {
     const maxDepth = state.agent.budgetDepth || 100;
 
     if (state.tokensUsed >= maxTokens) {
-      console.warn(`[CircuitBreaker] ${state.agent.name}: tokeny ${state.tokensUsed}/${maxTokens}`);
+      // console.warn(`[CircuitBreaker] ${state.agent.name}: tokeny ${state.tokensUsed}/${maxTokens}`);
       return false;
     }
 
@@ -483,6 +491,7 @@ export class AgentOrchestrator {
           }
         }
 
+        this.providerRegistry.recordSend(agent.model.providerLabel);
         return fullContent;
       }
 
@@ -490,6 +499,7 @@ export class AgentOrchestrator {
       const response = await adapter.complete(request);
       // Emit whole content as one chunk
       this.events.onStream(agentId, response.content);
+      this.providerRegistry.recordSend(agent.model.providerLabel);
       return response.content;
 
     } catch (error) {
@@ -618,15 +628,14 @@ export class AgentOrchestrator {
             const state = this.agents.get(agentId);
             const useClipboard = state?.agent.trigger.useClipboard;
             if (useClipboard) {
-              try {
-                const { clipboard } = require('electron');
-                const clipText = clipboard.readText();
+              if (this.clipboard) {
+                const clipText = this.clipboard.readText();
                 if (clipText) {
                   sourceText = `=== Schowek systemowy ===\n${clipText}\n`;
                 } else {
                   sourceText = '=== Schowek systemowy ===\n(Schowek pusty)\n';
                 }
-              } catch {
+              } else {
                 sourceText = '=== Schowek systemowy ===\n(Schowek niedostępny — nie jesteśmy w Electron)\n';
               }
             } else {
@@ -657,7 +666,7 @@ export class AgentOrchestrator {
             if (filePath) {
               try {
                 // #S2: Security — restrict file access to allowed directories
-                const storageBasePath = this.storage ? (this.storage as any).basePath : null;
+                const storageBasePath = this.storage?.basePath ?? null;
                 const allowedDirs = [
                   process.cwd(),
                   storageBasePath || path.join(process.cwd(), 'data'),
@@ -724,7 +733,7 @@ export class AgentOrchestrator {
             console.warn(`[AgentOrchestrator] F6.8: entity not found for ref type=${ref.type} id=${ref.entityId} — skipping`);
           }
         } catch (err) {
-          console.warn(`[AgentOrchestrator] F6.8: error fetching entity type=${ref.type} id=${ref.entityId}:`, err);
+          // console.warn(`[AgentOrchestrator] F6.8: error fetching entity type=${ref.type} id=${ref.entityId}:`, err);
         }
       }
       if (entityTexts.length > 0) {
@@ -736,9 +745,8 @@ export class AgentOrchestrator {
     // F6.8: Toggle flags — includeClipboardImage / includeLastAgentOutput
     // ====================================================================
     if (contextConfig.includeClipboardImage) {
-      try {
-        const { clipboard } = require('electron');
-        const clipImage = clipboard.readImage();
+      if (this.clipboard) {
+        const clipImage = this.clipboard.readImage();
         if (!clipImage.isEmpty()) {
           const pngBuffer = clipImage.toPNG();
           const base64 = pngBuffer.toString('base64');
@@ -746,7 +754,7 @@ export class AgentOrchestrator {
         } else {
           parts.push({ sourceId: '_clipboard_image', text: '=== Obraz ze schowka ===\n(Schowek nie zawiera obrazu)\n' });
         }
-      } catch {
+      } else {
         parts.push({ sourceId: '_clipboard_image', text: '=== Obraz ze schowka ===\n(Obraz niedostępny — nie jesteśmy w Electron)\n' });
       }
     }

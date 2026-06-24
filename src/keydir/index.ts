@@ -38,8 +38,6 @@ export function registerDefaultKeybindings(navigate: NavigateFn, actions: Action
     G('nav-lab-writing', 'Lab — Pisanie', 'Ctrl+3', () => navigate('lab-writing')),
     G('nav-agents', 'Agenci AI', 'Ctrl+4', () => navigate('agents')),
     G('nav-wiki', 'Wiki', 'Ctrl+5', () => navigate('wiki')),
-    G('nav-pipeline', 'Pipeline', 'Ctrl+6', () => navigate('pipeline')),
-    G('nav-workflows', 'Workflows', 'Ctrl+7', () => navigate('workflows')),
     G('nav-changes', 'Zmiany', 'Ctrl+8', () => navigate('changes')),
 
     // ====================================================================

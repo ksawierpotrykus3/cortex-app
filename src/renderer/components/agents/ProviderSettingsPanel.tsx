@@ -5,7 +5,7 @@
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Key, Check, AlertCircle, RefreshCw, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { X, Key, Check, AlertCircle, RefreshCw, Plus, Trash2, Save, Circle } from 'lucide-react';
 import { ProviderAuthConfig, AIProvider } from '../../../shared/types/schema';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
@@ -30,12 +30,22 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
   }, []);
   const [newCustomUrl, setNewCustomUrl] = useState('');
   const [newCustomKey, setNewCustomKey] = useState('');
+  const [nvidiaKeys, setNvidiaKeys] = useState<string[]>([]);
+  const [nvidiaJsonText, setNvidiaJsonText] = useState('');
+  const [nvidiaSaving, setNvidiaSaving] = useState(false);
+  const [nvidiaSaveResult, setNvidiaSaveResult] = useState<{ success: boolean; count?: number; error?: string } | null>(null);
+  const [bridgeStatus, setBridgeStatus] = useState<Record<number, { alive: boolean; model: string }>>({});
   const modalRef = useFocusTrap(isOpen);
+
+  // Prosty formularz NVIDIA: nazwa + klucz
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState('');
 
   // Load configs on mount
   useEffect(() => {
     if (!isOpen) return;
     loadConfigs();
+    loadNvidiaKeys();
   }, [isOpen]);
 
   const loadConfigs = async () => {
@@ -84,6 +94,96 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
       if (mountedRef.current) setTestingLabel(null);
     }
   };
+
+  const loadNvidiaKeys = async () => {
+    try {
+      const bridge = window.nexusBridge;
+      if (bridge?.getNvidiaKeys) {
+        const keys = await bridge.getNvidiaKeys();
+        setNvidiaKeys(keys);
+        setNvidiaJsonText(JSON.stringify(keys, null, 2));
+      }
+    } catch { /* skip */ }
+  };
+
+  const addNvidiaKey = () => {
+    const key = newKeyValue.trim();
+    if (!key) return;
+    const updated = [...nvidiaKeys, key];
+    setNvidiaKeys(updated);
+    setNvidiaJsonText(JSON.stringify(updated, null, 2));
+    setNewKeyName('');
+    setNewKeyValue('');
+    // Auto-save
+    saveKeysImmediate(updated);
+  };
+
+  const removeNvidiaKey = (index: number) => {
+    const updated = nvidiaKeys.filter((_, i) => i !== index);
+    setNvidiaKeys(updated);
+    setNvidiaJsonText(JSON.stringify(updated, null, 2));
+    saveKeysImmediate(updated);
+  };
+
+  const saveKeysImmediate = async (keys: string[]) => {
+    const bridge = window.nexusBridge;
+    if (!bridge?.setNvidiaKeys) return;
+    try {
+      await bridge.setNvidiaKeys({ keys });
+    } catch { /* skip */ }
+  };
+
+  const handleSaveNvidiaKeys = async () => {
+    setNvidiaSaving(true);
+    setNvidiaSaveResult(null);
+    try {
+      let parsed: string[] = [];
+      try {
+        parsed = JSON.parse(nvidiaJsonText);
+        if (!Array.isArray(parsed)) throw new Error('JSON musi być tablicą stringów');
+      } catch {
+        setNvidiaSaveResult({ success: false, error: 'Nieprawidłowy JSON — wklej tablicę kluczy, np. ["nvapi-...", "nvapi-..."]' });
+        setNvidiaSaving(false);
+        return;
+      }
+      const bridge = window.nexusBridge;
+      const result = await bridge?.setNvidiaKeys?.({ keys: parsed });
+      if (result?.success) {
+        setNvidiaSaveResult({ success: true, count: result.count });
+        setNvidiaKeys(parsed);
+        setNvidiaJsonText(JSON.stringify(parsed, null, 2));
+      } else {
+        setNvidiaSaveResult({ success: false, error: result?.error || 'Nieznany błąd' });
+      }
+    } catch (err) {
+      setNvidiaSaveResult({ success: false, error: err instanceof Error ? err.message : 'Błąd zapisu' });
+    } finally {
+      setNvidiaSaving(false);
+    }
+  };
+
+  const checkBridgeHealth = async () => {
+    const bridge = window.nexusBridge;
+    if (!bridge?.bridgeHealth) return;
+    const ports = [3456]; // NVIDIA proxy
+    const results: Record<number, { alive: boolean; model: string }> = {};
+    for (const port of ports) {
+      try {
+        const r = await bridge.bridgeHealth({ port });
+        results[port] = { alive: r.alive, model: r.model };
+      } catch { results[port] = { alive: false, model: '' }; }
+    }
+    setBridgeStatus(results);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    checkBridgeHealth();
+    const interval = setInterval(checkBridgeHealth, 15000); // co 15s
+    return () => clearInterval(interval);
+  }, [isOpen]);
+
+  // (handlery add/remove nvidia key zostały usunięte — zastąpione przez set-keys)
 
   const handleAddCustom = async () => {
     if (!newCustomUrl.trim()) return;
@@ -252,7 +352,7 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
               <input
                 value={newCustomUrl}
                 onChange={(e) => setNewCustomUrl(e.target.value)}
-                placeholder="URL: http://localhost:3458"
+                placeholder="URL: http://localhost:3456"
                 className="flex-1 px-3 py-1.5 text-[12px] bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text))] placeholder:text-[rgb(var(--text-secondary))] outline-none focus:border-[rgb(var(--accent))]/50"
               />
               <input
@@ -272,6 +372,87 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
             </div>
             <p className="text-[9px] text-[rgb(var(--text-secondary))] opacity-50">
               Dowolny endpoint kompatybilny z OpenAI API (OpenRouter, lokalne proxy, Ollama, LM Studio, itp.)
+            </p>
+          </div>
+
+          {/* === NVIDIA Bridge Status ================================== */}
+          <div className="p-4 bg-[rgb(var(--bg-elevated))] rounded-lg border border-[rgb(var(--border))] space-y-3">
+            <span className="text-[12px] font-medium text-[rgb(var(--text))]">Proxy NVIDIA (port 3456)</span>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${bridgeStatus[3456]?.alive ? 'bg-emerald-400' : bridgeStatus[3456]?.alive === false ? 'bg-red-400' : 'bg-gray-400'}`} />
+              <span className="text-[11px] text-[rgb(var(--text-secondary))]">
+                {bridgeStatus[3456]?.alive
+                  ? `Online · ${bridgeStatus[3456].model || 'running'}`
+                  : bridgeStatus[3456]?.alive === false ? 'Offline' : 'Sprawdzanie...'}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {(['deepseek-ai/deepseek-v4-flash', 'deepseek-ai/deepseek-v4-pro', 'moonshotai/kimi-k2.6', 'qwen/qwen3.5-397b-a17b']).map(m => (
+                <span key={m} className="px-2 py-0.5 text-[10px] bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))] rounded-full border border-[rgb(var(--border))]">{m}</span>
+              ))}
+            </div>
+            <p className="text-[9px] text-[rgb(var(--text-secondary))] opacity-50">
+              Status odświeżany co 15s. Proxy odpala się automatycznie z Nexusem.
+            </p>
+          </div>
+
+          {/* === NVIDIA Keys — Prosty formularz ====================== */}
+          <div className="p-4 bg-[rgb(var(--bg-elevated))] rounded-lg border border-[rgb(var(--border))] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-medium text-[rgb(var(--text))]">
+                Klucze NVIDIA API
+              </span>
+              <span className="text-[10px] text-[rgb(var(--text-secondary))] opacity-50">
+                {nvidiaKeys.length} kluczy · {(nvidiaKeys.length * 40)} RPM łącznie
+              </span>
+            </div>
+
+            {/* Dodawanie klucza */}
+            <div className="flex gap-2">
+              <input
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                placeholder="Nazwa (np. DeepSeek v4 Pro)"
+                className="flex-1 px-3 py-1.5 text-[11px] bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text))] placeholder:text-[rgb(var(--text-secondary))]/50 outline-none focus:border-[rgb(var(--accent))]/50"
+              />
+              <input
+                value={newKeyValue}
+                onChange={(e) => setNewKeyValue(e.target.value)}
+                placeholder="Klucz API (nvapi-...)"
+                className="flex-[2] px-3 py-1.5 text-[11px] font-mono bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded-lg text-[rgb(var(--text))] placeholder:text-[rgb(var(--text-secondary))]/50 outline-none focus:border-[rgb(var(--accent))]/50"
+              />
+              <button
+                onClick={addNvidiaKey}
+                disabled={!newKeyValue.trim()}
+                className="px-3 py-1.5 text-[11px] font-medium bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 shrink-0"
+              >
+                <Plus size={13} /> Dodaj
+              </button>
+            </div>
+
+            {/* Lista kluczy */}
+            {nvidiaKeys.length > 0 && (
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {nvidiaKeys.map((key, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-[rgb(var(--bg-surface))] rounded-lg border border-[rgb(var(--border))] group">
+                    <Circle size={8} className="text-green-400 fill-green-400 shrink-0" />
+                    <span className="text-[11px] font-mono text-[rgb(var(--text-secondary))] flex-1 truncate">
+                      {key.substring(0, 10)}...{key.substring(key.length - 4)}
+                    </span>
+                    <span className="text-[9px] text-[rgb(var(--text-secondary))] opacity-40">40 RPM</span>
+                    <button
+                      onClick={() => removeNvidiaKey(i)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 text-[rgb(var(--text-muted))] hover:text-red-400 cursor-pointer transition-opacity"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="text-[9px] text-[rgb(var(--text-secondary))] opacity-50">
+              Dodaj klucze API NVIDIA. Proxy automatycznie wykryje zmiany i będzie rotować klucze przy każdym zapytaniu. Każdy klucz ma limit ~40 RPM.
             </p>
           </div>
         </div>

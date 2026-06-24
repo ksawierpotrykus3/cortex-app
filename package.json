@@ -70,10 +70,16 @@
     "directories": {
       "output": "release"
     },
-    "files": [
-      "out/**/*",
-      "dist/**/*"
+    "asarUnpack": [
+      "node_modules/better-sqlite3/build/Release/*.node",
+      "node_modules/better-sqlite3/build/*.node",
+      "node_modules/lightningcss*/**/*.node",
+      "node_modules/@tailwindcss/oxide*/**/*.node",
+      "node_modules/@rollup/rollup*/**/*.node",
+      "src/main/services/nvidia-bridge/**/*"
     ],
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
     "win": {
       "target": [
         "nsis"

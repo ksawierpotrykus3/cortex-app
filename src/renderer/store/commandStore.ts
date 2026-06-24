@@ -206,10 +206,9 @@ function buildCustomCommand(cc: CustomCommandData): Command {
       break;
     case 'shell':
       handler = () => {
-        const bridge = window.nexusBridge as any;
-        if (bridge?.executeCommand) {
-          bridge.executeCommand({ command: val });
-        }
+        // Shell execution is disabled by default for security reasons.
+        // Enable only after explicit user opt-in via settings.
+        console.warn('[CommandStore] Shell commands are disabled for security. Enable in settings if needed.');
       };
       break;
     default:

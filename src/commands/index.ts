@@ -53,22 +53,6 @@ const NAV_CMDS = (navigate: NavigateFn) => [
     handler: () => navigate('wiki'),
   },
   {
-    id: 'nav:pipeline',
-    label: 'Pipeline DAG',
-    category: 'Nawigacja',
-    shortcut: 'Ctrl+6',
-    keywords: ['pipeline', 'dag', 'flow', 'przepływ'],
-    handler: () => navigate('pipeline'),
-  },
-  {
-    id: 'nav:workflows',
-    label: 'Workflows',
-    category: 'Nawigacja',
-    shortcut: 'Ctrl+7',
-    keywords: ['automatyzacja', 'workflow', 'akcje'],
-    handler: () => navigate('workflows'),
-  },
-  {
     id: 'nav:changes',
     label: 'Zmiany (Changelog)',
     category: 'Nawigacja',

@@ -6,7 +6,7 @@
 
 import { Agent, AgentOutput, AgentStatus, TriggerType, AIProvider } from '../../shared/types/schema';
 
-// === Minimalny adapter AI dla sandboxa ====================================
+// === Minimalny AI adapter dla sandboxa ====================================
 // Nie importuje całego ProviderRegistry — tylko surowy fetch do API.
 // Dzięki temu worker jest lekki i nie zależy od reszty systemu.
 
@@ -16,10 +16,39 @@ interface WorkerPayload {
   triggerType: TriggerType;
   providerApiKey: string;
   providerBaseUrl: string;
+  capabilities?: import('../../shared/types/capabilities').CapabilityEntry[];
+}
+
+// === Action Bridge — komunikacja z parentem ================================
+let pendingActions: Map<string, { resolve: (v: any) => void; reject: (e: any) => void }> = new Map();
+
+async function callAction(action: string, params: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const id = crypto.randomUUID?.() || `${Date.now()}_${Math.random()}`;
+    pendingActions.set(id, { resolve, reject });
+    process.send!({ type: 'action_request', id, action, params });
+    // Timeout after 60s
+    setTimeout(() => {
+      if (pendingActions.has(id)) {
+        pendingActions.delete(id);
+        reject(new Error(`Action ${action} timed out`));
+      }
+    }, 60000);
+  });
 }
 
 // === Główna pętla workera ==================================================
 process.on('message', async (msg: any) => {
+  if (msg.type === 'action_response') {
+    const pending = pendingActions.get(msg.id);
+    if (pending) {
+      pendingActions.delete(msg.id);
+      if (msg.error) pending.reject(new Error(msg.error));
+      else pending.resolve(msg.result);
+    }
+    return;
+  }
+
   if (msg.type === 'config') {
     // Memory limit — handled by parent via execArgv
     return;
@@ -40,6 +69,7 @@ process.on('message', async (msg: any) => {
 // === Sandbox Execution =====================================================
 async function executeInSandbox(payload: WorkerPayload): Promise<Partial<AgentOutput>> {
   const { agent, context, triggerType, providerApiKey, providerBaseUrl } = payload;
+  const caps = payload.capabilities || [];
   const startTime = Date.now();
 
   const startOutput: Partial<AgentOutput> = {
@@ -72,6 +102,35 @@ async function executeInSandbox(payload: WorkerPayload): Promise<Partial<AgentOu
   finalPrompt = finalPrompt.replace(/\{\{NOW\}\}/g, new Date().toISOString().replace('T', ' ').slice(0, 19));
   finalPrompt = finalPrompt.replace(/\{\{BRANCH\}\}/g, 'sandbox');
   finalPrompt = finalPrompt.replace(/\{\{AGENT_NAME\}\}/g, agent.name);
+
+  // === Context injection via actions =======================================
+  let contextData = '';
+
+  if (caps.some((c: any) => c.capability === 'read:context')) {
+    contextData += `\n=== KONTEKST UZYTKOWNIKA ===\n${context}\n`;
+  }
+  if (caps.some((c: any) => c.capability === 'read:notes')) {
+    try {
+      const notes = await callAction('read:notes', {});
+      contextData += `\n=== NOTATKI Z MAPY MYSLI ===\n${JSON.stringify(notes, null, 2)}\n`;
+    } catch (e) {
+      // Silently ignore if action fails
+    }
+  }
+  if (caps.some((c: any) => c.capability === 'read:tasks')) {
+    try {
+      const tasks = await callAction('read:tasks', {});
+      contextData += `\n=== ZADANIA ===\n${JSON.stringify(tasks, null, 2)}\n`;
+    } catch (e) {}
+  }
+  if (caps.some((c: any) => c.capability === 'read:git')) {
+    try {
+      const gitStatus = await callAction('read:git', {});
+      contextData += `\n=== STATUS GIT ===\n${JSON.stringify(gitStatus, null, 2)}\n`;
+    } catch (e) {}
+  }
+
+  finalPrompt += contextData;
 
   // === AI Call =============================================================
   const content = await callAI(
@@ -128,10 +187,13 @@ async function callGemini(
   maxTokens: number,
   topP: number,
 ): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+    },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { temperature, maxOutputTokens: maxTokens, topP },

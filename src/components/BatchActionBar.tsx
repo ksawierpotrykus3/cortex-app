@@ -94,7 +94,7 @@ export function BatchActionBar({
                 onClick={() => { onAssignProject(selectedIds, ''); setShowProjectPicker(false); }}
                 className="w-full px-3 py-1.5 text-[12px] text-left text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--border))] transition-colors cursor-pointer border-t border-[rgb(var(--border))]"
               >
-                ✕ Usuń z projektu
+                &times; Usuń z projektu
               </button>
             </div>
           )}

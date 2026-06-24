@@ -1312,7 +1312,7 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
                          onClick={() => onUpdateNode?.(node.id, { cleanImageMode: !node.cleanImageMode })}
                          className={`text-left w-full px-2 py-1 text-[12px] capitalize rounded flex items-center gap-1.5 ${node.cleanImageMode ? 'bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))]' : 'hover:bg-[rgb(var(--border))] text-[rgb(var(--text-main))]'}`}
                       >
-                         <span>{node.cleanImageMode ? '✓ ' : ''}Clean image mode</span>
+                         <span>Clean image mode</span>
                       </button>
                    </div>
                 )}
@@ -1336,7 +1336,7 @@ const NodeCard: React.FC<NodeProps> = ({ node, scale, isSelected, isDragging, on
                                  marker === 'question' ? 'bg-blue-400' : 'bg-green-400'
                               }`} />
                               <span>{marker}</span>
-                              {hasMarker && <span className="ml-auto text-[rgb(var(--accent))] font-normal">✓</span>}
+                              {hasMarker && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[rgb(var(--accent))]" />}
                            </button>
                        );
                    })}

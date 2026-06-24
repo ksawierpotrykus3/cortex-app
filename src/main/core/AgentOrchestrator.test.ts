@@ -29,6 +29,7 @@ const mockProviderRegistry = {
   testConnection: vi.fn(),
   upsertConfig: vi.fn(),
   removeConfig: vi.fn(),
+  recordSend: vi.fn(),
   destroy: vi.fn(),
 } as unknown as ProviderRegistry;
 

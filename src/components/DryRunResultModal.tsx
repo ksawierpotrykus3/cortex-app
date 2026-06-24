@@ -15,9 +15,9 @@ interface DryRunResultModalProps {
 }
 
 export function DryRunResultModal({ result, open, onClose }: DryRunResultModalProps) {
-  if (!open || !result) return null;
-
   const focusTrapRef = useFocusTrap(open && !!result);
+
+  if (!open || !result) return null;
 
   const completedNodes = result.nodes.filter(n => !n.skipped).length;
   const skippedNodes = result.nodes.filter(n => n.skipped).length;
@@ -119,14 +119,14 @@ export function DryRunResultModal({ result, open, onClose }: DryRunResultModalPr
               {/* Stats row */}
               <div className="flex items-center gap-3 mt-2 pl-5">
                 <span className="text-[10px] text-[rgb(var(--text-muted))]">
-                  ⏱ ~{node.estimatedDuration}ms
+                  ~{node.estimatedDuration}ms
                 </span>
                 <span className="text-[10px] text-[rgb(var(--text-muted))]">
-                  🪙 ~{node.estimatedTokens} tokenów
+                  ~{node.estimatedTokens} tokenów
                 </span>
                 {node.conditionResult !== undefined && node.conditionResult !== null && (
                   <span className={`text-[10px] ${node.conditionResult ? 'text-[rgb(var(--success))]' : 'text-[rgb(var(--text-muted))]'}`}>
-                    Warunek: {node.conditionResult ? '✅ spełniony' : '❌ niespełniony'}
+                    Warunek: <span className={node.conditionResult ? 'text-[rgb(var(--success))]' : 'text-[rgb(var(--danger))]'}>{node.conditionResult ? 'spełniony' : 'niespełniony'}</span>
                   </span>
                 )}
               </div>
@@ -136,7 +136,7 @@ export function DryRunResultModal({ result, open, onClose }: DryRunResultModalPr
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-[rgb(var(--border))] flex items-center justify-between text-[10px] text-[rgb(var(--text-muted))]">
-          <span>Status: {result.status === 'success' ? '✅ Symulacja zakończona' : '❌ Wystąpił błąd'}</span>
+          <span>Status: <span className={result.status === 'success' ? 'text-[rgb(var(--success))]' : 'text-[rgb(var(--danger))]'}>{result.status === 'success' ? 'Symulacja zakończona' : 'Wystąpił błąd'}</span></span>
           <span>{result.nodes.length} nodów w pipeline'ie</span>
         </div>
       </div>

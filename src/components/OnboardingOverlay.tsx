@@ -81,6 +81,9 @@ export function OnboardingOverlay({ open, onClose, onComplete }: OnboardingOverl
     if (step > 0) setStep(step - 1);
   };
 
+  // Focus trap (MUSI być przed warunkowym returnem — reguła hooków)
+  const focusTrapRef = useFocusTrap(open);
+
   // Keyboard nav
   useEffect(() => {
     if (!open) return;
@@ -94,8 +97,6 @@ export function OnboardingOverlay({ open, onClose, onComplete }: OnboardingOverl
   }, [open, step]);
 
   if (!open) return null;
-
-  const focusTrapRef = useFocusTrap(open);
 
   const StepIcon = STEPS[step].icon;
 
