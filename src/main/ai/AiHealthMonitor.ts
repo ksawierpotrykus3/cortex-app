@@ -166,7 +166,7 @@ export class AiHealthMonitor {
           messages: [{ role: 'user', content: '1' }],
           max_tokens: 1
         }),
-        signal: AbortSignal.timeout(5000), // 5 seconds health check timeout
+        signal: AbortSignal.timeout(30000), // 30 seconds health check timeout (prevent false-offline on high latency)
       });
 
       if (response.ok) {
