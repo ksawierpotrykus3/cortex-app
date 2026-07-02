@@ -347,21 +347,24 @@ export function ExperimentalCanvas() {
   };
 
   // ==========================================================================
-  // Auto-layout helper
+  // Auto-layout helper (przyjmuje aktualne wezly, zeby uniknac stale closure)
   // ==========================================================================
-  const runAutoLayout = useCallback(() => {
-    const laidOut = applyLayout(nodes, edges);
+  const runAutoLayout = useCallback((newNodes?: ExperimentalNode[], newEdges?: ExperimentalEdge[]) => {
+    const targetNodes = newNodes || nodes;
+    const targetEdges = newEdges || edges;
+    const laidOut = applyLayout(targetNodes, targetEdges);
     setNodes(laidOut);
   }, [nodes, edges, applyLayout]);
 
   // ==========================================================================
   // Faza 3: Krawedzie (edges)
   // ==========================================================================
-  const runPhase3Edges = async () => {
+  const runPhase3Edges = async (nodesToUse?: ExperimentalNode[]) => {
+    const effectiveNodes = nodesToUse || nodes;
     if (!activeProjectId) return;
     setPlannerPhase('phase3');
 
-    const readyNodes = nodes.filter(n => n.status === 'ready');
+    const readyNodes = effectiveNodes.filter(n => n.status === 'ready');
     if (readyNodes.length === 0) {
       setPlannerPhase('done');
       return;
@@ -389,7 +392,7 @@ ${JSON.stringify(readyNodes)}`;
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         const b = window.nexusBridge;
-        const newEdges: ExperimentalEdge[] = [];
+        const allNewEdges: ExperimentalEdge[] = [];
         for (const e of parsed.edges || []) {
           const edge: ExperimentalEdge = {
             id: genId(),
@@ -399,16 +402,18 @@ ${JSON.stringify(readyNodes)}`;
             label: e.label || '',
             relation_type: e.relation_type || 'depends_on',
           };
-          newEdges.push(edge);
+          allNewEdges.push(edge);
           setEdges(prev => [...prev, edge]);
           if (b?.expSaveEdge) await b.expSaveEdge({ edge });
         }
+        // Auto-layout z lokalna lista krawedzi (unikamy stale closure)
+        runAutoLayout(effectiveNodes, allNewEdges);
       }
     } catch (err: any) {
       setAiError(err.message);
     }
 
-    // Auto-layout po krawedziach
+    // Auto-layout i zakonczenie fazy 3
     runAutoLayout();
     setPlannerPhase('done');
   };
@@ -416,23 +421,28 @@ ${JSON.stringify(readyNodes)}`;
   // ==========================================================================
   // Faza 2: Dekompozycja wezlow
   // ==========================================================================
-  const runPhase2Decompose = async () => {
+  const runPhase2Decompose = async (initialNodes?: ExperimentalNode[]) => {
     if (!activeProjectId || !activeConversationId) return;
     setPlannerPhase('phase2');
 
-    const nodesToProcess = nodes.filter(
+    // Jesli Phase 1 przekazala initialNodes, uzyj ich; inaczej wez z closure
+    const allNodesLocal = initialNodes || nodes;
+
+    const nodesToProcess = allNodesLocal.filter(
       n => (n.node_type === 'root' || n.node_type === 'domain' || n.node_type === 'component') && n.status !== 'ready'
     );
 
     if (nodesToProcess.length === 0) {
       setPlannerPhase('phase3');
-      await runPhase3Edges();
+      await runPhase3Edges(allNodesLocal);
       return;
     }
 
     setPlannerProgress({ current: 0, total: nodesToProcess.length });
 
     const b = window.nexusBridge;
+    // Lokalny akumulator: sledzimy nowe wezly, zeby Faza 3 je widziala
+    let allNodes = allNodesLocal;
 
     for (let i = 0; i < nodesToProcess.length; i++) {
       const wezel = nodesToProcess[i];
@@ -454,9 +464,6 @@ ${JSON.stringify(globalContext)}
 BIEZACY WEZEL DO ROZBIENIA:
 ${JSON.stringify(wezel)}
 
-AKTUALNE WEZLY (kontekst):
-${JSON.stringify(nodes)}
-
 Zwroc TYLKO JSON:
 {
   "is_leaf": false,
@@ -473,7 +480,7 @@ Jesli is_leaf = true, children = [].`;
           role: 'user',
           content: prompt,
         };
-        const raw = await invokePlanner(plannerSystemPrompt, [phase2Msg], nodes, edges, specContent, plannerModel);
+        const raw = await invokePlanner(plannerSystemPrompt, [phase2Msg], allNodes, edges, specContent, plannerModel);
         const jsonMatch = raw.match(/\{[\s\S]*"is_leaf"[\s\S]*\}/);
         if (!jsonMatch) continue;
 
@@ -481,6 +488,7 @@ Jesli is_leaf = true, children = [].`;
 
         if (parsed.is_leaf) {
           const updated: ExperimentalNode = { ...wezel, status: 'ready' };
+          allNodes = allNodes.map(n => n.id === wezel.id ? updated : n);
           setNodes(prev => prev.map(n => n.id === wezel.id ? updated : n));
           if (b?.expSaveNode) await b.expSaveNode({ node: updated });
         } else if (parsed.children && parsed.children.length > 0) {
@@ -501,10 +509,12 @@ Jesli is_leaf = true, children = [].`;
               height: 100,
               source_conversation_id: activeConversationId,
             };
+            allNodes.push(childNode);
             setNodes(prev => [...prev, childNode]);
             if (b?.expSaveNode) await b.expSaveNode({ node: childNode });
           }
           const updated: ExperimentalNode = { ...wezel, status: 'ready' };
+          allNodes = allNodes.map(n => n.id === wezel.id ? updated : n);
           setNodes(prev => prev.map(n => n.id === wezel.id ? updated : n));
           if (b?.expSaveNode) await b.expSaveNode({ node: updated });
         }
@@ -514,7 +524,7 @@ Jesli is_leaf = true, children = [].`;
     }
 
     setPlannerPhase('phase3');
-    await runPhase3Edges();
+    await runPhase3Edges(allNodes);
   };
 
   // ==========================================================================
@@ -574,11 +584,12 @@ SPEC: ${specContent}`;
         height: 100,
         source_conversation_id: activeConversationId,
       };
-      setNodes(prev => [...prev, rootNode]);
+      const newNodes = [...nodes, rootNode];
+      setNodes(newNodes);
       if (b?.expSaveNode) await b.expSaveNode({ node: rootNode });
 
-      // Przejdz do fazy 2
-      await runPhase2Decompose();
+      // Przejdz do fazy 2 (przekaz nowa liste wezlow, zeby Faza 2 widziala rootNode)
+      await runPhase2Decompose(newNodes);
     } catch (err: any) {
       setAiError(err.message);
       setPlannerPhase('idle');
@@ -681,6 +692,10 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
     const b = window.nexusBridge;
     resetNodePos();
 
+    // Lokalne tablice, zeby uniknac stale closure
+    let localNodes = [...nodes];
+    const allNewEdges: ExperimentalEdge[] = [];
+
     for (const op of diffProposal.operations) {
       if (op.action === 'ADD' && op.node) {
         const pos = nextNodePos();
@@ -696,18 +711,21 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
           height: 100,
           source_conversation_id: activeConversationId,
         };
+        localNodes.push(node);
         setNodes(prev => [...prev, node]);
         if (b?.expSaveNode) await b.expSaveNode({ node });
       }
       if (op.action === 'UPDATE' && op.node?.id) {
-        const existing = nodes.find(n => n.id === op.node!.id);
+        const existing = localNodes.find(n => n.id === op.node!.id);
         if (existing) {
           const updated = { ...existing, title: op.node.title, content: op.node.content };
+          localNodes = localNodes.map(n => n.id === op.node!.id ? updated : n);
           setNodes(prev => prev.map(n => n.id === op.node!.id ? updated : n));
           if (b?.expSaveNode) await b.expSaveNode({ node: updated });
         }
       }
       if (op.action === 'DELETE' && op.nodeId) {
+        localNodes = localNodes.filter(n => n.id !== op.nodeId);
         setNodes(prev => prev.filter(n => n.id !== op.nodeId));
         if (b?.expDeleteNode) await b.expDeleteNode({ id: op.nodeId });
       }
@@ -719,14 +737,15 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
           target_node_id: op.edge.target_node_id,
           label: op.edge.label || '',
         };
+        allNewEdges.push(edge);
         setEdges(prev => [...prev, edge]);
         if (b?.expSaveEdge) await b.expSaveEdge({ edge });
       }
     }
     setDiffProposal(null);
 
-    // Auto-layout po zatwierdzeniu diffa
-    runAutoLayout();
+    // Auto-layout po zatwierdzeniu diffa (z lokalna lista)
+    runAutoLayout(localNodes);
   };
 
   // ==========================================================================
@@ -768,11 +787,12 @@ ${message.content}`;
       };
 
       const b = window.nexusBridge;
-      setNodes(prev => [...prev, noteNode]);
+      const newNodes = [...nodes, noteNode];
+      setNodes(newNodes);
       if (b?.expSaveNode) await b.expSaveNode({ node: noteNode });
 
       // Auto-layout po dodaniu notatki
-      runAutoLayout();
+      runAutoLayout(newNodes);
     } catch (err: any) {
       setAiError(err.message);
     }
