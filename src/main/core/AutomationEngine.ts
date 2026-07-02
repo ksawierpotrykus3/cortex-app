@@ -66,6 +66,43 @@ interface CursorState {
 
 const cursorStore = new Map<string, CursorState>();
 
+const getCursorStorePath = () => path.resolve(process.cwd(), 'data', 'cursor_store.json');
+
+function loadCursorStore(): void {
+  try {
+    const file = getCursorStorePath();
+    if (fs.existsSync(file)) {
+      const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      for (const [k, v] of Object.entries(data)) {
+        const val = v as any;
+        cursorStore.set(k, {
+          ...val,
+          processedIds: new Set(val.processedIds || []),
+        });
+      }
+    }
+  } catch { /* ignore load errors */ }
+}
+
+function saveCursorStore(): void {
+  try {
+    const file = getCursorStorePath();
+    const dir = path.dirname(file);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const obj: Record<string, any> = {};
+    for (const [k, v] of cursorStore.entries()) {
+      obj[k] = {
+        ...v,
+        processedIds: Array.from(v.processedIds),
+      };
+    }
+    fs.writeFileSync(file, JSON.stringify(obj, null, 2), 'utf-8');
+  } catch { /* ignore save errors */ }
+}
+
+// Load initially
+loadCursorStore();
+
 /** Odczytuje pozycję kursora dla danego pipeline/stage */
 export function getCursor(key: string): CursorState {
   if (!cursorStore.has(key)) {
@@ -93,6 +130,7 @@ export function advanceCursor(key: string, processedId: string, context?: Record
     const arr = Array.from(cursor.processedIds);
     cursor.processedIds = new Set(arr.slice(arr.length - 500));
   }
+  saveCursorStore();
 }
 
 /** Sprawdza czy element był już przetworzony */
@@ -103,6 +141,7 @@ export function isAlreadyProcessed(key: string, id: string): boolean {
 /** Resetuje kursor */
 export function resetCursor(key: string): void {
   cursorStore.delete(key);
+  saveCursorStore();
 }
 
 /** Pobiera listę nowych elementów do przetworzenia (filtruje już przetworzone) */
@@ -147,12 +186,17 @@ export function fuzzyMatchFilename(expected: string, actual: string): boolean {
 
   // Remove common OS zrostki
   const cleanBase = (base: string): string => {
-    let cleaned = base
-      .replace(/\s*\(\d+\)\s*$/, '')      // " (1)", "(99)"
-      .replace(/\s*-\s*Copy(\s*\(\d+\))?$/i, '')  // " - Copy", " - Copy (2)"
-      .replace(/\s*\(\d+\)$/, '')          // "(1)" bez spacji
-      .replace(/\s*_copy\d*$/i, '')        // "_copy", "_copy2"
-      .trim();
+    let prev = '';
+    let cleaned = base;
+    while (prev !== cleaned) {
+      prev = cleaned;
+      cleaned = cleaned
+        .replace(/\s*\(\d+\)\s*$/, '')              // " (1)", "(99)"
+        .replace(/\s*-\s*Copy(\s*\(\d+\))?$/i, '')  // " - Copy", " - Copy (2)"
+        .replace(/\s*\(\d+\)$/, '')                  // "(1)" bez spacji
+        .replace(/\s*_copy\d*$/i, '')                // "_copy", "_copy2"
+        .trim();
+    }
     return cleaned;
   };
 

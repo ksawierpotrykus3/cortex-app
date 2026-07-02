@@ -310,6 +310,13 @@ export class PipelineExecutor {
             runState.nodeResults.set(node.id, `[SKIPPED] Node type ${node.type} not implemented in executor`);
             break;
         }
+
+        if (runState.errors.has(node.id)) {
+          if (node.config?.abortOnError !== false) {
+            runState.status = 'failed';
+            return { success: false, error: `Node "${node.name || node.id}" failed: ${runState.errors.get(node.id)}` };
+          }
+        }
       }
 
       runState.progress = 1;
