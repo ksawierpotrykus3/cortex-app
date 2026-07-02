@@ -36,9 +36,7 @@ export function useExperimentalAI() {
   ): Promise<string> => {
     const bridge = window.nexusBridge;
     if (!bridge?.expInvokeChatLLM) {
-      // Fallback — symulacja gdy bridge nie jest dostepny
-      await new Promise(r => setTimeout(r, 600));
-      return `[AI offline] Przeanalizowalem: "${messages[messages.length - 1]?.content}". Uzyj przycisku Planera by zaktualizowac plan.`;
+      throw new Error('Bridge AI nie jest dostepny — sprawdz polaczenie.');
     }
     setChatLoading(true);
     try {
@@ -59,20 +57,7 @@ export function useExperimentalAI() {
   ): Promise<string> => {
     const bridge = window.nexusBridge;
     if (!bridge?.expInvokePlanner) {
-      // Fallback
-      await new Promise(r => setTimeout(r, 900));
-      return JSON.stringify({
-        operations: [
-          {
-            action: 'ADD',
-            node: { title: 'Analiza wymagan', content: 'Przeglad wymagan projektu na podstawie rozmowy.', parent_id: null },
-          },
-          {
-            action: 'ADD',
-            node: { title: 'Architektura systemu', content: 'Projekt struktury i komponentow.', parent_id: null },
-          },
-        ],
-      });
+      throw new Error('Bridge Planera nie jest dostepny.');
     }
     setPlannerLoading(true);
     try {
@@ -91,7 +76,6 @@ export function useExperimentalAI() {
   }, []);
 
   const parsePlannerResponse = useCallback((raw: string): PlannerResult => {
-    // Szukaj JSON w odpowiedzi
     const jsonMatch = raw.match(/\{[\s\S]*"operations"[\s\S]*\}/);
     if (jsonMatch) {
       try {
@@ -100,7 +84,6 @@ export function useExperimentalAI() {
         // ignore
       }
     }
-    // Fallback: pusta lista
     return { operations: [] };
   }, []);
 
