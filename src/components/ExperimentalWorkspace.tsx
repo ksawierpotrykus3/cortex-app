@@ -146,6 +146,11 @@ export function ExperimentalWorkspace() {
       if (window.nexusBridge?.expGetProjects) {
         list = await window.nexusBridge.expGetProjects();
       }
+      setProjects(list.length > 0 ? list : [newProj]);
+      setProjectsLoaded(true);
+      await selectProject(id, list.length > 0 ? list : [newProj]);
+    } else {
+      const list = [...projects, newProj];
       setProjects(list);
       setProjectsLoaded(true);
       await selectProject(id, list);
