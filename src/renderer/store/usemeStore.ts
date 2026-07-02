@@ -95,10 +95,13 @@ export const useUsemeStore = create<UsemeState & UsemeActions>((set, get) => ({
       const b = await getBridge();
       await b.usemeSubmitDecision({ jobId, decision, proposal });
 
-      set((state) => ({
-        pendingReviews: state.pendingReviews.filter((r) => r.jobId !== jobId),
-        status: state.pendingReviews.length <= 1 ? 'RUNNING' : 'AWAITING_REVIEW',
-      }));
+      set((state) => {
+        const updatedReviews = state.pendingReviews.filter((r) => r.jobId !== jobId);
+        return {
+          pendingReviews: updatedReviews,
+          status: updatedReviews.length === 0 ? 'RUNNING' : 'AWAITING_REVIEW',
+        };
+      });
     } catch (err) {
       set({ error: String(err) });
     }
@@ -111,10 +114,13 @@ export const useUsemeStore = create<UsemeState & UsemeActions>((set, get) => ({
       const b = await getBridge();
       const result = await b.usemeListPrompts();
       if (result.success && result.files) {
-        const files: PromptFile[] = result.files.map((f: string) => ({
-          relativePath: f,
-          filename: f.replace(/^config\/(prompts|knowledge)\//, ''),
-        }));
+        const files: PromptFile[] = result.files.map((fRaw: string) => {
+          const f = fRaw.replace(/\\/g, '/');
+          return {
+            relativePath: f,
+            filename: f.replace(/^config\/(prompts|knowledge)\//, ''),
+          };
+        });
         set({ promptFiles: files });
       }
     } catch (err) {

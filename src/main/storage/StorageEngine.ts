@@ -769,7 +769,10 @@ export class StorageEngine {
   // =========================================================================
 
   runTableInfoPragma(tableName: string): any[] {
-    if (!this.db) return [];
+    if (!this.db || !tableName) return [];
+    if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+      throw new Error(`[StorageEngine] Invalid table name for PRAGMA: ${tableName}`);
+    }
     return (this.db.prepare(`PRAGMA table_info(${tableName})`).all() as any[]) || [];
   }
 

@@ -2,7 +2,7 @@ import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
-import { ipcMain, IpcMainInvokeEvent, BrowserWindow } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, BrowserWindow, app } from 'electron';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
@@ -33,11 +33,9 @@ export class UsemeHandlerManager {
   private process: ChildProcess | null = null;
   private mainWindow: BrowserWindow | null = null;
 
-  /** Ścieżka do katalogu useme-ai-automation (znajduje się obok nexus/) */
   private getEngineDir(): string {
-    // W dev: nexus/../useme-ai-automation
-    const nexusDir = path.resolve(__dirname, '..', '..', '..');
-    return path.join(nexusDir, 'useme-ai-automation');
+    const appPath = app.getAppPath();
+    return path.resolve(appPath, '..', 'useme-ai-automation');
   }
 
   setMainWindow(win: BrowserWindow): void {
@@ -60,12 +58,13 @@ export class UsemeHandlerManager {
       HEADLESS: headless ? 'true' : 'false',
     };
 
-    // Użyj tsx do uruchomienia TypeScript bez kompilacji
-    const child = require('child_process').spawn('npx', ['tsx', 'src/index.ts'], {
+    // Użyj tsx do uruchomienia TypeScript bez kompilacji (zabezpieczone przed command injection: shell=false)
+    const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+    const child = require('child_process').spawn(cmd, ['tsx', 'src/index.ts'], {
       cwd: engineDir,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true,
+      shell: false,
     });
 
     this.process = child;
@@ -136,7 +135,7 @@ export class UsemeHandlerManager {
         const entries = fs.readdirSync(absDir);
         for (const entry of entries) {
           if (entry.endsWith('.md')) {
-            files.push(path.join(dir, entry));
+            files.push(path.join(dir, entry).replace(/\\/g, '/'));
           }
         }
       }

@@ -132,7 +132,7 @@ export class OpenAIApiAdapter implements IAIProvider {
         } catch { /* skip */ }
       }
     } finally {
-      reader.releaseLock();
+      if (reader) reader.releaseLock();
     }
 
     yield { token: '', done: true };

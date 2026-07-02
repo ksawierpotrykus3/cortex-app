@@ -78,7 +78,7 @@ export const DEFAULT_PROVIDERS: ProviderAuthConfig[] = [
   {
     provider: AIProvider.OPENROUTER,
     label: 'DeepSeek V4 Flash',
-    apiKey: 'sk-754d3f11434a4a0aabaf254a9af52652',
+    apiKey: process.env.DEEPSEEK_FLASH_API_KEY || '',
     baseUrl: 'https://api.deepseek.com/v1',
     models: ['deepseek-chat', 'deepseek-v4-flash'],
     isBuiltin: true,
@@ -88,7 +88,7 @@ export const DEFAULT_PROVIDERS: ProviderAuthConfig[] = [
   {
     provider: AIProvider.OPENROUTER,
     label: 'DeepSeek V4 Pro',
-    apiKey: 'sk-beaffc56675d43458e0821966d3a6251',
+    apiKey: process.env.DEEPSEEK_PRO_API_KEY || '',
     baseUrl: 'https://api.deepseek.com/v1',
     models: ['deepseek-reasoner', 'deepseek-v4-pro'],
     isBuiltin: true,
