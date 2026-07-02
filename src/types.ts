@@ -180,9 +180,9 @@ export type AgentRole = 'writer' | 'researcher' | 'critic' | 'auditor' | 'tool-e
 // --- Tryb Eksperymentalny Types ---
 
 export interface ExperimentalAIConfig {
-  selectedModel?: string; // e.g. 'DeepSeek V4 Pro' | 'DeepSeek V4 Flash'
+  chatModel?: string; // e.g. 'DeepSeek V4 Pro' | 'DeepSeek V4 Flash'
+  plannerModel?: string; // osobny model dla Planera
   chatSystemPrompt?: string; // AI #1
-  specAnalyzerSystemPrompt?: string; // AI #2
   mapPlannerSystemPrompt?: string; // AI #3
 }
 
@@ -195,9 +195,17 @@ export interface ExperimentalProject {
   updated_at?: string;
 }
 
+export interface ExperimentalConversation {
+  id: string;
+  project_id: string;
+  name: string;
+  created_at?: string;
+}
+
 export interface ExperimentalChatMessage {
   id: string;
   project_id: string;
+  conversation_id?: string;
   role: 'user' | 'ai' | 'system';
   content: string;
   extracted_to_spec?: number;
@@ -210,12 +218,14 @@ export interface ExperimentalNode {
   project_id: string;
   title: string;
   content: string;
+  parent_id?: string | null; // hierarchia: null = root
   x: number;
   y: number;
   width?: number;
   height?: number;
   collapsed?: number;
   source_message_id?: string | null;
+  source_conversation_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -237,6 +247,14 @@ export interface ExperimentalChangelog {
   entity_id: string;
   summary: string;
   source_message_id?: string | null;
+  created_at?: string;
+}
+
+export interface ExperimentalNodeAnnotation {
+  id: string;
+  node_id: string;
+  project_id: string;
+  content: string;
   created_at?: string;
 }
 

@@ -15,6 +15,7 @@ import {
   GitLogEntry, GitBranchInfo, ContextSource, ContextConfig, DEFAULT_CONTEXT_CONFIG,
   TriggerType, Pipeline, FeedbackEntry, WorkspaceEntity,
   KillSwitchState, DEFAULT_KILLSWITCH, SearchConfig, SearchResult, DryRunConfig, DryRunResult, DEFAULT_DRY_RUN_CONFIG,
+  ModelConfig,
 } from '../../shared/types/schema';
 import { WorkflowDefinition, WorkflowMode } from '../../shared/types/workflow';
 import { AgentOrchestrator } from '../core/AgentOrchestrator';
@@ -1636,9 +1637,9 @@ export class ElectronIpcBridge {
       }
     });
 
-    this.ipc.handle('experimental:chat:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+    this.ipc.handle('experimental:chat:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string; conversationId?: string }) => {
       try {
-        return this.storage.getExperimentalChatMessages(payload.projectId);
+        return this.storage.getExperimentalChatMessages(payload.projectId, payload.conversationId);
       } catch (err) {
         console.error('[experimental:chat:get]', err);
         return [];
@@ -1651,6 +1652,25 @@ export class ElectronIpcBridge {
         return { success: true };
       } catch (err) {
         console.error('[experimental:chat:delete]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:chat:get-unprocessed', async (_event: IpcMainInvokeEvent, payload: { projectId: string; conversationId?: string }) => {
+      try {
+        return this.storage.getExperimentalUnprocessedMessages(payload.projectId, payload.conversationId);
+      } catch (err) {
+        console.error('[experimental:chat:get-unprocessed]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('experimental:chat:mark-processed', async (_event: IpcMainInvokeEvent, payload: { ids: string[] }) => {
+      try {
+        this.storage.markExperimentalMessagesProcessed(payload.ids);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:chat:mark-processed]', err);
         return { success: false };
       }
     });
@@ -1732,6 +1752,164 @@ export class ElectronIpcBridge {
       } catch (err) {
         console.error('[experimental:changelog:get]', err);
         return [];
+      }
+    });
+
+    // Conversations
+    this.ipc.handle('experimental:conversation:save', async (_event: IpcMainInvokeEvent, payload: { conversation: any }) => {
+      try {
+        this.storage.saveExperimentalConversation(payload.conversation);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:conversation:save]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:conversation:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+      try {
+        return this.storage.getExperimentalConversations(payload.projectId);
+      } catch (err) {
+        console.error('[experimental:conversation:get]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('experimental:conversation:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        this.storage.deleteExperimentalConversation(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:conversation:delete]', err);
+        return { success: false };
+      }
+    });
+
+    // Node Annotations
+    this.ipc.handle('experimental:annotation:save', async (_event: IpcMainInvokeEvent, payload: { annotation: any }) => {
+      try {
+        this.storage.saveExperimentalNodeAnnotation(payload.annotation);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:annotation:save]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:annotation:get', async (_event: IpcMainInvokeEvent, payload: { nodeId: string }) => {
+      try {
+        return this.storage.getExperimentalNodeAnnotations(payload.nodeId);
+      } catch (err) {
+        console.error('[experimental:annotation:get]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('experimental:annotation:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        this.storage.deleteExperimentalNodeAnnotation(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:annotation:delete]', err);
+        return { success: false };
+      }
+    });
+
+    // LLM: Chat AI (#1)
+    this.ipc.handle('experimental:chat:llm', async (_event: IpcMainInvokeEvent, payload: { systemPrompt: string; messages: any[]; model: string }) => {
+      try {
+        const { providerRegistry } = this;
+        if (!providerRegistry) throw new Error('ProviderRegistry not available');
+
+        const modelConfig: ModelConfig = {
+          provider: payload.model as any,
+          providerLabel: payload.model,
+          modelName: payload.model === 'DeepSeek V4 Pro' ? 'deepseek-ai/deepseek-v4-pro' : 'deepseek-ai/deepseek-v4-flash',
+          temperature: 0.7,
+          maxTokens: 4096,
+          topP: 0.9,
+        };
+        const adapter = await providerRegistry.getAdapter(modelConfig);
+
+        const chatHistory = payload.messages.map(m => ({
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content,
+        }));
+
+        const prompt = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+
+        const response = await adapter.complete({
+          prompt,
+          model: modelConfig,
+          systemPrompt: payload.systemPrompt,
+          contextSize: 4096,
+        });
+
+        providerRegistry.recordSend(modelConfig.providerLabel, modelConfig.modelName);
+        return { content: response.content };
+      } catch (err: any) {
+        console.error('[experimental:chat:llm]', err);
+        return { content: `[Blad AI: ${err.message || 'nieznany blad'}]` };
+      }
+    });
+
+    // LLM: Planner (#3)
+    this.ipc.handle('experimental:planner:run', async (_event: IpcMainInvokeEvent, payload: { systemPrompt: string; messages: any[]; nodes: any[]; edges: any[]; specContent: string; model: string }) => {
+      try {
+        const { providerRegistry } = this;
+        if (!providerRegistry) throw new Error('ProviderRegistry not available');
+
+        const modelConfig: ModelConfig = {
+          provider: payload.model as any,
+          providerLabel: payload.model,
+          modelName: payload.model === 'DeepSeek V4 Pro' ? 'deepseek-ai/deepseek-v4-pro' : 'deepseek-ai/deepseek-v4-flash',
+          temperature: 0.7,
+          maxTokens: 8192,
+          topP: 0.9,
+        };
+        const adapter = await providerRegistry.getAdapter(modelConfig);
+
+        const chatHistory = payload.messages.map(m => `[${m.role}]: ${m.content}`).join('\n');
+        const nodesJson = JSON.stringify(payload.nodes.map(n => ({ id: n.id, title: n.title, content: n.content, parent_id: n.parent_id })), null, 2);
+        const edgesJson = JSON.stringify(payload.edges.map(e => ({ from: e.source_node_id, to: e.target_node_id, label: e.label })), null, 2);
+
+        const prompt = `## Aktualny plan (wezly)
+${nodesJson}
+
+## Polaczenia miedzy wezlami
+${edgesJson}
+
+## Specyfikacja projektu
+${payload.specContent}
+
+## Nowe wiadomosci z rozmowy do analizy
+${chatHistory}
+
+## Instrukcja
+Na podstawie nowych wiadomosci w kontekscie aktualnego planu, zaproponuj zmiany.
+Zwroc JSON w formacie:
+{
+  "operations": [
+    {
+      "action": "ADD" | "UPDATE" | "DELETE",
+      "node": { "title": "...", "content": "...", "parent_id": null | "id_rodzica" }
+    }
+  ]
+}
+Kazdy wezel to krotka, czytelna notatka (1-2 zdania). Uzywaj parent_id do tworzenia hierarchii (galezie, podgalezie).`;
+
+        const response = await adapter.complete({
+          prompt,
+          model: modelConfig,
+          systemPrompt: payload.systemPrompt,
+          contextSize: 8192,
+        });
+
+        providerRegistry.recordSend(modelConfig.providerLabel, modelConfig.modelName);
+        return { content: response.content };
+      } catch (err: any) {
+        console.error('[experimental:planner:run]', err);
+        return { content: `[Blad Planera: ${err.message || 'nieznany blad'}]` };
       }
     });
   }

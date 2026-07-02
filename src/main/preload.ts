@@ -262,6 +262,8 @@ const nexusBridge: NexusBridge = {
   expSaveChatMessage: (payload) => ipcRenderer.invoke('experimental:chat:save', payload),
   expGetChatMessages: (payload) => ipcRenderer.invoke('experimental:chat:get', payload),
   expDeleteChatMessage: (payload) => ipcRenderer.invoke('experimental:chat:delete', payload),
+  expGetUnprocessedMessages: (payload) => ipcRenderer.invoke('experimental:chat:get-unprocessed', payload),
+  expMarkMessagesProcessed: (payload) => ipcRenderer.invoke('experimental:chat:mark-processed', payload),
 
   expSaveNode: (payload) => ipcRenderer.invoke('experimental:node:save', payload),
   expGetNodes: (payload) => ipcRenderer.invoke('experimental:node:get', payload),
@@ -273,6 +275,20 @@ const nexusBridge: NexusBridge = {
 
   expSaveChangelog: (payload) => ipcRenderer.invoke('experimental:changelog:save', payload),
   expGetChangelog: (payload) => ipcRenderer.invoke('experimental:changelog:get', payload),
+
+  // Conversations
+  expSaveConversation: (payload) => ipcRenderer.invoke('experimental:conversation:save', payload),
+  expGetConversations: (payload) => ipcRenderer.invoke('experimental:conversation:get', payload),
+  expDeleteConversation: (payload) => ipcRenderer.invoke('experimental:conversation:delete', payload),
+
+  // Annotations
+  expSaveAnnotation: (payload) => ipcRenderer.invoke('experimental:annotation:save', payload),
+  expGetAnnotations: (payload) => ipcRenderer.invoke('experimental:annotation:get', payload),
+  expDeleteAnnotation: (payload) => ipcRenderer.invoke('experimental:annotation:delete', payload),
+
+  // LLM calls
+  expInvokeChatLLM: (payload) => ipcRenderer.invoke('experimental:chat:llm', payload),
+  expInvokePlanner: (payload) => ipcRenderer.invoke('experimental:planner:run', payload),
 };
 
 // ============================================================================

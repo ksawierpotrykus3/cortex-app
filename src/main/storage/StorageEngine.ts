@@ -17,7 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Agent, AgentOutput, Pipeline, WorkspaceEntity, DownloadedFileRecord } from '../../shared/types/schema';
 import { WorkflowDefinition, WorkflowExecutionResult } from '../../shared/types/workflow';
-import { ExperimentalProject, ExperimentalChatMessage, ExperimentalNode, ExperimentalEdge, ExperimentalChangelog } from '../../types';
+import { ExperimentalProject, ExperimentalChatMessage, ExperimentalNode, ExperimentalEdge, ExperimentalChangelog, ExperimentalConversation, ExperimentalNodeAnnotation } from '../../types';
 
 /**
  * Atomowy zapis pliku: tmp → rename.
@@ -45,6 +45,7 @@ interface Database {
   prepare(sql: string): Statement;
   pragma(sql: string, arg?: unknown): unknown;
   exec(sql: string): void;
+  transaction<T extends (...args: any[]) => any>(fn: T): T;
   close(): void;
 }
 interface Statement {
@@ -153,33 +154,47 @@ export class StorageEngine {
         updated_at TEXT DEFAULT (datetime('now'))
       );
 
+      -- Konwersacje (wiele rozmow w jednym projekcie)
+      CREATE TABLE IF NOT EXISTS experimental_conversations (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        name TEXT NOT NULL DEFAULT 'Nowa rozmowa',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+      );
+
       -- Wiadomości w czacie
       CREATE TABLE IF NOT EXISTS experimental_chat_messages (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
+        conversation_id TEXT,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
         extracted_to_spec INTEGER DEFAULT 0,
         extracted_to_canvas INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (conversation_id) REFERENCES experimental_conversations(id) ON DELETE SET NULL
       );
 
-      -- Nody na mapie
+      -- Nody na mapie (z hierarchia parent_id)
       CREATE TABLE IF NOT EXISTS experimental_nodes (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
         title TEXT NOT NULL,
         content TEXT DEFAULT '',
+        parent_id TEXT,
         x REAL DEFAULT 0,
         y REAL DEFAULT 0,
         width REAL DEFAULT 240,
         height REAL DEFAULT 120,
         collapsed INTEGER DEFAULT 0,
         source_message_id TEXT,
+        source_conversation_id TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES experimental_nodes(id) ON DELETE SET NULL,
         FOREIGN KEY (source_message_id) REFERENCES experimental_chat_messages(id) ON DELETE SET NULL
       );
 
@@ -194,6 +209,17 @@ export class StorageEngine {
         FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
         FOREIGN KEY (source_node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE,
         FOREIGN KEY (target_node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE
+      );
+
+      -- Adnotacje do wezlow (komentarze uzytkownika)
+      CREATE TABLE IF NOT EXISTS experimental_node_annotations (
+        id TEXT PRIMARY KEY,
+        node_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        content TEXT NOT NULL DEFAULT '',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE,
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
       );
 
       -- Historia zmian (Changelog)
@@ -839,19 +865,25 @@ export class StorageEngine {
   saveExperimentalChatMessage(msg: ExperimentalChatMessage): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_chat_messages (id, project_id, role, content, extracted_to_spec, extracted_to_canvas, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_chat_messages WHERE id = ?), datetime('now')))
+        INSERT OR REPLACE INTO experimental_chat_messages (id, project_id, conversation_id, role, content, extracted_to_spec, extracted_to_canvas, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_chat_messages WHERE id = ?), datetime('now')))
       `);
-      stmt.run(msg.id, msg.project_id, msg.role, msg.content, msg.extracted_to_spec ? 1 : 0, msg.extracted_to_canvas ? 1 : 0, msg.id);
+      stmt.run(msg.id, msg.project_id, msg.conversation_id || null, msg.role, msg.content, msg.extracted_to_spec ? 1 : 0, msg.extracted_to_canvas ? 1 : 0, msg.id);
     }
   }
 
-  getExperimentalChatMessages(projectId: string): ExperimentalChatMessage[] {
+  getExperimentalChatMessages(projectId: string, conversationId?: string): ExperimentalChatMessage[] {
     if (this.db) {
-      const rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+      let rows: any[];
+      if (conversationId) {
+        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? AND conversation_id = ? ORDER BY created_at ASC').all(projectId, conversationId) as any[];
+      } else {
+        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+      }
       return rows.map(r => ({
         id: r.id,
         project_id: r.project_id,
+        conversation_id: r.conversation_id,
         role: r.role,
         content: r.content,
         extracted_to_spec: r.extracted_to_spec,
@@ -860,6 +892,40 @@ export class StorageEngine {
       }));
     }
     return [];
+  }
+
+  getExperimentalUnprocessedMessages(projectId: string, conversationId?: string): ExperimentalChatMessage[] {
+    if (this.db) {
+      let rows: any[];
+      if (conversationId) {
+        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? AND conversation_id = ? AND extracted_to_canvas = 0 ORDER BY created_at ASC').all(projectId, conversationId) as any[];
+      } else {
+        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? AND extracted_to_canvas = 0 ORDER BY created_at ASC').all(projectId) as any[];
+      }
+      return rows.map(r => ({
+        id: r.id,
+        project_id: r.project_id,
+        conversation_id: r.conversation_id,
+        role: r.role,
+        content: r.content,
+        extracted_to_spec: r.extracted_to_spec,
+        extracted_to_canvas: r.extracted_to_canvas,
+        created_at: r.created_at,
+      }));
+    }
+    return [];
+  }
+
+  markExperimentalMessagesProcessed(messageIds: string[]): void {
+    if (this.db && messageIds.length > 0) {
+      const stmt = this.db.prepare('UPDATE experimental_chat_messages SET extracted_to_canvas = 1 WHERE id = ?');
+      const runAll = this.db.transaction((ids: string[]) => {
+        for (const id of ids) {
+          stmt.run(id);
+        }
+      });
+      runAll(messageIds);
+    }
   }
 
   deleteExperimentalChatMessage(id: string): void {
@@ -872,13 +938,14 @@ export class StorageEngine {
   saveExperimentalNode(node: ExperimentalNode): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_nodes (id, project_id, title, content, x, y, width, height, collapsed, source_message_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_nodes WHERE id = ?), datetime('now')), datetime('now'))
+        INSERT OR REPLACE INTO experimental_nodes (id, project_id, title, content, parent_id, x, y, width, height, collapsed, source_message_id, source_conversation_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_nodes WHERE id = ?), datetime('now')), datetime('now'))
       `);
       stmt.run(
         node.id, node.project_id, node.title || '', node.content || '',
+        node.parent_id || null,
         node.x ?? 0, node.y ?? 0, node.width ?? 240, node.height ?? 120,
-        node.collapsed ? 1 : 0, node.source_message_id || null, node.id
+        node.collapsed ? 1 : 0, node.source_message_id || null, node.source_conversation_id || null, node.id
       );
     }
   }
@@ -891,12 +958,14 @@ export class StorageEngine {
         project_id: r.project_id,
         title: r.title,
         content: r.content,
+        parent_id: r.parent_id,
         x: r.x,
         y: r.y,
         width: r.width,
         height: r.height,
         collapsed: r.collapsed,
         source_message_id: r.source_message_id,
+        source_conversation_id: r.source_conversation_id,
         created_at: r.created_at,
         updated_at: r.updated_at,
       }));
@@ -907,6 +976,67 @@ export class StorageEngine {
   deleteExperimentalNode(id: string): void {
     if (this.db) {
       this.db.prepare('DELETE FROM experimental_nodes WHERE id = ?').run(id);
+    }
+  }
+
+  // --- Conversations ---
+  saveExperimentalConversation(conv: ExperimentalConversation): void {
+    if (this.db) {
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO experimental_conversations (id, project_id, name, created_at)
+        VALUES (?, ?, ?, COALESCE((SELECT created_at FROM experimental_conversations WHERE id = ?), datetime('now')))
+      `);
+      stmt.run(conv.id, conv.project_id, conv.name, conv.id);
+    }
+  }
+
+  getExperimentalConversations(projectId: string): ExperimentalConversation[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM experimental_conversations WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+      return rows.map(r => ({
+        id: r.id,
+        project_id: r.project_id,
+        name: r.name,
+        created_at: r.created_at,
+      }));
+    }
+    return [];
+  }
+
+  deleteExperimentalConversation(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM experimental_conversations WHERE id = ?').run(id);
+    }
+  }
+
+  // --- Node Annotations ---
+  saveExperimentalNodeAnnotation(ann: ExperimentalNodeAnnotation): void {
+    if (this.db) {
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO experimental_node_annotations (id, node_id, project_id, content, created_at)
+        VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_node_annotations WHERE id = ?), datetime('now')))
+      `);
+      stmt.run(ann.id, ann.node_id, ann.project_id, ann.content, ann.id);
+    }
+  }
+
+  getExperimentalNodeAnnotations(nodeId: string): ExperimentalNodeAnnotation[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM experimental_node_annotations WHERE node_id = ? ORDER BY created_at ASC').all(nodeId) as any[];
+      return rows.map(r => ({
+        id: r.id,
+        node_id: r.node_id,
+        project_id: r.project_id,
+        content: r.content,
+        created_at: r.created_at,
+      }));
+    }
+    return [];
+  }
+
+  deleteExperimentalNodeAnnotation(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM experimental_node_annotations WHERE id = ?').run(id);
     }
   }
 

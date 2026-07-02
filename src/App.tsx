@@ -24,7 +24,7 @@ import { SettingsModal } from "./components/SettingsModal";
 import { LogViewer } from "./components/LogViewer";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { UsemeContainer } from "./components/useme/UsemeContainer";
-import { ExperimentalWorkspace } from "./components/ExperimentalWorkspace";
+import { ExperimentalCanvas } from "./components/ExperimentalCanvas";
 import { ViewMode, RightPanelState, ModalState, NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, FeedbackEntry, WikiArticle } from "./types";
 import { uid } from "./utils/ids";
 import { useFileSystemWatcher } from "./fs";
@@ -658,7 +658,7 @@ export function App() {
           {/* Useme Automation Engine */}
           {activeView === "useme" && <UsemeContainer />}
           {/* Tryb Eksperymentalny */}
-          {activeView === "experimental" && <ExperimentalWorkspace />}
+          {activeView === "experimental" && <ExperimentalCanvas />}
           {activeView === "raw-fragments" && (
             <RawFragmentsView 
                 nodes={nodes} 
