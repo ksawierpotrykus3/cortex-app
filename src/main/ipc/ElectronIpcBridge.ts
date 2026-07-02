@@ -26,6 +26,7 @@ import { StorageEngine } from '../storage/StorageEngine';
 import { ProviderRegistry } from '../ai/ProviderRegistry';
 import { IAIProvider } from '../ai/IAIProvider';
 import { rateLimiter } from '../ai/RateLimiter';
+import { UsemeHandlerManager, registerUsemeHandlers } from './usemeHandlers';
 
 /** Zastępuje access token w URL-u placeholderem [REDACTED] */
 function sanitizeUrl(url: string, token: string | undefined): string {
@@ -95,6 +96,8 @@ export class ElectronIpcBridge {
   private repoPath: string = '';
   private nvidiaKeysPath: string = '';
 
+  private usemeManager: UsemeHandlerManager;
+
   // Git Scheduler timers (#23)
   private pullTimer: ReturnType<typeof setInterval> | null = null;
   private pushTimer: ReturnType<typeof setInterval> | null = null;
@@ -120,6 +123,7 @@ export class ElectronIpcBridge {
     this.searchEngine = new SearchEngine(this.getPrimaryAIProvider() ?? undefined);
     if (repoPath) { this.repoPath = repoPath; }
     this.nvidiaKeysPath = nvidiaKeysPath || path.join(repoPath || process.cwd(), 'src', 'main', 'services', 'nvidia-bridge', 'keys.json');
+    this.usemeManager = new UsemeHandlerManager();
   }
 
   // =========================================================================
@@ -696,6 +700,8 @@ export class ElectronIpcBridge {
     this.registerGitHandlers();
     // Register git scheduler handlers
     this.registerGitScheduleHandlers();
+    // Register experimental handlers (Etap 1)
+    this.registerExperimentalHandlers();
   }
 
   // =========================================================================
@@ -1567,6 +1573,169 @@ export class ElectronIpcBridge {
     // console.debug('[ElectronIpcBridge] Registered Git Scheduler handlers');
   }
 
+  // =========================================================================
+  // Tryb Eksperymentalny Handlers (Etap 1)
+  // =========================================================================
+  private registerExperimentalHandlers(): void {
+    this.ipc.handle('experimental:table-info', async (_event: IpcMainInvokeEvent, payload: { tableName: string }) => {
+      try {
+        return this.storage.runTableInfoPragma(payload.tableName);
+      } catch (err) {
+        console.error('[experimental:table-info]', err);
+        return [];
+      }
+    });
+
+    // Projects
+    this.ipc.handle('experimental:project:save', async (_event: IpcMainInvokeEvent, payload: { project: any }) => {
+      try {
+        this.storage.saveExperimentalProject(payload.project);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:project:save]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:project:get-all', async () => {
+      try {
+        return this.storage.getExperimentalProjects();
+      } catch (err) {
+        console.error('[experimental:project:get-all]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('experimental:project:get', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        return this.storage.getExperimentalProject(payload.id);
+      } catch (err) {
+        console.error('[experimental:project:get]', err);
+        return null;
+      }
+    });
+
+    this.ipc.handle('experimental:project:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        this.storage.deleteExperimentalProject(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:project:delete]', err);
+        return { success: false };
+      }
+    });
+
+    // Chat Messages
+    this.ipc.handle('experimental:chat:save', async (_event: IpcMainInvokeEvent, payload: { message: any }) => {
+      try {
+        this.storage.saveExperimentalChatMessage(payload.message);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:chat:save]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:chat:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+      try {
+        return this.storage.getExperimentalChatMessages(payload.projectId);
+      } catch (err) {
+        console.error('[experimental:chat:get]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('experimental:chat:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        this.storage.deleteExperimentalChatMessage(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:chat:delete]', err);
+        return { success: false };
+      }
+    });
+
+    // Nodes
+    this.ipc.handle('experimental:node:save', async (_event: IpcMainInvokeEvent, payload: { node: any }) => {
+      try {
+        this.storage.saveExperimentalNode(payload.node);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:node:save]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:node:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+      try {
+        return this.storage.getExperimentalNodes(payload.projectId);
+      } catch (err) {
+        console.error('[experimental:node:get]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('experimental:node:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        this.storage.deleteExperimentalNode(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:node:delete]', err);
+        return { success: false };
+      }
+    });
+
+    // Edges
+    this.ipc.handle('experimental:edge:save', async (_event: IpcMainInvokeEvent, payload: { edge: any }) => {
+      try {
+        this.storage.saveExperimentalEdge(payload.edge);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:edge:save]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:edge:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+      try {
+        return this.storage.getExperimentalEdges(payload.projectId);
+      } catch (err) {
+        console.error('[experimental:edge:get]', err);
+        return [];
+      }
+    });
+
+    this.ipc.handle('experimental:edge:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+      try {
+        this.storage.deleteExperimentalEdge(payload.id);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:edge:delete]', err);
+        return { success: false };
+      }
+    });
+
+    // Changelog
+    this.ipc.handle('experimental:changelog:save', async (_event: IpcMainInvokeEvent, payload: { entry: any }) => {
+      try {
+        this.storage.saveExperimentalChangelog(payload.entry);
+        return { success: true };
+      } catch (err) {
+        console.error('[experimental:changelog:save]', err);
+        return { success: false };
+      }
+    });
+
+    this.ipc.handle('experimental:changelog:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+      try {
+        return this.storage.getExperimentalChangelog(payload.projectId);
+      } catch (err) {
+        console.error('[experimental:changelog:get]', err);
+        return [];
+      }
+    });
+  }
+
   destroy(): void {
     // Remove all handlers
     const channels = [
@@ -1633,6 +1802,14 @@ export class ElectronIpcBridge {
 
       // RPM Usage
       'rpm:usage',
+
+      // Experimental Mode
+      'experimental:table-info',
+      'experimental:project:save', 'experimental:project:get-all', 'experimental:project:get', 'experimental:project:delete',
+      'experimental:chat:save', 'experimental:chat:get', 'experimental:chat:delete',
+      'experimental:node:save', 'experimental:node:get', 'experimental:node:delete',
+      'experimental:edge:save', 'experimental:edge:get', 'experimental:edge:delete',
+      'experimental:changelog:save', 'experimental:changelog:get',
     ];
 
     // Stop all git schedulers

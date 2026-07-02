@@ -1,4 +1,4 @@
-export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'draft' | 'agents' | 'mermaid-plan' | 'changes' | 'wiki' | 'git' | 'feedback';
+export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'agents' | 'mermaid-plan' | 'changes' | 'wiki' | 'git' | 'feedback' | 'useme' | 'experimental';
 export type RightPanelState = 'none' | 'properties';
 export type ModalState = 'none' | 'export' | 'settings';
 
@@ -176,3 +176,67 @@ export const DEFAULT_EXPORT_SCOPE: ExportScope = {
 // --- NXS-ENG-001 (Node-Based AI Engine Types) ---
 
 export type AgentRole = 'writer' | 'researcher' | 'critic' | 'auditor' | 'tool-executor';
+
+// --- Tryb Eksperymentalny Types ---
+
+export interface ExperimentalAIConfig {
+  selectedModel?: string; // e.g. 'DeepSeek V4 Pro' | 'DeepSeek V4 Flash'
+  chatSystemPrompt?: string; // AI #1
+  specAnalyzerSystemPrompt?: string; // AI #2
+  mapPlannerSystemPrompt?: string; // AI #3
+}
+
+export interface ExperimentalProject {
+  id: string;
+  name: string;
+  spec_content: string;
+  ai_config: ExperimentalAIConfig | string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ExperimentalChatMessage {
+  id: string;
+  project_id: string;
+  role: 'user' | 'ai' | 'system';
+  content: string;
+  extracted_to_spec?: number;
+  extracted_to_canvas?: number;
+  created_at?: string;
+}
+
+export interface ExperimentalNode {
+  id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  collapsed?: number;
+  source_message_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ExperimentalEdge {
+  id: string;
+  project_id: string;
+  source_node_id: string;
+  target_node_id: string;
+  label?: string;
+  created_at?: string;
+}
+
+export interface ExperimentalChangelog {
+  id: string;
+  project_id: string;
+  action_type: 'CREATE' | 'UPDATE' | 'DELETE';
+  entity_type: 'NODE' | 'EDGE' | 'SPEC';
+  entity_id: string;
+  summary: string;
+  source_message_id?: string | null;
+  created_at?: string;
+}
+

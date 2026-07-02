@@ -64,16 +64,31 @@ export function TopNavigation({
           >
             Laboratory
           </button>
+
+          {/* Useme Automation */}
           <button
-            onClick={() => setActiveView("sandbox")}
-            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer flex items-center gap-1 ${
-              activeView === "sandbox"
+            onClick={() => setActiveView("useme")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
+              activeView === "useme"
                 ? "text-[rgb(var(--accent))] border-[rgb(var(--accent))]"
                 : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
             }`}
           >
-            Knowledge Base
+            Useme
           </button>
+
+          {/* Tryb Eksperymentalny */}
+          <button
+            onClick={() => setActiveView("experimental")}
+            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
+              activeView === "experimental"
+                ? "text-[rgb(var(--accent))] border-[rgb(var(--accent))]"
+                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
+            }`}
+          >
+            Eksperyment
+          </button>
+          
 
           <div className="w-px h-6 bg-[rgb(var(--border))] mx-1" />
           <NavGroup label="More" activeView={activeView} setActiveView={setActiveView} />
@@ -133,10 +148,7 @@ function NavGroup({ label, activeView, setActiveView }: { label: string; activeV
   }, []);
 
   const subViews: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
-    { id: 'logs', label: 'Agent Logs', icon: <ScrollText className="w-3.5 h-3.5" /> },
     { id: 'raw-fragments', label: 'Raw Fragments', icon: <PenSquare className="w-3.5 h-3.5" /> },
-    { id: 'draft', label: 'RLHF Draft', icon: <PenSquare className="w-3.5 h-3.5" /> },
-    { id: 'mermaid-plan', label: 'Diagram (Mermaid)', icon: <Workflow className="w-3.5 h-3.5" /> },
     { id: 'changes', label: 'Changes', icon: <History className="w-3.5 h-3.5" /> },
     { id: 'wiki', label: 'Wiki', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'git', label: 'Git', icon: <GitBranch className="w-3.5 h-3.5" /> },

@@ -8,7 +8,8 @@ import {
   CircleDot, HardDrive, GitBranch, Activity,
 } from "lucide-react";
 import { ViewMode } from "../types";
-import { RpmIndicator } from "./RpmIndicator";
+// [AI] RpmIndicator — zakomentowane
+// import { RpmIndicator } from "./RpmIndicator";
 
 interface StatusBarProps {
   activeView: ViewMode;
@@ -25,22 +26,20 @@ export function StatusBar({
   fsConnected,
   gitBranch,
 }: StatusBarProps) {
-  const viewLabels: Record<ViewMode, string> = {
+  const viewLabels: Partial<Record<ViewMode, string>> = {
     nexus: "Topology",
     "lab-todo": "Laboratory",
     "lab-writing": "Writing",
-    sandbox: "Baza Wiedzy",
     "raw-fragments": "Raw Fragments",
-    logs: "Agent Logs",
-    draft: "RLHF Draft",
-    agents: "Agenci",
     changes: "Zmiany",
     wiki: "Wiki",
     git: "Git",
-
-    "mermaid-plan": "Diagram Mermaid",
     feedback: "Feedback",
+    experimental: "Tryb Eksperymentalny",
   };
+
+  // Default fallback for any unmapped view
+  const label = viewLabels[activeView] || activeView;
 
   return (
     <div className="h-7 border-t border-[rgb(var(--border))] bg-[rgb(var(--bg-canvas))] flex items-center justify-between px-4 shrink-0 select-none">
@@ -48,7 +47,7 @@ export function StatusBar({
       <div className="flex items-center gap-4 text-[11px]">
         <div className="flex items-center gap-1.5 text-[rgb(var(--text-main))] font-medium">
           <Activity className="w-3 h-3" />
-          <span>{viewLabels[activeView] || activeView}</span>
+          <span>{label}</span>
         </div>
 
         <div className="w-px h-3 bg-[rgb(var(--border))]" />
@@ -64,8 +63,8 @@ export function StatusBar({
 
       {/* Right: status indicators */}
       <div className="flex items-center gap-4 text-[11px]">
-        {/* RPM indicator */}
-        <RpmIndicator />
+        {/* [AI] RPM indicator — zakomentowane */}
+        {/* <RpmIndicator /> */}
 
         {/* FS status */}
         <div className="flex items-center gap-1.5">

@@ -76,39 +76,24 @@ export interface ProviderAuthConfig {
 // === Domyślne konfiguracje providerów =====================================
 export const DEFAULT_PROVIDERS: ProviderAuthConfig[] = [
   {
-    provider: AIProvider.GEMINI,
-    label: 'Google Gemini',
-    apiKey: '',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-    models: ['gemini-2.0-flash', 'gemini-2.0-pro', 'gemini-1.5-pro'],
+    provider: AIProvider.OPENROUTER,
+    label: 'DeepSeek V4 Flash',
+    apiKey: 'sk-754d3f11434a4a0aabaf254a9af52652',
+    baseUrl: 'https://api.deepseek.com/v1',
+    models: ['deepseek-chat', 'deepseek-v4-flash'],
     isBuiltin: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: '2026-07-01T00:00:00.000Z',
   },
   {
     provider: AIProvider.OPENROUTER,
-    label: 'NVIDIA (DeepSeek / Kimi / Qwen)',
-    apiKey: 'not-needed',  // proxy zarządza kluczami
-    baseUrl: 'http://localhost:3456/v1',
-    models: [
-      'deepseek-ai/deepseek-v4-flash',
-      'deepseek-ai/deepseek-v4-pro',
-      'moonshotai/kimi-k2.6',
-      'qwen/qwen3.5-397b-a17b',
-    ],
+    label: 'DeepSeek V4 Pro',
+    apiKey: 'sk-beaffc56675d43458e0821966d3a6251',
+    baseUrl: 'https://api.deepseek.com/v1',
+    models: ['deepseek-reasoner', 'deepseek-v4-pro'],
     isBuiltin: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    provider: AIProvider.OLLAMA,
-    label: 'Ollama (lokalny)',
-    apiKey: '',
-    baseUrl: 'http://localhost:11434/v1',
-    models: ['llama3', 'mistral', 'mixtral', 'phi4'],
-    isBuiltin: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: '2026-07-01T00:00:00.000Z',
   },
 ];
 
@@ -177,7 +162,6 @@ export enum OutputDestinationType {
   WEBHOOK = 'WEBHOOK',         // Wyślij na zewnętrzny URL
   AGENT = 'AGENT',             // Przekaż do innego agenta
   CLIPBOARD = 'CLIPBOARD',     // Kopiuj do schowka
-  KNOWLEDGE = 'KNOWLEDGE',     // Baza wiedzy (usunięte przez solo agenta)
 }
 
 // === Context Config (F6.2) ==================================================

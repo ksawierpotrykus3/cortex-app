@@ -36,14 +36,15 @@ const NAV_CMDS = (navigate: NavigateFn) => [
     keywords: ['draft', 'writing', 'manuskrypt', 'notatki'],
     handler: () => navigate('lab-writing'),
   },
-  {
-    id: 'nav:agents',
-    label: 'Agenci AI',
-    category: 'Nawigacja',
-    shortcut: 'Ctrl+4',
-    keywords: ['ai', 'agent', 'sztuczna inteligencja'],
-    handler: () => navigate('agents'),
-  },
+  // [AI] nav:agents — zakomentowane
+  // {
+  //   id: 'nav:agents',
+  //   label: 'Agenci AI',
+  //   category: 'Nawigacja',
+  //   shortcut: 'Ctrl+4',
+  //   keywords: ['ai', 'agent', 'sztuczna inteligencja'],
+  //   handler: () => navigate('agents'),
+  // },
   {
     id: 'nav:wiki',
     label: 'Wiki',
@@ -127,14 +128,15 @@ const ACTION_CMDS = (callbacks: GlobalActions) => [
     keywords: ['feedback', 'bug', 'błąd', 'issue', 'sugestia'],
     handler: () => callbacks.onFeedback?.(),
   },
-  {
-    id: 'danger:clear-outputs',
-    label: 'Wyczyść wszystkie outputy agentów',
-    category: 'Akcje',
-    dangerous: true,
-    keywords: ['clear', 'wyczyść', 'output', 'agent', 'usuń'],
-    handler: () => callbacks.onClearOutputs?.(),
-  },
+  // [AI] danger:clear-outputs — zakomentowane
+  // {
+  //   id: 'danger:clear-outputs',
+  //   label: 'Wyczyść wszystkie outputy agentów',
+  //   category: 'Akcje',
+  //   dangerous: true,
+  //   keywords: ['clear', 'wyczyść', 'output', 'agent', 'usuń'],
+  //   handler: () => callbacks.onClearOutputs?.(),
+  // },
   {
     id: 'danger:kill-switch',
     label: '[KILL] Kill Switch — zatrzymaj wszystko',

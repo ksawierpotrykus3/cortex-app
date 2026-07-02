@@ -27,8 +27,8 @@ describe('ProviderRegistry Failover Routing', () => {
 
   const freeModel: ModelConfig = {
     provider: AIProvider.OPENROUTER,
-    providerLabel: 'NVIDIA (DeepSeek / Kimi / Qwen)',
-    modelName: 'deepseek-ai/deepseek-v4-pro',
+    providerLabel: 'DeepSeek V4 Flash',
+    modelName: 'deepseek-v4-flash',
     temperature: 0.7,
     maxTokens: 100,
     topP: 0.9,
@@ -44,8 +44,8 @@ describe('ProviderRegistry Failover Routing', () => {
       timeoutSeconds: 5,
     });
     vi.spyOn(healthMonitor, 'getStatus').mockReturnValue({
-      'deepseek-ai/deepseek-v4-pro': { status: 'ONLINE', ping: 12 },
-      'deepseek-ai/deepseek-v4-flash': { status: 'ONLINE', ping: 8 },
+      'deepseek-v4-flash': { status: 'ONLINE', ping: 12 },
+      'deepseek-v4-pro': { status: 'ONLINE', ping: 8 },
     });
 
     registry = new ProviderRegistry(healthMonitor);
@@ -56,7 +56,7 @@ describe('ProviderRegistry Failover Routing', () => {
       label: 'DeepSeek Paid Provider',
       apiKey: 'sk-deepseek-paid-key',
       baseUrl: 'https://api.deepseek.com/v1',
-      models: ['deepseek-ai/deepseek-v4-pro', 'deepseek-ai/deepseek-v4-flash'],
+      models: ['deepseek-v4-flash', 'deepseek-v4-pro'],
       isBuiltin: false,
       createdAt: '',
       updatedAt: '',
@@ -66,14 +66,14 @@ describe('ProviderRegistry Failover Routing', () => {
   it('should return the free adapter when model is ONLINE and no failover is active', async () => {
     const adapter = await registry.getAdapter(freeModel);
     expect(adapter).toBeDefined();
-    // Should resolve NVIDIA provider (free)
+    // Should resolve DeepSeek V4 Flash provider (free/default)
     expect(registry['activeFailovers'].has(freeModel.modelName)).toBe(false);
   });
 
   it('should automatically failover to paid adapter when model is OFFLINE in automatic mode', async () => {
     vi.spyOn(healthMonitor, 'getStatus').mockReturnValue({
-      'deepseek-ai/deepseek-v4-pro': { status: 'OFFLINE', ping: 0 },
-      'deepseek-ai/deepseek-v4-flash': { status: 'ONLINE', ping: 8 },
+      'deepseek-v4-flash': { status: 'OFFLINE', ping: 0 },
+      'deepseek-v4-pro': { status: 'ONLINE', ping: 8 },
     });
 
     const adapter = await registry.getAdapter(freeModel);
@@ -87,8 +87,8 @@ describe('ProviderRegistry Failover Routing', () => {
       timeoutSeconds: 5,
     });
     vi.spyOn(healthMonitor, 'getStatus').mockReturnValue({
-      'deepseek-ai/deepseek-v4-pro': { status: 'OFFLINE', ping: 0 },
-      'deepseek-ai/deepseek-v4-flash': { status: 'ONLINE', ping: 8 },
+      'deepseek-v4-flash': { status: 'OFFLINE', ping: 0 },
+      'deepseek-v4-pro': { status: 'ONLINE', ping: 8 },
     });
 
     const adapter = await registry.getAdapter(freeModel, { isPipeline: true });
@@ -102,8 +102,8 @@ describe('ProviderRegistry Failover Routing', () => {
       timeoutSeconds: 5,
     });
     vi.spyOn(healthMonitor, 'getStatus').mockReturnValue({
-      'deepseek-ai/deepseek-v4-pro': { status: 'OFFLINE', ping: 0 },
-      'deepseek-ai/deepseek-v4-flash': { status: 'ONLINE', ping: 8 },
+      'deepseek-v4-flash': { status: 'OFFLINE', ping: 0 },
+      'deepseek-v4-pro': { status: 'ONLINE', ping: 8 },
     });
 
     await expect(registry.getAdapter(freeModel)).rejects.toThrow('jest niedostępny w trybie Strict');
@@ -115,8 +115,8 @@ describe('ProviderRegistry Failover Routing', () => {
       timeoutSeconds: 5,
     });
     vi.spyOn(healthMonitor, 'getStatus').mockReturnValue({
-      'deepseek-ai/deepseek-v4-pro': { status: 'OFFLINE', ping: 0 },
-      'deepseek-ai/deepseek-v4-flash': { status: 'ONLINE', ping: 8 },
+      'deepseek-v4-flash': { status: 'OFFLINE', ping: 0 },
+      'deepseek-v4-pro': { status: 'ONLINE', ping: 8 },
     });
 
     // Mock proposal IPC and respond immediately with approved: true
@@ -140,8 +140,8 @@ describe('ProviderRegistry Failover Routing', () => {
       timeoutSeconds: 5,
     });
     vi.spyOn(healthMonitor, 'getStatus').mockReturnValue({
-      'deepseek-ai/deepseek-v4-pro': { status: 'OFFLINE', ping: 0 },
-      'deepseek-ai/deepseek-v4-flash': { status: 'ONLINE', ping: 8 },
+      'deepseek-v4-flash': { status: 'OFFLINE', ping: 0 },
+      'deepseek-v4-pro': { status: 'ONLINE', ping: 8 },
     });
 
     const ipcMock = vi.fn().mockImplementation((channel, data) => {

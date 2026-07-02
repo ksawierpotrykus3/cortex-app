@@ -151,8 +151,8 @@ export class ProviderRegistry {
 
   private getPaidAdapter(modelName: string): { label: string; adapter: IAIProvider } | null {
     for (const cfg of this.configs) {
-      // Paid provider is not the Nvidia proxy
-      if (cfg.baseUrl?.includes('localhost:3456') || cfg.label.includes('NVIDIA')) {
+      // Paid provider is not the Nvidia proxy or default free model
+      if (cfg.baseUrl?.includes('localhost:3456') || cfg.label.includes('NVIDIA') || (cfg.label === 'DeepSeek V4 Flash' && cfg.isBuiltin)) {
         continue;
       }
       if (cfg.models.includes(modelName) && cfg.apiKey && cfg.apiKey !== 'not-needed') {
@@ -225,9 +225,9 @@ export class ProviderRegistry {
     const label = modelConfig.providerLabel;
     const modelName = modelConfig.modelName;
 
-    // Check if this is a free model on the local Nvidia proxy
-    const isFreeModel = (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA')) &&
-      (modelName === 'deepseek-ai/deepseek-v4-pro' || modelName === 'deepseek-ai/deepseek-v4-flash');
+    // Check if this is a free model on the local Nvidia proxy or default free model
+    const isFreeModel = (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA') || label === 'DeepSeek V4 Flash') &&
+      (modelName === 'deepseek-ai/deepseek-v4-pro' || modelName === 'deepseek-ai/deepseek-v4-flash' || modelName === 'deepseek-v4-flash' || modelName === 'deepseek-v4-pro');
 
     if (isFreeModel && this.healthMonitor) {
       const settings = this.healthMonitor.getSettings();
@@ -291,7 +291,7 @@ export class ProviderRegistry {
 
   /** Rejestruje udane wysłanie zapytania do RateLimiter */
   recordSend(label: string, modelName?: string): void {
-    if (modelName && this.activeFailovers.has(modelName) && (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA'))) {
+    if (modelName && this.activeFailovers.has(modelName) && (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA') || label === 'DeepSeek V4 Flash')) {
       const paid = this.getPaidAdapter(modelName);
       if (paid) {
         rateLimiter.recordSend(paid.label);

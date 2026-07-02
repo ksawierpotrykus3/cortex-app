@@ -14,6 +14,7 @@ import { ElectronIpcBridge } from './ipc/ElectronIpcBridge';
 import { ProviderRegistry } from './ai/ProviderRegistry';
 import { AiHealthMonitor } from './ai/AiHealthMonitor';
 import { AgentOutput, AgentStatus } from '../shared/types/schema';
+import { UsemeHandlerManager, registerUsemeHandlers } from './ipc/usemeHandlers';
 
 // === Constants =============================================================
 const IS_DEV = !app.isPackaged;
@@ -33,6 +34,7 @@ let storage: StorageEngine | null = null;
 let ipcBridge: ElectronIpcBridge | null = null;
 let providerRegistry: ProviderRegistry | null = null;
 let nvidiaProcess: ChildProcess | null = null;
+let usemeManager: UsemeHandlerManager | null = null;
 
 // === NVIDIA-Bridge (własne proxy z rotacją kluczy) ===========================
 const NVIDIA_BRIDGE_PORT = 3456;
@@ -196,6 +198,11 @@ async function bootstrap(): Promise<void> {
   ipcBridge = new ElectronIpcBridge(ipcMain, orchestrator, storage, providerRegistry, ROOT_DIR, NVIDIA_KEYS_PATH);
   ipcBridge.registerHandlers();
 
+  // === Useme Handlers ===
+  usemeManager = new UsemeHandlerManager();
+  if (mainWindow) usemeManager.setMainWindow(mainWindow);
+  registerUsemeHandlers(ipcMain, usemeManager);
+
   // console.log('[NEXUS] System gotowy — AI Providers:', providerRegistry.getConfigs().length);
 }
 
@@ -211,6 +218,10 @@ app.whenReady().then(async () => {
   mainWindow = createMainWindow();
   try {
     await bootstrap();
+    // Set mainWindow after bootstrap (usemeManager may have been created)
+    if (usemeManager && mainWindow) {
+      usemeManager.setMainWindow(mainWindow);
+    }
   } catch (err) {
     console.error('[NEXUS] Bootstrap failed:', err);
   }
@@ -234,5 +245,6 @@ app.on('before-quit', () => {
   orchestrator?.destroy();
   storage?.destroy();
   ipcBridge?.destroy();
+  usemeManager?.destroy();
   stopNvidiaBridge();
 });

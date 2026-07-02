@@ -770,7 +770,7 @@ Format:
       permissions: {
         ...DEFAULT_PERMISSION_SET,
         allowedTriggers: [TriggerType.MANUAL],
-        allowedDestinations: [OutputDestinationType.CHANGELOG, OutputDestinationType.KNOWLEDGE],
+        allowedDestinations: [OutputDestinationType.CHANGELOG],
       },
     }),
   },

@@ -54,7 +54,7 @@ const DEST_LABELS: Record<OutputDestinationType, string> = {
   [OutputDestinationType.WEBHOOK]: 'Webhook',
   [OutputDestinationType.AGENT]: 'Inny agent',
   [OutputDestinationType.CLIPBOARD]: 'Schowek (Clipboard)',
-  [OutputDestinationType.KNOWLEDGE]: 'Baza Wiedzy',
+  
 };
 
 // === Helpers ===============================================================

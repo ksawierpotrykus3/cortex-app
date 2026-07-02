@@ -17,6 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Agent, AgentOutput, Pipeline, WorkspaceEntity, DownloadedFileRecord } from '../../shared/types/schema';
 import { WorkflowDefinition, WorkflowExecutionResult } from '../../shared/types/workflow';
+import { ExperimentalProject, ExperimentalChatMessage, ExperimentalNode, ExperimentalEdge, ExperimentalChangelog } from '../../types';
 
 /**
  * Atomowy zapis pliku: tmp → rename.
@@ -140,6 +141,72 @@ export class StorageEngine {
         content, tags,
         content='outputs',
         content_rowid='rowid'
+      );
+
+      -- Projekty eksperymentalne
+      CREATE TABLE IF NOT EXISTS experimental_projects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        spec_content TEXT DEFAULT '',
+        ai_config TEXT DEFAULT '{}',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      -- Wiadomości w czacie
+      CREATE TABLE IF NOT EXISTS experimental_chat_messages (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        extracted_to_spec INTEGER DEFAULT 0,
+        extracted_to_canvas INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+      );
+
+      -- Nody na mapie
+      CREATE TABLE IF NOT EXISTS experimental_nodes (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT DEFAULT '',
+        x REAL DEFAULT 0,
+        y REAL DEFAULT 0,
+        width REAL DEFAULT 240,
+        height REAL DEFAULT 120,
+        collapsed INTEGER DEFAULT 0,
+        source_message_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (source_message_id) REFERENCES experimental_chat_messages(id) ON DELETE SET NULL
+      );
+
+      -- Relacje między nodami
+      CREATE TABLE IF NOT EXISTS experimental_edges (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        source_node_id TEXT NOT NULL,
+        target_node_id TEXT NOT NULL,
+        label TEXT DEFAULT '',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (source_node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE,
+        FOREIGN KEY (target_node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE
+      );
+
+      -- Historia zmian (Changelog)
+      CREATE TABLE IF NOT EXISTS experimental_changelog (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        source_message_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
       );
     `);
   }
@@ -695,6 +762,212 @@ export class StorageEngine {
       '.mp4': 'video/mp4',
     };
     return mimeMap[ext] || 'application/octet-stream';
+  }
+
+  // =========================================================================
+  // Tryb Eksperymentalny CRUD
+  // =========================================================================
+
+  runTableInfoPragma(tableName: string): any[] {
+    if (!this.db) return [];
+    return (this.db.prepare(`PRAGMA table_info(${tableName})`).all() as any[]) || [];
+  }
+
+  // --- Projects ---
+  saveExperimentalProject(proj: ExperimentalProject): void {
+    if (this.db) {
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO experimental_projects (id, name, spec_content, ai_config, created_at, updated_at)
+        VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_projects WHERE id = ?), datetime('now')), datetime('now'))
+      `);
+      const aiConfigStr = typeof proj.ai_config === 'string' ? proj.ai_config : JSON.stringify(proj.ai_config || {});
+      stmt.run(proj.id, proj.name, proj.spec_content || '', aiConfigStr, proj.id);
+    }
+    const dir = path.join(this.basePath, 'experimental', 'projects');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    atomicWriteFileSync(path.join(dir, `${proj.id}.json`), JSON.stringify(proj, null, 2));
+  }
+
+  getExperimentalProjects(): ExperimentalProject[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM experimental_projects ORDER BY updated_at DESC').all() as any[];
+      return rows.map(r => ({
+        id: r.id,
+        name: r.name,
+        spec_content: r.spec_content || '',
+        ai_config: typeof r.ai_config === 'string' ? ((() => { try { return JSON.parse(r.ai_config); } catch { return {}; } })()) : r.ai_config,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+      }));
+    }
+    const dir = path.join(this.basePath, 'experimental', 'projects');
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir).filter(f => f.endsWith('.json')).map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalProject);
+  }
+
+  getExperimentalProject(id: string): ExperimentalProject | null {
+    if (this.db) {
+      const r = this.db.prepare('SELECT * FROM experimental_projects WHERE id = ?').get(id) as any;
+      if (r) {
+        return {
+          id: r.id,
+          name: r.name,
+          spec_content: r.spec_content || '',
+          ai_config: typeof r.ai_config === 'string' ? ((() => { try { return JSON.parse(r.ai_config); } catch { return {}; } })()) : r.ai_config,
+          created_at: r.created_at,
+          updated_at: r.updated_at,
+        };
+      }
+    }
+    const p = path.join(this.basePath, 'experimental', 'projects', `${id}.json`);
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8')) as ExperimentalProject;
+    return null;
+  }
+
+  deleteExperimentalProject(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM experimental_projects WHERE id = ?').run(id);
+    }
+    const p = path.join(this.basePath, 'experimental', 'projects', `${id}.json`);
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  }
+
+  // --- Chat Messages ---
+  saveExperimentalChatMessage(msg: ExperimentalChatMessage): void {
+    if (this.db) {
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO experimental_chat_messages (id, project_id, role, content, extracted_to_spec, extracted_to_canvas, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_chat_messages WHERE id = ?), datetime('now')))
+      `);
+      stmt.run(msg.id, msg.project_id, msg.role, msg.content, msg.extracted_to_spec ? 1 : 0, msg.extracted_to_canvas ? 1 : 0, msg.id);
+    }
+  }
+
+  getExperimentalChatMessages(projectId: string): ExperimentalChatMessage[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+      return rows.map(r => ({
+        id: r.id,
+        project_id: r.project_id,
+        role: r.role,
+        content: r.content,
+        extracted_to_spec: r.extracted_to_spec,
+        extracted_to_canvas: r.extracted_to_canvas,
+        created_at: r.created_at,
+      }));
+    }
+    return [];
+  }
+
+  deleteExperimentalChatMessage(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM experimental_chat_messages WHERE id = ?').run(id);
+    }
+  }
+
+  // --- Nodes ---
+  saveExperimentalNode(node: ExperimentalNode): void {
+    if (this.db) {
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO experimental_nodes (id, project_id, title, content, x, y, width, height, collapsed, source_message_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_nodes WHERE id = ?), datetime('now')), datetime('now'))
+      `);
+      stmt.run(
+        node.id, node.project_id, node.title || '', node.content || '',
+        node.x ?? 0, node.y ?? 0, node.width ?? 240, node.height ?? 120,
+        node.collapsed ? 1 : 0, node.source_message_id || null, node.id
+      );
+    }
+  }
+
+  getExperimentalNodes(projectId: string): ExperimentalNode[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM experimental_nodes WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+      return rows.map(r => ({
+        id: r.id,
+        project_id: r.project_id,
+        title: r.title,
+        content: r.content,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        collapsed: r.collapsed,
+        source_message_id: r.source_message_id,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+      }));
+    }
+    return [];
+  }
+
+  deleteExperimentalNode(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM experimental_nodes WHERE id = ?').run(id);
+    }
+  }
+
+  // --- Edges ---
+  saveExperimentalEdge(edge: ExperimentalEdge): void {
+    if (this.db) {
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO experimental_edges (id, project_id, source_node_id, target_node_id, label, created_at)
+        VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_edges WHERE id = ?), datetime('now')))
+      `);
+      stmt.run(edge.id, edge.project_id, edge.source_node_id, edge.target_node_id, edge.label || '', edge.id);
+    }
+  }
+
+  getExperimentalEdges(projectId: string): ExperimentalEdge[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM experimental_edges WHERE project_id = ?').all(projectId) as any[];
+      return rows.map(r => ({
+        id: r.id,
+        project_id: r.project_id,
+        source_node_id: r.source_node_id,
+        target_node_id: r.target_node_id,
+        label: r.label,
+        created_at: r.created_at,
+      }));
+    }
+    return [];
+  }
+
+  deleteExperimentalEdge(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM experimental_edges WHERE id = ?').run(id);
+    }
+  }
+
+  // --- Changelog ---
+  saveExperimentalChangelog(entry: ExperimentalChangelog): void {
+    if (this.db) {
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO experimental_changelog (id, project_id, action_type, entity_type, entity_id, summary, source_message_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_changelog WHERE id = ?), datetime('now')))
+      `);
+      stmt.run(
+        entry.id, entry.project_id, entry.action_type, entry.entity_type, entry.entity_id,
+        entry.summary || '', entry.source_message_id || null, entry.id
+      );
+    }
+  }
+
+  getExperimentalChangelog(projectId: string): ExperimentalChangelog[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM experimental_changelog WHERE project_id = ? ORDER BY created_at DESC').all(projectId) as any[];
+      return rows.map(r => ({
+        id: r.id,
+        project_id: r.project_id,
+        action_type: r.action_type,
+        entity_type: r.entity_type,
+        entity_id: r.entity_id,
+        summary: r.summary,
+        source_message_id: r.source_message_id,
+        created_at: r.created_at,
+      }));
+    }
+    return [];
   }
 
   // =========================================================================

@@ -224,6 +224,55 @@ const nexusBridge: NexusBridge = {
 
   // RPM Usage (RateLimiter)
   getRpmUsage: () => ipcRenderer.invoke('rpm:usage'),
+
+  // ========================================================================
+  // Useme Automation
+  // ========================================================================
+
+  usemeStart: (payload) => ipcRenderer.invoke('useme:start', payload),
+  usemeStop: () => ipcRenderer.invoke('useme:stop'),
+  usemeStatus: () => ipcRenderer.invoke('useme:status'),
+  usemeListPrompts: () => ipcRenderer.invoke('useme:list-prompts'),
+  usemeReadPrompt: (payload) => ipcRenderer.invoke('useme:read-prompt', payload),
+  usemeSavePrompt: (payload) => ipcRenderer.invoke('useme:save-prompt', payload),
+
+  onUsemeLog: (callback) => {
+    const channel = 'useme:log';
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on(channel, handler);
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
+
+  onUsemeReviewRequired: (callback) => {
+    const channel = 'useme:review-required';
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on(channel, handler);
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
+
+  // ========================================================================
+  // Experimental Mode (Etap 1)
+  // ========================================================================
+  expGetTableInfo: (payload) => ipcRenderer.invoke('experimental:table-info', payload),
+  expSaveProject: (payload) => ipcRenderer.invoke('experimental:project:save', payload),
+  expGetProjects: () => ipcRenderer.invoke('experimental:project:get-all'),
+  expGetProject: (payload) => ipcRenderer.invoke('experimental:project:get', payload),
+  expDeleteProject: (payload) => ipcRenderer.invoke('experimental:project:delete', payload),
+
+  expSaveChatMessage: (payload) => ipcRenderer.invoke('experimental:chat:save', payload),
+  expGetChatMessages: (payload) => ipcRenderer.invoke('experimental:chat:get', payload),
+  expDeleteChatMessage: (payload) => ipcRenderer.invoke('experimental:chat:delete', payload),
+
+  expSaveNode: (payload) => ipcRenderer.invoke('experimental:node:save', payload),
+  expGetNodes: (payload) => ipcRenderer.invoke('experimental:node:get', payload),
+  expDeleteNode: (payload) => ipcRenderer.invoke('experimental:node:delete', payload),
+
+  expSaveEdge: (payload) => ipcRenderer.invoke('experimental:edge:save', payload),
+  expGetEdges: (payload) => ipcRenderer.invoke('experimental:edge:get', payload),
+  expDeleteEdge: (payload) => ipcRenderer.invoke('experimental:edge:delete', payload),
+
+  expSaveChangelog: (payload) => ipcRenderer.invoke('experimental:changelog:save', payload),
+  expGetChangelog: (payload) => ipcRenderer.invoke('experimental:changelog:get', payload),
 };
 
 // ============================================================================

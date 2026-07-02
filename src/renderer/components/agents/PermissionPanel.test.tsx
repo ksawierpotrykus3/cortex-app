@@ -118,7 +118,6 @@ describe('PermissionPanel', () => {
     expect(screen.getByText('Changelog')).toBeTruthy();
     expect(screen.getByText('Plik (File)')).toBeTruthy();
     expect(screen.getByText('Inny agent')).toBeTruthy();
-    expect(screen.getByText('Baza Wiedzy')).toBeTruthy();
   });
 
   it('toggles a destination on click', () => {

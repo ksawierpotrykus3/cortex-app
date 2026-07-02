@@ -32,12 +32,11 @@ const defaultProps = {
 // Test 1: Renderowanie glownych zakladek
 // ============================================================
 describe('TopNavigation — zakladki', () => {
-  it('renderuje glowne zakladki: Topology, Laboratory, Knowledge Base, More', () => {
+  it('renderuje glowne zakladki: Topology, Laboratory, More', () => {
     render(<TopNavigation {...defaultProps} />);
 
     expect(screen.getByText('Topology')).toBeInTheDocument();
     expect(screen.getByText('Laboratory')).toBeInTheDocument();
-    expect(screen.getByText('Knowledge Base')).toBeInTheDocument();
     expect(screen.getByText('More')).toBeInTheDocument();
   });
 
@@ -69,13 +68,7 @@ describe('TopNavigation — zmiana widoku', () => {
     expect(setActiveView).toHaveBeenCalledWith('lab-todo');
   });
 
-  it('klikniecie Knowledge Base wywoluje setActiveView z "sandbox"', () => {
-    const setActiveView = vi.fn();
-    render(<TopNavigation {...defaultProps} setActiveView={setActiveView} />);
-
-    fireEvent.click(screen.getByText('Knowledge Base'));
-    expect(setActiveView).toHaveBeenCalledWith('sandbox');
-  });
+  
 });
 
 // ============================================================
@@ -88,12 +81,9 @@ describe('TopNavigation — More dropdown', () => {
     fireEvent.click(screen.getByText('More'));
 
     // Sprawdz czy dropdown zawiera expected sub-views
-    expect(screen.getByText('Agent Logs')).toBeInTheDocument();
     expect(screen.getByText('Raw Fragments')).toBeInTheDocument();
-    expect(screen.getByText('RLHF Draft')).toBeInTheDocument();
     expect(screen.getByText('Changes')).toBeInTheDocument();
     expect(screen.getByText('Wiki')).toBeInTheDocument();
-    expect(screen.getByText('Diagram (Mermaid)')).toBeInTheDocument();
     expect(screen.getByText('Git')).toBeInTheDocument();
     expect(screen.getByText('Feedback')).toBeInTheDocument();
   });

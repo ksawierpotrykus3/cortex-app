@@ -17,31 +17,34 @@ import { WikiPanel } from "./components/WikiPanel";
 import { GitPanel } from "./components/GitPanel";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { FeedbackPanel } from "./components/FeedbackPanel";
-import { FloatingAgentPanel } from "./components/FloatingAgentPanel";
 import { ChangeLog } from "./changelog";
 import { NexusState } from "./fs";
 import { ExportModal } from "./components/ExportModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { LogViewer } from "./components/LogViewer";
-import { DraftZone } from "./components/DraftZone";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { UsemeContainer } from "./components/useme/UsemeContainer";
+import { ExperimentalWorkspace } from "./components/ExperimentalWorkspace";
 import { ViewMode, RightPanelState, ModalState, NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, FeedbackEntry, WikiArticle } from "./types";
 import { uid } from "./utils/ids";
 import { useFileSystemWatcher } from "./fs";
 
-// Phase 1: Agents UI (stores & support, views moved to workflow-studio)
+// [AI] Phase 1 — zakomentowane, do przywrócenia gdy AI wróci
+// import { useAgentStore } from "./renderer/store/agentStore";
+// import { useChangelogStore } from "./renderer/store/changelogStore";
+// import { useWorkflowStore } from "./renderer/store/workflowStore";
+// import { ChangelogEntry, Pipeline } from "./shared/types/schema";
+// import { WorkflowDefinition } from "./shared/types/workflow";
+// import { NexusBridge } from "./shared/types/ipc";
+// import { FloatingAgentPanel } from "./components/FloatingAgentPanel";
+// import { MermaidPlanPanel, MermaidDraft, parseMermaidToSVG } from "./components/MermaidPlanPanel";
+
 import { DiffModal } from "./components/DiffModal";
 import { CommandPalette } from "./components/CommandPalette";
-import { useAgentStore } from "./renderer/store/agentStore";
-import { useChangelogStore } from "./renderer/store/changelogStore";
-import { useWorkflowStore } from "./renderer/store/workflowStore";
 import { useDiffStore } from "./renderer/store/diffStore";
 import { useCommandStore } from "./renderer/store/commandStore";
 import { setGlobalActions } from "./renderer/store/commandStore";
 import { registerAllCommands, GlobalActions } from "./commands";
-import { ChangelogEntry, Pipeline } from "./shared/types/schema";
-import { WorkflowDefinition } from "./shared/types/workflow";
-import { NexusBridge } from "./shared/types/ipc";
 import { CustomCommandsManager } from "./components/CustomCommandsManager";
 import { KillSwitchBanner } from "./components/KillSwitchBanner";
 import { StatusBar } from "./components/StatusBar";
@@ -57,8 +60,6 @@ import { SplashScreen } from "./components/SplashScreen";
 
 // Workflow Studio 2.0 (usunięto)
 
-// Mermaid Plan
-import { MermaidPlanPanel, MermaidDraft, parseMermaidToSVG } from "./components/MermaidPlanPanel";
 // AtMention
 import { MentionableItem } from "./components/AtMentionAutocomplete";
 
@@ -89,36 +90,14 @@ export function App() {
   const changeLogRef = useRef<ChangeLog>(new ChangeLog());
   const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
   const [wikiArticles, setWikiArticles] = useState<WikiArticle[]>([]);
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-  const [runningPipelineId, setRunningPipelineId] = useState<string | null>(null);
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
-
-  // Workflow Studio 2.0 (usunięto)
-
-  // Mermaid Plan
-  const [mermaidDrafts, setMermaidDrafts] = useState<MermaidDraft[]>([]);
-  const [mermaidSystemPrompt, setMermaidSystemPrompt] = useState<string | null>(null);
-
-  // Shared workflow creation logic
-  const handleCreateWorkflow = useCallback(() => {
-    const now = new Date().toISOString();
-    const newWf: WorkflowDefinition = {
-      id: `wf_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      name: 'Nowy workflow',
-      description: '',
-      mode: 'sandbox',
-      trigger: { type: 'on_approve' },
-      conditions: null,
-      actions: [],
-      createdAt: now,
-      updatedAt: now,
-      runCount: 0,
-      lastRunAt: null,
-    };
-    setWorkflows((prev) => [...prev, newWf]);
-    setSelectedWorkflowId(newWf.id);
-  }, []);
+  // [AI] pipeliny, workflowy, mermaid — zakomentowane
+  // const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  // const [runningPipelineId, setRunningPipelineId] = useState<string | null>(null);
+  // const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  // const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+  // const [mermaidDrafts, setMermaidDrafts] = useState<MermaidDraft[]>([]);
+  // const [mermaidSystemPrompt, setMermaidSystemPrompt] = useState<string | null>(null);
+  // const handleCreateWorkflow = useCallback(() => { ... }, []);
   const [lastFeedbackAction, setLastFeedbackAction] = useState('');
   const [feedbackSelectedAgentId, setFeedbackSelectedAgentId] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -133,11 +112,11 @@ export function App() {
       id: a.id, type: 'wiki', label: a.title,
       subtitle: a.category, content: a.content?.slice(0, 2000),
     }));
-    // Agenci
-    useAgentStore.getState().agents.forEach(a => items.push({
-      id: a.id, type: 'agent', label: a.name,
-      subtitle: a.model.modelName, content: '',
-    }));
+    // [AI] Agenci — zakomentowane
+    // useAgentStore.getState().agents.forEach(a => items.push({
+    //   id: a.id, type: 'agent', label: a.name,
+    //   subtitle: a.model.modelName, content: '',
+    // }));
     // Notatki
     nodes.forEach(n => items.push({
       id: n.id, type: 'note', label: n.title || 'Bez tytułu',
@@ -153,8 +132,8 @@ export function App() {
   const [tagFilter, setTagFilter] = useState('');
 
   // Refs to keep latest state for callbacks (avoids stale closures in useEffects with [])
-  const stateRef = useRef({ nodes, links, tasks, drafts, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles, pipelines, workflows, mermaidDrafts });
-  stateRef.current = { nodes, links, tasks, drafts, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles, pipelines, workflows, mermaidDrafts };
+  const stateRef = useRef({ nodes, links, tasks, drafts, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles });
+  stateRef.current = { nodes, links, tasks, drafts, geminiKey, manuscriptFolders, manuscriptTabs, manuscriptMetas, selectedNodeId, selectedNodeIds, expandedProjects, draggedProject, feedback, wikiArticles };
 
   // Helper to build workspace state object (DRY)
   const buildWorkspaceState = useCallback(() => {
@@ -166,11 +145,9 @@ export function App() {
       manuscriptMetas: s.manuscriptMetas,
       changelog: changeLogRef.current?.toJSON(),
       feedback: s.feedback, wiki: s.wikiArticles,
-      pipelines: s.pipelines, workflows: s.workflows,
       snapshots: useDiffStore.getState().snapshots,
       customCommands: useCommandStore.getState().customCommands,
       shortcutOverrides: useKeydirStore.getState().overrides,
-      mermaidDrafts: s.mermaidDrafts,
     };
   }, []);
 
@@ -253,18 +230,19 @@ export function App() {
         useCommandStore.getState().openManage();
       },
       onKillSwitch: () => {
-        const b = window.nexusBridge as unknown as NexusBridge;
+        const b = window.nexusBridge as any;
         b?.activateKillSwitch?.({ reason: 'Kill Switch from Command Palette' });
       },
     };
     registerAllCommands(navigate, callbacks);
 
     // Set global actions bridge for custom commands
+    // [AI] setGlobalActions — runWorkflow zakomentowane
     setGlobalActions({
       setActiveView,
-      runWorkflow: (id: string) => {
-        useWorkflowStore.getState().selectWorkflow?.(id);
-      },
+      // runWorkflow: (id: string) => {
+      //   useWorkflowStore.getState().selectWorkflow?.(id);
+      // },
     });
   }, []);
 
@@ -344,12 +322,14 @@ export function App() {
         setManuscriptMetas(state.manuscriptMetas || []);
         setGeminiKey(state.geminiKey || "");
         setWikiArticles(state.wiki || []);
-        setPipelines(state.pipelines || []);
-        setWorkflows(state.workflows || []);
+        // [AI] pipeliny/workflowy/mermaid — pomijane
+        // setPipelines(state.pipelines || []);
+        // setWorkflows(state.workflows || []);
         useDiffStore.getState().setSnapshots(state.snapshots || []);
         useCommandStore.getState().setCustomCommands(state.customCommands || []);
         useKeydirStore.getState().setOverrides(state.shortcutOverrides || []);
-        if (state.mermaidDrafts) setMermaidDrafts(state.mermaidDrafts);
+        // [AI] mermaid pomijane
+        // if (state.mermaidDrafts) setMermaidDrafts(state.mermaidDrafts);
         setIsLoaded(true);
       } catch (err) {
         if (!cancelled) {
@@ -378,7 +358,8 @@ export function App() {
     if (newState.changelog) changeLogRef.current = new ChangeLog(newState.changelog);
     if (newState.feedback) setFeedback(newState.feedback);
     if (newState.wiki) setWikiArticles(newState.wiki);
-    if (newState.mermaidDrafts) setMermaidDrafts(newState.mermaidDrafts);
+    // [AI] mermaid pomijane
+    // if (newState.mermaidDrafts) setMermaidDrafts(newState.mermaidDrafts);
   });
 
   useEffect(() => {
@@ -394,7 +375,6 @@ export function App() {
     nodes, links, tasks, drafts, geminiKey,
     manuscriptFolders, manuscriptTabs, manuscriptMetas,
     feedback, wikiArticles, isLoaded,
-    mermaidDrafts,
   ]);
 
   const setLabMode = (mode: "todo" | "writing") => {
@@ -518,50 +498,41 @@ export function App() {
     }
   }, [activeView, selectedNodeId, selectedNode]);
 
-  // Sync selected agent from zustand store for feedback context
-  useEffect(() => {
-    const unsub = useAgentStore.subscribe((state) => {
-      setFeedbackSelectedAgentId(state.selectedAgentId);
-    });
-    setFeedbackSelectedAgentId(useAgentStore.getState().selectedAgentId);
-    return unsub;
-  }, []);
+  // [AI] Sync selected agent — zakomentowane
+  // useEffect(() => {
+  //   const unsub = useAgentStore.subscribe((state) => {
+  //     setFeedbackSelectedAgentId(state.selectedAgentId);
+  //   });
+  //   setFeedbackSelectedAgentId(useAgentStore.getState().selectedAgentId);
+  //   return unsub;
+  // }, []);
 
   // =========================================================================
-  // Phase 1: Agents IPC hooks
+  // [AI] Agents IPC hooks — zakomentowane
   // =========================================================================
-  useEffect(() => {
-    const bridge = window.nexusBridge;
-    if (!bridge) return;
-
-    // Load agents from main process on mount
-    bridge.getAgents().then(agents => {
-      if (agents?.length > 0) {
-        useAgentStore.getState().setAgents(agents);
-      }
-    }).catch(err => console.warn('[App] Failed to load agents:', err));
-
-    // Listen for agent output — finalizuje streaming entry zamiast tworzyć nowy
-    const cleanupOutput = bridge.onAgentOutput((output) => {
-      useChangelogStore.getState().completeEntry(output.agentId, output);
-    });
-
-    // Listen for streaming tokens
-    const cleanupStream = bridge.onAgentStream((data) => {
-      useChangelogStore.getState().updateStream(data.agentId, data.token);
-    });
-
-    // Listen for status changes
-    const cleanupStatus = bridge.onAgentStatus((data) => {
-      useAgentStore.getState().updateAgentStatus(data.agentId, data.status);
-    });
-
-    return () => {
-      cleanupOutput();
-      cleanupStream();
-      cleanupStatus();
-    };
-  }, []);
+  // useEffect(() => {
+  //   const bridge = window.nexusBridge;
+  //   if (!bridge) return;
+  //   bridge.getAgents().then(agents => {
+  //     if (agents?.length > 0) {
+  //       useAgentStore.getState().setAgents(agents);
+  //     }
+  //   }).catch(err => console.warn('[App] Failed to load agents:', err));
+  //   const cleanupOutput = bridge.onAgentOutput((output) => {
+  //     useChangelogStore.getState().completeEntry(output.agentId, output);
+  //   });
+  //   const cleanupStream = bridge.onAgentStream((data) => {
+  //     useChangelogStore.getState().updateStream(data.agentId, data.token);
+  //   });
+  //   const cleanupStatus = bridge.onAgentStatus((data) => {
+  //     useAgentStore.getState().updateAgentStatus(data.agentId, data.status);
+  //   });
+  //   return () => {
+  //     cleanupOutput();
+  //     cleanupStream();
+  //     cleanupStatus();
+  //   };
+  // }, []);
 
   if (!isLoaded) {
     return (
@@ -683,6 +654,11 @@ export function App() {
             />
           )}
           {activeView === "sandbox" && <Sandbox />}
+
+          {/* Useme Automation Engine */}
+          {activeView === "useme" && <UsemeContainer />}
+          {/* Tryb Eksperymentalny */}
+          {activeView === "experimental" && <ExperimentalWorkspace />}
           {activeView === "raw-fragments" && (
             <RawFragmentsView 
                 nodes={nodes} 
@@ -703,24 +679,9 @@ export function App() {
           {activeView === "logs" && (
             <LogViewer height={window.innerHeight - 56} pageSize={50} />
           )}
-          {activeView === "draft" && (
-            <div className="flex items-start justify-center pt-8 h-full overflow-y-auto">
-              <DraftZone
-                onSaved={(mutation) => { /* console.debug('[NEXUS] Mutation saved:', mutation); */ }}
-                onValidationError={(errors) => { /* console.warn('[NEXUS] Validation errors:', errors); */ }}
-              />
-            </div>
-          )}
 
-          {/* Phase 1: Agents View */}
-          {activeView === "agents" && (
-            <div className="flex items-center justify-center h-full text-[rgb(var(--text-muted))]">
-              <div className="text-center">
-                <div className="text-4xl mb-3 opacity-30">🤖</div>
-                <p className="text-sm">Agenci AI (W przebudowie)</p>
-              </div>
-            </div>
-          )}
+          {/* [AI] Agents View — zakomentowane */}
+          {/* {activeView === "agents" && (...) } */}
 
           {/* F4: Tablica Zmian */}
           {activeView === "changes" && (
@@ -804,50 +765,8 @@ export function App() {
 
           {/* F6.12: Pipeline DAG + #1: Workflows — zastąpione przez Workflow Studio */}
 
-          {/* Mermaid Plan — Środowisko Planowania */}
-          {activeView === "mermaid-plan" && (
-            <MermaidPlanPanel
-              drafts={mermaidDrafts}
-              onSaveDraft={(draft) => {
-                setMermaidDrafts(prev => {
-                  const idx = prev.findIndex(d => d.id === draft.id);
-                  return idx >= 0 ? prev.map(d => d.id === draft.id ? draft : d) : [...prev, draft];
-                });
-              }}
-              onDeleteDraft={(id) => setMermaidDrafts(prev => prev.filter(d => d.id !== id))}
-              onGenerateMermaid={async (draft, customPrompt) => {
-                const bridge = window.nexusBridge as any;
-                if (!bridge?.executeAgent) return draft.mermaidCode;
-                try {
-                  // Try to use searchQuery or similar to generate Mermaid via AI
-                  const prompt = customPrompt
-                    ? `${customPrompt}\n\nWygeneruj diagram Mermaid na temat: ${draft.description || draft.title}`
-                    : `Wygeneruj diagram Mermaid na temat: ${draft.description || draft.title}`;
-                  const results = await bridge.searchQuery({ query: prompt, entities: [] });
-                  // Extract mermaid code from response
-                  const text = Array.isArray(results) ? results.map((r: any) => r.snippet || '').join('\n') : String(results);
-                  const match = text.match(/```mermaid\s*\n([\s\S]*?)```/);
-                  return match ? match[1].trim() : text.trim().split('\n').filter(Boolean).join('\n');
-                } catch {
-                  return draft.mermaidCode;
-                }
-              }}
-
-              onPromoteToWiki={(draft) => {
-                setWikiArticles(prev => [...prev, {
-                  id: `wiki_mermaid_${draft.id}`,
-                  title: draft.title,
-                  content: `# ${draft.title}\n\n${draft.description}\n\n\`\`\`mermaid\n${draft.mermaidCode}\n\`\`\``,
-                  tags: ['mermaid', 'diagram'],
-                  category: 'planning',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                }]);
-              }}
-              mermaidSystemPrompt={mermaidSystemPrompt || undefined}
-              onSaveMermaidPrompt={setMermaidSystemPrompt}
-            />
-          )}
+          {/* [AI] Mermaid Plan — zakomentowane */}
+          {/* {activeView === "mermaid-plan" && <MermaidPlanPanel ... />} */}
         </div>
 
         {/* Right Panel Overlay */}
@@ -929,36 +848,8 @@ export function App() {
         }}
       />
 
-      {/* Floating Agent Panel */}
-      <FloatingAgentPanel
-        viewMode={activeView}
-        selectedNodeId={selectedNodeId}
-        selectedAgentId={feedbackSelectedAgentId}
-        selectedTaskId={null}
-        selectedManuscriptId={null}
-        projectId={selectedNode?.projectId || null}
-        lastAction={lastFeedbackAction}
-        onSendToAgent={async (agentId, message) => {
-          // Use the IPC bridge to send a raw chat to any AI model
-          const bridge = window.nexusBridge;
-          if (bridge?.searchQuery) {
-            try {
-              const results = await bridge.searchQuery({
-                query: message,
-                entities: [],
-              });
-              if (results && results.length > 0) {
-                return results.map(r => r.snippet).join('\n\n');
-              }
-              return 'Brak odpowiedzi od modelu.';
-            } catch (err) {
-              return `Błąd: ${err instanceof Error ? err.message : String(err)}`;
-            }
-          }
-          return 'Most IPC nie jest dostępny. Skonfiguruj klucz API w ustawieniach.';
-        }}
-        mentionableItems={mentionableItems}
-      />
+      {/* [AI] Floating Agent Panel — zakomentowane */}
+      {/* <FloatingAgentPanel ... /> */}
 
       {/* #5: Diff Viewer Modal */}
       <DiffModal

@@ -88,6 +88,28 @@ export interface CommandChannels {
 
   // RPM Usage (RateLimiter)
   'rpm:usage': { payload: void; response: { totalUsed: number; totalLimit: number; keys: { key: string; used: number; limit: number }[] } };
+
+  // Experimental Mode (Etap 1)
+  'experimental:table-info': { payload: { tableName: string }; response: any[] };
+  'experimental:project:save': { payload: { project: import('../../types').ExperimentalProject }; response: { success: boolean } };
+  'experimental:project:get-all': { payload: void; response: import('../../types').ExperimentalProject[] };
+  'experimental:project:get': { payload: { id: string }; response: import('../../types').ExperimentalProject | null };
+  'experimental:project:delete': { payload: { id: string }; response: { success: boolean } };
+
+  'experimental:chat:save': { payload: { message: import('../../types').ExperimentalChatMessage }; response: { success: boolean } };
+  'experimental:chat:get': { payload: { projectId: string }; response: import('../../types').ExperimentalChatMessage[] };
+  'experimental:chat:delete': { payload: { id: string }; response: { success: boolean } };
+
+  'experimental:node:save': { payload: { node: import('../../types').ExperimentalNode }; response: { success: boolean } };
+  'experimental:node:get': { payload: { projectId: string }; response: import('../../types').ExperimentalNode[] };
+  'experimental:node:delete': { payload: { id: string }; response: { success: boolean } };
+
+  'experimental:edge:save': { payload: { edge: import('../../types').ExperimentalEdge }; response: { success: boolean } };
+  'experimental:edge:get': { payload: { projectId: string }; response: import('../../types').ExperimentalEdge[] };
+  'experimental:edge:delete': { payload: { id: string }; response: { success: boolean } };
+
+  'experimental:changelog:save': { payload: { entry: import('../../types').ExperimentalChangelog }; response: { success: boolean } };
+  'experimental:changelog:get': { payload: { projectId: string }; response: import('../../types').ExperimentalChangelog[] };
 }
 
 // ============================================================================
@@ -259,4 +281,37 @@ export interface NexusBridge {
   onFailoverProposal: (callback: (data: { proposalId: string; modelName: string; timeoutSeconds: number }) => void) => () => void;
   onRecoveryProposal: (callback: (data: { modelName: string }) => void) => () => void;
   onAiStatusChanged: (callback: (data: { status: Record<string, { status: 'ONLINE' | 'OFFLINE'; ping: number }>; activeFailovers: string[] }) => void) => () => void;
+
+  // Useme Automation
+  usemeStart: (payload: { mode: 'dry' | 'prod'; headless: boolean }) => Promise<{ success: boolean; error?: string }>;
+  usemeStop: () => Promise<{ success: boolean; error?: string }>;
+  usemeStatus: () => Promise<{ running: boolean }>;
+  usemeListPrompts: () => Promise<{ success: boolean; error?: string; files: string[] }>;
+  usemeReadPrompt: (payload: { filename: string }) => Promise<{ success: boolean; error?: string; content: string }>;
+  usemeSavePrompt: (payload: { filename: string; content: string }) => Promise<{ success: boolean; error?: string }>;
+
+  onUsemeLog: (callback: (data: { level: 'info' | 'warn' | 'error'; message: string; timestamp: string }) => void) => () => void;
+  onUsemeReviewRequired: (callback: (data: { jobId: string; jobTitle: string; price: string; proposal: string; auditReport: string }) => void) => () => void;
+
+  // Experimental Mode (Etap 1)
+  expGetTableInfo: (payload: { tableName: string }) => Promise<any[]>;
+  expSaveProject: (payload: { project: import('../../types').ExperimentalProject }) => Promise<{ success: boolean }>;
+  expGetProjects: () => Promise<import('../../types').ExperimentalProject[]>;
+  expGetProject: (payload: { id: string }) => Promise<import('../../types').ExperimentalProject | null>;
+  expDeleteProject: (payload: { id: string }) => Promise<{ success: boolean }>;
+
+  expSaveChatMessage: (payload: { message: import('../../types').ExperimentalChatMessage }) => Promise<{ success: boolean }>;
+  expGetChatMessages: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalChatMessage[]>;
+  expDeleteChatMessage: (payload: { id: string }) => Promise<{ success: boolean }>;
+
+  expSaveNode: (payload: { node: import('../../types').ExperimentalNode }) => Promise<{ success: boolean }>;
+  expGetNodes: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalNode[]>;
+  expDeleteNode: (payload: { id: string }) => Promise<{ success: boolean }>;
+
+  expSaveEdge: (payload: { edge: import('../../types').ExperimentalEdge }) => Promise<{ success: boolean }>;
+  expGetEdges: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalEdge[]>;
+  expDeleteEdge: (payload: { id: string }) => Promise<{ success: boolean }>;
+
+  expSaveChangelog: (payload: { entry: import('../../types').ExperimentalChangelog }) => Promise<{ success: boolean }>;
+  expGetChangelog: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalChangelog[]>;
 }
