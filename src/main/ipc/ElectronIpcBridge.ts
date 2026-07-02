@@ -1815,6 +1815,36 @@ export class ElectronIpcBridge {
       }
     });
 
+    // Global Context
+    this.ipc.handle('experimental:global-context:save', async (_event: IpcMainInvokeEvent, payload: { projectId: string; context: any }) => {
+      try {
+        this.storage.saveExperimentalGlobalContext(payload.projectId, payload.context);
+        return {};
+      } catch (err) {
+        console.error('[experimental:global-context:save]', err);
+        return {};
+      }
+    });
+
+    this.ipc.handle('experimental:global-context:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+      try {
+        return this.storage.getExperimentalGlobalContext(payload.projectId);
+      } catch (err) {
+        console.error('[experimental:global-context:get]', err);
+        return null;
+      }
+    });
+
+    // Undecomposed nodes for BFS loop
+    this.ipc.handle('experimental:node:get-undecomposed', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+      try {
+        return this.storage.getExperimentalUndecomposedNodes(payload.projectId);
+      } catch (err) {
+        console.error('[experimental:node:get-undecomposed]', err);
+        return [];
+      }
+    });
+
     // LLM: Chat AI (#1)
     this.ipc.handle('experimental:chat:llm', async (_event: IpcMainInvokeEvent, payload: { systemPrompt: string; messages: any[]; model: string }) => {
       try {

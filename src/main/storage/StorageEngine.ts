@@ -181,8 +181,11 @@ export class StorageEngine {
       CREATE TABLE IF NOT EXISTS experimental_nodes (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
-        title TEXT NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
         content TEXT DEFAULT '',
+        node_type TEXT DEFAULT 'task',
+        status TEXT DEFAULT 'new',
+        metadata TEXT DEFAULT '{}',
         parent_id TEXT,
         x REAL DEFAULT 0,
         y REAL DEFAULT 0,
@@ -205,6 +208,9 @@ export class StorageEngine {
         source_node_id TEXT NOT NULL,
         target_node_id TEXT NOT NULL,
         label TEXT DEFAULT '',
+        relation_type TEXT DEFAULT 'depends_on',
+        source_handle TEXT,
+        target_handle TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
         FOREIGN KEY (source_node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE,
@@ -937,12 +943,15 @@ export class StorageEngine {
   // --- Nodes ---
   saveExperimentalNode(node: ExperimentalNode): void {
     if (this.db) {
+      const meta = typeof node.metadata === 'string' ? node.metadata : (node.metadata ? JSON.stringify(node.metadata) : '{}');
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_nodes (id, project_id, title, content, parent_id, x, y, width, height, collapsed, source_message_id, source_conversation_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_nodes WHERE id = ?), datetime('now')), datetime('now'))
+        INSERT OR REPLACE INTO experimental_nodes (id, project_id, title, content, node_type, status, metadata, parent_id, x, y, width, height, collapsed, source_message_id, source_conversation_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_nodes WHERE id = ?), datetime('now')), datetime('now'))
       `);
       stmt.run(
-        node.id, node.project_id, node.title || '', node.content || '',
+        node.id, node.project_id,
+        node.title || node.label || '', node.content || node.description || '',
+        node.node_type || 'task', node.status || 'new', meta,
         node.parent_id || null,
         node.x ?? 0, node.y ?? 0, node.width ?? 240, node.height ?? 120,
         node.collapsed ? 1 : 0, node.source_message_id || null, node.source_conversation_id || null, node.id
@@ -958,6 +967,36 @@ export class StorageEngine {
         project_id: r.project_id,
         title: r.title,
         content: r.content,
+        node_type: r.node_type,
+        status: r.status,
+        metadata: r.metadata ? (() => { try { return JSON.parse(r.metadata); } catch { return {}; } })() : undefined,
+        parent_id: r.parent_id,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        collapsed: r.collapsed,
+        source_message_id: r.source_message_id,
+        source_conversation_id: r.source_conversation_id,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+      }));
+    }
+    return [];
+  }
+
+  getExperimentalUndecomposedNodes(projectId: string): ExperimentalNode[] {
+    if (this.db) {
+      const rows = this.db.prepare(
+        `SELECT * FROM experimental_nodes WHERE project_id = ? AND (node_type = 'root' OR node_type = 'domain' OR node_type = 'component') AND status != 'ready' AND metadata NOT LIKE '%"is_leaf":true%' ORDER BY created_at ASC LIMIT 1`
+      ).all(projectId) as any[];
+      return rows.map(r => ({
+        id: r.id,
+        project_id: r.project_id,
+        title: r.title,
+        content: r.content,
+        node_type: r.node_type,
+        status: r.status,
         parent_id: r.parent_id,
         x: r.x,
         y: r.y,
@@ -1040,14 +1079,41 @@ export class StorageEngine {
     }
   }
 
+  // --- Global Context (Faza 1) ---
+  saveExperimentalGlobalContext(projectId: string, context: any): void {
+    if (this.db) {
+      const existing = this.db.prepare('SELECT ai_config FROM experimental_projects WHERE id = ?').get(projectId) as any;
+      if (existing) {
+        let cfg = {};
+        try { cfg = existing.ai_config ? JSON.parse(existing.ai_config) : {}; } catch { cfg = {}; }
+        cfg = { ...cfg, global_context: context };
+        this.db.prepare('UPDATE experimental_projects SET ai_config = ?, updated_at = datetime(\'now\') WHERE id = ?').run(JSON.stringify(cfg), projectId);
+      }
+    }
+  }
+
+  getExperimentalGlobalContext(projectId: string): any {
+    if (this.db) {
+      const r = this.db.prepare('SELECT ai_config FROM experimental_projects WHERE id = ?').get(projectId) as any;
+      if (r && r.ai_config) {
+        try {
+          const cfg = typeof r.ai_config === 'string' ? JSON.parse(r.ai_config) : r.ai_config;
+          return cfg.global_context || null;
+        } catch { return null; }
+      }
+    }
+    return null;
+  }
+
   // --- Edges ---
   saveExperimentalEdge(edge: ExperimentalEdge): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_edges (id, project_id, source_node_id, target_node_id, label, created_at)
-        VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_edges WHERE id = ?), datetime('now')))
+        INSERT OR REPLACE INTO experimental_edges (id, project_id, source_node_id, target_node_id, label, relation_type, source_handle, target_handle, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_edges WHERE id = ?), datetime('now')))
       `);
-      stmt.run(edge.id, edge.project_id, edge.source_node_id, edge.target_node_id, edge.label || '', edge.id);
+      stmt.run(edge.id, edge.project_id, edge.source_node_id, edge.target_node_id,
+        edge.label || '', edge.relation_type || 'depends_on', edge.source_handle || null, edge.target_handle || null, edge.id);
     }
   }
 
@@ -1060,6 +1126,9 @@ export class StorageEngine {
         source_node_id: r.source_node_id,
         target_node_id: r.target_node_id,
         label: r.label,
+        relation_type: r.relation_type,
+        source_handle: r.source_handle,
+        target_handle: r.target_handle,
         created_at: r.created_at,
       }));
     }

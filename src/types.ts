@@ -213,12 +213,30 @@ export interface ExperimentalChatMessage {
   created_at?: string;
 }
 
+export type NodeType = 'root' | 'domain' | 'component' | 'task' | 'integration' | 'note';
+export type NodeStatus = 'new' | 'in_progress' | 'ready' | 'deprecated';
+export type RelationType = 'requires' | 'depends_on' | 'data_flow' | 'sync' | 'supports';
+
+export interface NodeMetadata {
+  is_leaf?: boolean;
+  stack?: string[];
+  author?: 'user' | 'ai';
+  associated_task_id?: string;
+  timestamp?: string;
+}
+
 export interface ExperimentalNode {
   id: string;
   project_id: string;
   title: string;
   content: string;
-  parent_id?: string | null; // hierarchia: null = root
+  // Nowe pola z protokolu
+  label?: string;
+  description?: string;
+  node_type?: NodeType;
+  status?: NodeStatus;
+  metadata?: NodeMetadata | string;
+  parent_id?: string | null;
   x: number;
   y: number;
   width?: number;
@@ -236,7 +254,40 @@ export interface ExperimentalEdge {
   source_node_id: string;
   target_node_id: string;
   label?: string;
+  // Nowe pola z protokolu
+  relation_type?: RelationType;
+  source_handle?: string;
+  target_handle?: string;
   created_at?: string;
+}
+
+// Kontekst globalny z Fazy 1 (analiza SPEC)
+export interface GlobalContext {
+  project_name: string;
+  mandatory_stack: string[];
+  out_of_scope: string[];
+  actors: { role: string; description: string }[];
+  integrations: { system: string; type: string; purpose: string }[];
+  data_io: { inputs: string[]; outputs: string[] };
+}
+
+// Wynik generatora notatek
+export interface NoteGenerationResult {
+  node: {
+    id: string;
+    parent_id: string | null;
+    type: 'note';
+    status: 'ready';
+    label: string;
+    description: string;
+    metadata: NodeMetadata;
+  };
+  edge?: {
+    id: string;
+    source: string;
+    target: string;
+    relation_type: 'supports';
+  };
 }
 
 export interface ExperimentalChangelog {

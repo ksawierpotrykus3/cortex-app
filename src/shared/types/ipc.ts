@@ -126,6 +126,11 @@ export interface CommandChannels {
   // LLM calls (rzeczywiste AI)
   'experimental:chat:llm': { payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; model: string }; response: { content: string } };
   'experimental:planner:run': { payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; nodes: import('../../types').ExperimentalNode[]; edges: import('../../types').ExperimentalEdge[]; specContent: string; model: string }; response: { content: string } };
+
+  // Global Context i node queries
+  'experimental:global-context:save': { payload: { projectId: string; context: any }; response: {} };
+  'experimental:global-context:get': { payload: { projectId: string }; response: any };
+  'experimental:node:get-undecomposed': { payload: { projectId: string }; response: import('../../types').ExperimentalNode[] };
 }
 
 // ============================================================================
@@ -346,4 +351,9 @@ export interface NexusBridge {
   // LLM calls
   expInvokeChatLLM: (payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; model: string }) => Promise<{ content: string }>;
   expInvokePlanner: (payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; nodes: import('../../types').ExperimentalNode[]; edges: import('../../types').ExperimentalEdge[]; specContent: string; model: string }) => Promise<{ content: string }>;
+
+  // Global Context i node queries
+  expSaveGlobalContext: (payload: { projectId: string; context: any }) => Promise<{}>;
+  expGetGlobalContext: (payload: { projectId: string }) => Promise<any>;
+  expGetUndecomposedNodes: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalNode[]>;
 }

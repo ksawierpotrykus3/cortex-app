@@ -289,6 +289,11 @@ const nexusBridge: NexusBridge = {
   // LLM calls
   expInvokeChatLLM: (payload) => ipcRenderer.invoke('experimental:chat:llm', payload),
   expInvokePlanner: (payload) => ipcRenderer.invoke('experimental:planner:run', payload),
+
+  // Fazy planowania (uzywaja expInvokeChatLLM z roznymi promptami)
+  expSaveGlobalContext: (payload) => ipcRenderer.invoke('experimental:global-context:save', payload),
+  expGetGlobalContext: (payload) => ipcRenderer.invoke('experimental:global-context:get', payload),
+  expGetUndecomposedNodes: (payload) => ipcRenderer.invoke('experimental:node:get-undecomposed', payload),
 };
 
 // ============================================================================

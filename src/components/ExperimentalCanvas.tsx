@@ -7,8 +7,14 @@ import {
   ExperimentalEdge,
   ExperimentalNodeAnnotation,
   ExperimentalAIConfig,
+  GlobalContext,
+  NodeType,
+  NodeStatus,
+  RelationType,
+  NoteGenerationResult,
 } from '../types';
 import { useExperimentalAI, PlannerOperation } from '../hooks/useExperimentalAI';
+import { useAutoLayout } from '../hooks/useAutoLayout';
 
 const genId = () => `exp_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
@@ -28,6 +34,15 @@ const nextNodePos = () => {
   nodeCounter.col++;
   if (nodeCounter.col > 5) { nodeCounter.col = 0; nodeCounter.row++; }
   return { x, y };
+};
+
+const NODE_BORDER: Record<string, string> = {
+  note: 'border-yellow-500 bg-yellow-900/10',
+  root: 'border-white',
+  domain: 'border-blue-500',
+  component: 'border-gray-400',
+  task: 'border-gray-600',
+  integration: 'border-green-500',
 };
 
 export function ExperimentalCanvas() {
@@ -81,8 +96,14 @@ export function ExperimentalCanvas() {
 
   // -- planner --
   const { invokeChat, invokePlanner, parsePlannerResponse, chatLoading, plannerLoading } = useExperimentalAI();
+  const { applyLayout } = useAutoLayout();
   const [diffProposal, setDiffProposal] = useState<{ operations: PlannerOperation[] } | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+
+  // -- Fazy planowania --
+  const [plannerPhase, setPlannerPhase] = useState<'idle' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'done'>('idle');
+  const [plannerProgress, setPlannerProgress] = useState({ current: 0, total: 0 });
+  const [globalContext, setGlobalContext] = useState<GlobalContext | null>(null);
 
   // ==========================================================================
   // Ladowanie
@@ -126,6 +147,8 @@ export function ExperimentalCanvas() {
     setPlannerModel(cfg.plannerModel || 'DeepSeek V4 Flash');
     if (cfg.chatSystemPrompt) setChatSystemPrompt(cfg.chatSystemPrompt);
     if (cfg.mapPlannerSystemPrompt) setPlannerSystemPrompt(cfg.mapPlannerSystemPrompt);
+    // Wczytaj global_context jesli istnieje
+    if ((cfg as any).global_context) setGlobalContext((cfg as any).global_context as GlobalContext);
     setSpecContent(proj.spec_content || '');
 
     const b = window.nexusBridge;
@@ -324,11 +347,251 @@ export function ExperimentalCanvas() {
   };
 
   // ==========================================================================
-  // Planer (#3)
+  // Auto-layout helper
   // ==========================================================================
-  const runPlanner = async () => {
+  const runAutoLayout = useCallback(() => {
+    const laidOut = applyLayout(nodes, edges);
+    setNodes(laidOut);
+  }, [nodes, edges, applyLayout]);
+
+  // ==========================================================================
+  // Faza 3: Krawedzie (edges)
+  // ==========================================================================
+  const runPhase3Edges = async () => {
+    if (!activeProjectId) return;
+    setPlannerPhase('phase3');
+
+    const readyNodes = nodes.filter(n => n.status === 'ready');
+    if (readyNodes.length === 0) {
+      setPlannerPhase('done');
+      return;
+    }
+
+    try {
+      const prompt = `Znajdz zaleznosci miedzy tymi zadaniami. Zwroc TYLKO JSON:
+{
+  "edges": [
+    { "source_node_id": "ID1", "target_node_id": "ID2", "relation_type": "requires|depends_on|data_flow|sync", "label": "krotki opis" }
+  ]
+}
+WEZLY:
+${JSON.stringify(readyNodes)}`;
+
+      const phase3Msg: ExperimentalChatMessage = {
+        id: genId(),
+        project_id: activeProjectId,
+        conversation_id: activeConversationId || undefined,
+        role: 'user',
+        content: prompt,
+      };
+      const raw = await invokePlanner(plannerSystemPrompt, [phase3Msg], readyNodes, edges, specContent, plannerModel);
+      const jsonMatch = raw.match(/\{[\s\S]*"edges"[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const b = window.nexusBridge;
+        const newEdges: ExperimentalEdge[] = [];
+        for (const e of parsed.edges || []) {
+          const edge: ExperimentalEdge = {
+            id: genId(),
+            project_id: activeProjectId,
+            source_node_id: e.source_node_id,
+            target_node_id: e.target_node_id,
+            label: e.label || '',
+            relation_type: e.relation_type || 'depends_on',
+          };
+          newEdges.push(edge);
+          setEdges(prev => [...prev, edge]);
+          if (b?.expSaveEdge) await b.expSaveEdge({ edge });
+        }
+      }
+    } catch (err: any) {
+      setAiError(err.message);
+    }
+
+    // Auto-layout po krawedziach
+    runAutoLayout();
+    setPlannerPhase('done');
+  };
+
+  // ==========================================================================
+  // Faza 2: Dekompozycja wezlow
+  // ==========================================================================
+  const runPhase2Decompose = async () => {
+    if (!activeProjectId || !activeConversationId) return;
+    setPlannerPhase('phase2');
+
+    const nodesToProcess = nodes.filter(
+      n => (n.node_type === 'root' || n.node_type === 'domain' || n.node_type === 'component') && n.status !== 'ready'
+    );
+
+    if (nodesToProcess.length === 0) {
+      setPlannerPhase('phase3');
+      await runPhase3Edges();
+      return;
+    }
+
+    setPlannerProgress({ current: 0, total: nodesToProcess.length });
+
+    const b = window.nexusBridge;
+
+    for (let i = 0; i < nodesToProcess.length; i++) {
+      const wezel = nodesToProcess[i];
+      setPlannerProgress({ current: i + 1, total: nodesToProcess.length });
+
+      try {
+        const prompt = `Jestes Planerem Architektury. Twoim zadaniem jest rozbicie JEDNEGO wezla na podwezly.
+
+ZASADY:
+- Rozbij wezel na 2-6 podwezlow
+- Kazdy podwezel to konkretny, pojedynczy element
+- Tytul: max 5 slow
+- Tresc: 1-2 zdania
+- Jesli wezel jest juz konkretny i nie da sie rozbic → ustaw is_leaf: true
+
+GLOBALNY KONTEKST PROJEKTU:
+${JSON.stringify(globalContext)}
+
+BIEZACY WEZEL DO ROZBIENIA:
+${JSON.stringify(wezel)}
+
+AKTUALNE WEZLY (kontekst):
+${JSON.stringify(nodes)}
+
+Zwroc TYLKO JSON:
+{
+  "is_leaf": false,
+  "children": [
+    { "title": "...", "content": "...", "node_type": "component|task|integration", "status": "new", "parent_id": "${wezel.id}" }
+  ]
+}
+Jesli is_leaf = true, children = [].`;
+
+        const phase2Msg: ExperimentalChatMessage = {
+          id: genId(),
+          project_id: activeProjectId,
+          conversation_id: activeConversationId || undefined,
+          role: 'user',
+          content: prompt,
+        };
+        const raw = await invokePlanner(plannerSystemPrompt, [phase2Msg], nodes, edges, specContent, plannerModel);
+        const jsonMatch = raw.match(/\{[\s\S]*"is_leaf"[\s\S]*\}/);
+        if (!jsonMatch) continue;
+
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        if (parsed.is_leaf) {
+          const updated: ExperimentalNode = { ...wezel, status: 'ready' };
+          setNodes(prev => prev.map(n => n.id === wezel.id ? updated : n));
+          if (b?.expSaveNode) await b.expSaveNode({ node: updated });
+        } else if (parsed.children && parsed.children.length > 0) {
+          resetNodePos();
+          for (const child of parsed.children) {
+            const pos = nextNodePos();
+            const childNode: ExperimentalNode = {
+              id: genId(),
+              project_id: activeProjectId,
+              title: child.title,
+              content: child.content,
+              node_type: child.node_type || 'component',
+              status: child.status || 'new',
+              parent_id: wezel.id,
+              x: pos.x,
+              y: pos.y,
+              width: 240,
+              height: 100,
+              source_conversation_id: activeConversationId,
+            };
+            setNodes(prev => [...prev, childNode]);
+            if (b?.expSaveNode) await b.expSaveNode({ node: childNode });
+          }
+          const updated: ExperimentalNode = { ...wezel, status: 'ready' };
+          setNodes(prev => prev.map(n => n.id === wezel.id ? updated : n));
+          if (b?.expSaveNode) await b.expSaveNode({ node: updated });
+        }
+      } catch (err: any) {
+        setAiError(err.message);
+      }
+    }
+
+    setPlannerPhase('phase3');
+    await runPhase3Edges();
+  };
+
+  // ==========================================================================
+  // Faza 1: Generuj plan ze SPEC
+  // ==========================================================================
+  const runFullPlanFromSpec = async () => {
+    if (!activeProjectId || !activeConversationId || !specContent.trim()) return;
+    setAiError(null);
+    setPlannerPhase('phase1');
+    setPlannerProgress({ current: 1, total: 1 });
+
+    try {
+      const prompt = `Przeanalizuj ponizsza specyfikacje projektu. Zwroc TYLKO JSON:
+{
+  "project_name": "...",
+  "mandatory_stack": ["tech1", "tech2"],
+  "out_of_scope": ["rzecz1", "rzecz2"],
+  "actors": [{"role": "...", "description": "..."}],
+  "integrations": [{"system": "...", "type": "API", "purpose": "..."}],
+  "data_io": {"inputs": [...], "outputs": [...]}
+}
+SPEC: ${specContent}`;
+
+      const phase1Msg: ExperimentalChatMessage = {
+        id: genId(),
+        project_id: activeProjectId,
+        conversation_id: activeConversationId || undefined,
+        role: 'user',
+        content: prompt,
+      };
+      const reply = await invokeChat('Jestes analitykiem projektu. Generuj JSON.', [phase1Msg], chatModel);
+      const jsonMatch = reply.match(/\{[\s\S]*"project_name"[\s\S]*\}/);
+      if (!jsonMatch) {
+        setAiError('Phase 1: Nie udalo sie sparsowac odpowiedzi LLM');
+        setPlannerPhase('idle');
+        return;
+      }
+
+      const ctx: GlobalContext = JSON.parse(jsonMatch[0]);
+      setGlobalContext(ctx);
+
+      const b = window.nexusBridge;
+      if (b?.expSaveGlobalContext) await b.expSaveGlobalContext({ projectId: activeProjectId, context: ctx });
+
+      // Utworz wezel root
+      const rootNode: ExperimentalNode = {
+        id: genId(),
+        project_id: activeProjectId,
+        title: ctx.project_name,
+        content: 'Root project node',
+        node_type: 'root',
+        status: 'new',
+        parent_id: null,
+        x: 0,
+        y: 0,
+        width: 240,
+        height: 100,
+        source_conversation_id: activeConversationId,
+      };
+      setNodes(prev => [...prev, rootNode]);
+      if (b?.expSaveNode) await b.expSaveNode({ node: rootNode });
+
+      // Przejdz do fazy 2
+      await runPhase2Decompose();
+    } catch (err: any) {
+      setAiError(err.message);
+      setPlannerPhase('idle');
+    }
+  };
+
+  // ==========================================================================
+  // Faza 4 (dawny Planer): Diff z rozmowy z klasyfikacja intencji
+  // ==========================================================================
+  const runPhase4Diff = async () => {
     if (!activeProjectId || !activeConversationId) return;
     setAiError(null);
+    setPlannerPhase('phase4');
 
     const b = window.nexusBridge;
     let unprocessed: ExperimentalChatMessage[] = [];
@@ -343,6 +606,37 @@ export function ExperimentalCanvas() {
     }
 
     try {
+      const intentPrompt = `Przeanalizuj NOWE wiadomosci z czatu w kontekscie aktualnego planu.
+Najpierw okresl intencje:
+
+1. NONE — pytanie, dyskusja, brak zmian w planie
+2. REFINEMENT — doprecyzowanie istniejacego wezla
+3. STRUCTURAL — nowa funkcjonalnosc
+4. DESTRUCTIVE — wywala istniejaca galaz
+
+AKTUALNY PLAN (wezly):
+${JSON.stringify(nodes)}
+
+AKTUALNE POLACZENIA:
+${JSON.stringify(edges)}
+
+SPECYFIKACJA:
+${specContent}
+
+NOWE WIADOMOSCI:
+${JSON.stringify(unprocessed)}
+
+Zwroc TYLKO JSON:
+{
+  "intent_category": "NONE|REFINEMENT|STRUCTURAL|DESTRUCTIVE",
+  "reasoning": "krotkie uzasadnienie",
+  "operations": []
+}
+Jesli NONE → operations = []. 
+Jesli DESTRUCTIVE → usun cale galaz (parent_id chain).
+Jesli REFINEMENT → UPDATE na konkretnych wezlach.
+Jesli STRUCTURAL → ADD nowych wezlow.`;
+
       const raw = await invokePlanner(plannerSystemPrompt, unprocessed, nodes, edges, specContent, plannerModel);
       const result = parsePlannerResponse(raw);
 
@@ -352,9 +646,11 @@ export function ExperimentalCanvas() {
           project_id: activeProjectId,
           conversation_id: activeConversationId || undefined,
           role: 'system',
-          content: `[Planer] Nie rozpoznal operacji. Surowa odpowiedz:\n${raw.slice(0, 500)}`,
+          content: `[Planer] Brak operacji (intencja: NONE lub nie rozpoznano). Surowa odpowiedz:\n${raw.slice(0, 500)}`,
         };
         setMessages(prev => [...prev, sysMsg]);
+        if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: sysMsg });
+        setPlannerPhase('idle');
         return;
       }
 
@@ -374,6 +670,7 @@ export function ExperimentalCanvas() {
       };
       setMessages(prev => [...prev, errMsg]);
     }
+    setPlannerPhase('idle');
   };
 
   // ==========================================================================
@@ -427,6 +724,58 @@ export function ExperimentalCanvas() {
       }
     }
     setDiffProposal(null);
+
+    // Auto-layout po zatwierdzeniu diffa
+    runAutoLayout();
+  };
+
+  // ==========================================================================
+  // Generowanie notatki z wiadomosci AI
+  // ==========================================================================
+  const generateNote = async (message: ExperimentalChatMessage) => {
+    if (!activeProjectId || !activeConversationId) return;
+    setAiError(null);
+
+    try {
+      const prompt = `Utworz krotka notatke z tej wypowiedzi. Notatka ma byc maksymalnie 2 zdania, czytelna dla czlowieka. Zwroc JSON:
+{
+  "label": "tytul notatki",
+  "description": "tresc notatki"
+}
+
+WIADOMOSC:
+${message.content}`;
+
+      const reply = await invokeChat('Generujesz notatki.', [message], chatModel);
+      const jsonMatch = reply.match(/\{[\s\S]*"label"[\s\S]*"description"[\s\S]*\}/);
+      if (!jsonMatch) return;
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      const noteNode: ExperimentalNode = {
+        id: genId(),
+        project_id: activeProjectId,
+        title: parsed.label,
+        content: parsed.description,
+        node_type: 'note',
+        status: 'ready',
+        parent_id: null,
+        x: 200,
+        y: 200,
+        width: 240,
+        height: 100,
+        source_conversation_id: activeConversationId,
+        metadata: { author: 'ai', timestamp: new Date().toISOString(), associated_task_id: undefined },
+      };
+
+      const b = window.nexusBridge;
+      setNodes(prev => [...prev, noteNode]);
+      if (b?.expSaveNode) await b.expSaveNode({ node: noteNode });
+
+      // Auto-layout po dodaniu notatki
+      runAutoLayout();
+    } catch (err: any) {
+      setAiError(err.message);
+    }
   };
 
   // ==========================================================================
@@ -531,9 +880,10 @@ export function ExperimentalCanvas() {
     if (!activeProjectId) return;
     const proj = projects.find(p => p.id === activeProjectId);
     if (!proj) return;
-    const aiConfig: ExperimentalAIConfig = {
+    const aiConfig: ExperimentalAIConfig & { global_context?: GlobalContext } = {
       chatModel, plannerModel, chatSystemPrompt, mapPlannerSystemPrompt: plannerSystemPrompt,
     };
+    if (globalContext) aiConfig.global_context = globalContext;
     const updated = { ...proj, ai_config: aiConfig, updated_at: new Date().toISOString() };
     const b = window.nexusBridge;
     if (b?.expSaveProject) await b.expSaveProject({ project: updated });
@@ -641,6 +991,12 @@ export function ExperimentalCanvas() {
                 <button onClick={analyzeSpec} className="px-2.5 py-1 text-xs bg-gray-700 text-gray-200 rounded hover:bg-gray-600">
                   Analizuj z AI
                 </button>
+                <button onClick={runFullPlanFromSpec}
+                  disabled={plannerPhase !== 'idle' || !specContent.trim()}
+                  className="px-2.5 py-1 text-xs bg-blue-700 text-gray-200 rounded hover:bg-blue-600 disabled:opacity-40"
+                >
+                  Generuj plan ze SPEC
+                </button>
                 <button onClick={saveSpec} className="px-2.5 py-1 text-xs bg-gray-700 text-gray-200 rounded hover:bg-gray-600">
                   Zapisz
                 </button>
@@ -654,6 +1010,20 @@ export function ExperimentalCanvas() {
                 placeholder="# Plan projektu&#10;&#10;Opisz architekture, komponenty, technologie..."
               />
             </div>
+            {/* Progress bar planowania */}
+            {plannerPhase !== 'idle' && (
+              <div className="px-3 py-2 border-t border-gray-700 bg-gray-900 shrink-0">
+                <div className="text-xs text-gray-400 mb-1">
+                  Phase: {plannerPhase} — {plannerProgress.current}/{plannerProgress.total}
+                </div>
+                <div className="w-full bg-gray-700 rounded h-2 overflow-hidden">
+                  <div
+                    className="bg-blue-500 h-full rounded transition-all duration-300"
+                    style={{ width: `${plannerProgress.total > 0 ? (plannerProgress.current / plannerProgress.total) * 100 : plannerPhase === 'phase1' ? 15 : plannerPhase === 'phase3' ? 70 : plannerPhase === 'done' ? 100 : 40}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -719,13 +1089,14 @@ export function ExperimentalCanvas() {
             {nodes.map(node => {
               const isParent = nodes.some(n => n.parent_id === node.id);
               const depth = node.parent_id ? 1 : 0;
+              const borderClass = NODE_BORDER[node.node_type || ''] || 'border-gray-700';
 
               return (
                 <div
                   key={node.id}
                   className={`absolute bg-[#161616] border-2 rounded-lg group ${
-                    annotationNode === node.id ? 'border-blue-500' : 'border-gray-700 hover:border-gray-500'
-                  }`}
+                    annotationNode === node.id ? 'border-blue-500' : borderClass
+                  } ${node.node_type === 'root' ? 'font-bold' : ''}`}
                   style={{
                     left: node.x,
                     top: node.y,
@@ -762,6 +1133,20 @@ export function ExperimentalCanvas() {
 
                   <div className="px-3 py-2">
                     <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{node.content}</p>
+                    {node.node_type && (
+                      <span className="inline-block mt-1.5 text-[10px] uppercase tracking-wider text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
+                        {node.node_type}
+                      </span>
+                    )}
+                    {node.status && (
+                      <span className={`inline-block mt-1.5 ml-1.5 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                        node.status === 'ready' ? 'text-green-500 bg-green-900/30' :
+                        node.status === 'in_progress' ? 'text-yellow-500 bg-yellow-900/30' :
+                        'text-gray-500 bg-gray-800'
+                      }`}>
+                        {node.status}
+                      </span>
+                    )}
                   </div>
 
                   {annotationNode === node.id && (
@@ -794,7 +1179,7 @@ export function ExperimentalCanvas() {
             {nodes.length === 0 && activeProject && (
               <div data-canvas="empty" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                 <p className="text-base text-gray-500">Brak wezlow na mapie.</p>
-                <p className="text-sm text-gray-600 mt-2">Napisz cos w czacie, a nastepnie uzyj Planera.</p>
+                <p className="text-sm text-gray-600 mt-2">Napisz cos w czacie, a nastepnie uzyj Planera lub wygeneruj plan ze SPEC.</p>
               </div>
             )}
           </div>
@@ -839,6 +1224,14 @@ export function ExperimentalCanvas() {
                   <div className={`whitespace-pre-wrap break-words ${m.role === 'user' ? 'text-gray-100' : m.role === 'system' ? 'text-yellow-600' : 'text-gray-300'}`}>
                     {m.content}
                   </div>
+                  {/* Przycisk Notatka dla wiadomosci AI */}
+                  {m.role === 'ai' && (
+                    <button
+                      onClick={() => generateNote(m)}
+                      disabled={plannerPhase !== 'idle'}
+                      className="mt-1 text-xs px-2 py-0.5 text-gray-500 hover:text-blue-400 rounded hover:bg-gray-800 transition-colors disabled:opacity-40"
+                    >[Notatka]</button>
+                  )}
                 </div>
               ))}
               {chatLoading && <div className="text-sm text-gray-500 animate-pulse">Asystent odpowiada...</div>}
@@ -864,8 +1257,8 @@ export function ExperimentalCanvas() {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={runPlanner}
-                  disabled={plannerLoading || messages.length === 0}
+                  onClick={runPhase4Diff}
+                  disabled={plannerLoading || messages.length === 0 || plannerPhase !== 'idle'}
                   className="flex-1 px-3 py-2 bg-gray-700 text-gray-200 text-sm rounded hover:bg-gray-600 disabled:opacity-40 border border-gray-600"
                 >
                   {plannerLoading ? 'Planowanie...' : 'Przebuduj plan z rozmowy'}
