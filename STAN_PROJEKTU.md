@@ -1,15 +1,15 @@
 # RAPORT STANU SYSTEMU NEXUS
-**Dokumentacja Techniczna i Architektoniczna (Stan na dzień: 30.06.2026)**
+**Dokumentacja Techniczna i Architektoniczna (Stan na dzień: 02.07.2026)**
 **Przeznaczenie:** Referencja deweloperska dla agentów AI / Systemy RAG
 
 ---
 
 ## 1. METADANE PROJEKTU
-*   **Nazwa aplikacji:** `nexus-system` (w trakcie procesu rebrandingowego i przebudowy fundamentów)
+*   **Nazwa aplikacji:** `nexus-system` (w trakcie procesu stabilizacji po audycie i przebudowy fundamentów)
 *   **Architektura:** Electron (Main Process) + React 19 (Renderer Process) + Vite + TypeScript
 *   **Lokalizacja repozytorium:** `c:/Users/Ksawier/Pictures/Screenshots/nexus`
-*   **Główny plik bazy danych:** `nexus.workspace.json` (przechowywany lokalnie w wybranym przez użytkownika katalogu roboczym)
-*   **Faza projektu:** **DISCOVERY / GATHERING THOUGHTS** (faza projektowania nowej koncepcji zapisu i strukturalizacji danych, wstrzymane aktywne wdrażanie kodu produkcyjnego)
+*   **Główny plik bazy danych:** `nexus.workspace.json` oraz relacyjna baza SQLite (przechowywane lokalnie w wybranym przez użytkownika katalogu roboczym)
+*   **Faza projektu:** **STABILIZACJA ARCHITEKTONICZNA & SECURITY HARDENING / WDROŻENIE AUDYTU** (ukończono 100% zaleceń krytycznych i architektonicznych z audytu bezpieczeństwa, wzmocniono potoki tła Playwright i Useme AI Automation)
 
 ---
 
@@ -133,6 +133,25 @@ Wiele funkcjonalności zostało **deaktywowanych w warstwie UI/nawigacji**, ale 
 | [src/components/TopNavigation.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/TopNavigation.tsx) | Zmiana struktury menu | Usunięto przycisk "Knowledge Base" oraz opcje "Agent Logs", "RLHF Draft", "Diagram (Mermaid)" z dropdownu "More". | Uproszczenie nawigacji górnej dla użytkownika. |
 | [src/types.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/types.ts) | Zmiana typu | Usunięto wartość `'draft'` z typu `ViewMode`. | Synchronizacja typów TypeScript z wyłączonymi widokami. |
 | [src/renderer/components/agents/AgentPresets.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/AgentPresets.ts) | Zmiana konfiguracji | Usunięto `OutputDestinationType.KNOWLEDGE` z tablicy `allowedDestinations`. | Zabezpieczenie przed samowolnym zapisem agentów do Bazy Wiedzy. |
+
+---
+
+## 4.1. HARDENING BEZPIECZEŃSTWA I ARCHITEKTURY (REALIZACJA AUDYTU 02.07.2026)
+W ramach kompleksowego audytu bezpieczeństwa i stabilności systemu Nexus wdrożono deterministyczne poprawki wyeliminowujące podatności krytyczne oraz wady architektoniczne procesów tła:
+
+### A. Poprawki Bezpieczeństwa (Security Fixes)
+1. **Wyciek Kluczy API ([src/shared/types/schema.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/shared/types/schema.ts#L81-82)):** Usunięto wpisane otwartym tekstem klucze API DeepSeek. Aplikacja pobiera je wysoce bezpiecznie z systemowych zmiennych środowiskowych (`process.env.DEEPSEEK_FLASH_API_KEY`, `process.env.DEEPSEEK_PRO_API_KEY`).
+2. **Podatność SQL Injection ([src/main/storage/StorageEngine.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/storage/StorageEngine.ts)):** Wdrożono rygorystyczny strażnik wyrażeń regularnych (`^[a-zA-Z0-9_]+$`) weryfikujący nazwy tabel przed wykonaniem zapytania `PRAGMA table_info()`.
+3. **Zagrożenie Command Injection ([src/main/ipc/usemeHandlers.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ipc/usemeHandlers.ts)):** Zastąpiono niestabilne `exec(..., { shell: true })` bezpiecznym wywołaniem `spawn(cmd, ['tsx', 'src/index.ts'], { shell: false })` z automatyczną detekcją powłoki Windows (`npx.cmd`).
+
+### B. Poprawki Niezawodności i Stanu (Core & UI Reliability)
+4. **Zabezpieczenie przed Crashem Streamingu AI ([src/main/ai/OpenAIApiAdapter.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ai/OpenAIApiAdapter.ts)):** Dodano weryfikację istnienia readera (`if (reader) reader.releaseLock();`) w bloku `finally` oraz wczesny powrót przy braku strumienia body HTTP.
+5. **Kolejność Operacji w Panelu Recenzji Useme ([src/renderer/store/usemeStore.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/store/usemeStore.ts)):** Naprawiono błąd race condition wyliczania statusu robota – najpierw odfiltrowywana jest lista `pendingReviews`, a dopiero na podstawie nowo wyliczonego rozmiaru wyznaczany jest stan `RUNNING` lub `AWAITING_REVIEW`.
+
+### C. Hardening Silnika Automatyzacji i Potoków DAG (`src/main/core/`)
+6. **Persystencja Pamięci Kursorowej ([src/main/core/AutomationEngine.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/AutomationEngine.ts)):** Przemodelowano `cursorStore` z czystej pamięci RAM na trwały zapis relacyjny do pliku na dysku (`data/cursor_store.json`). Zapewnia to odporność na resety aplikacji i eliminuje ryzyko ponownego wysyłania ofert na te same zlecenia Useme.
+7. **Iteracyjne Dopasowywanie Nazw Plików ([src/main/core/AutomationEngine.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/AutomationEngine.ts)):** Zaktualizowano algorytm `cleanBase` o pętlę `while (prev !== cleaned)`, która całkowicie oczyszcza wielokrotne, zagnieżdżone dopiski systemowe plików (np. `raport - Copy (2).pdf`).
+8. **Fail-Fast w Potoku Wykonawczym ([src/main/core/PipelineExecutor.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/PipelineExecutor.ts)):** Dodano rygorystyczne przerywanie pętli topologicznej DAG natychmiast po wystąpieniu błędu w dowolnym węźle (gdy `abortOnError !== false`), chroniąc potok przed kaskadowym błędnym przetwarzaniem.
 
 ---
 
