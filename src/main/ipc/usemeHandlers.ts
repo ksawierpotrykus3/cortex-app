@@ -34,7 +34,22 @@ export class UsemeHandlerManager {
   private mainWindow: BrowserWindow | null = null;
 
   private getEngineDir(): string {
+    if (process.env.USEME_AUTOMATION_DIR && fs.existsSync(process.env.USEME_AUTOMATION_DIR)) {
+      return process.env.USEME_AUTOMATION_DIR;
+    }
     const appPath = app.getAppPath();
+    const candidates = [
+      path.resolve(appPath, '..', 'useme-ai-automation'),
+      path.resolve(process.cwd(), '..', 'useme-ai-automation'),
+      path.resolve(process.cwd(), 'useme-ai-automation'),
+      'C:/Users/Ksawier/Pictures/Screenshots/useme-ai-automation',
+      path.resolve(app.getPath('home'), 'Pictures', 'Screenshots', 'useme-ai-automation')
+    ];
+    for (const cand of candidates) {
+      if (fs.existsSync(cand)) {
+        return cand;
+      }
+    }
     return path.resolve(appPath, '..', 'useme-ai-automation');
   }
 
@@ -64,7 +79,7 @@ export class UsemeHandlerManager {
       cwd: engineDir,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: false,
+      shell: process.platform === 'win32',
     });
 
     this.process = child;
