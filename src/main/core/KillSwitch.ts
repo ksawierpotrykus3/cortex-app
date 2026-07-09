@@ -44,7 +44,7 @@ export class KillSwitch {
     // Count and stop everything
     let agents = 0, pipelines = 0, workflows = 0;
     for (const [id, svc] of this.stoppables) {
-      svc.stop();
+      try { svc.stop(); } catch { /* ignore individual stop failures */ }
       if (id.startsWith('agent:')) agents++;
       else if (id.startsWith('pipeline:')) pipelines++;
       else if (id.startsWith('workflow:')) workflows++;

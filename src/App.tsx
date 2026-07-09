@@ -7,8 +7,6 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { LeftSidebar } from "./components/LeftSidebar";
 import { TopNavigation } from "./components/TopNavigation";
 import { NexusCanvas, NexusCanvasHandle } from "./components/NexusCanvas";
-import { LabTodo } from "./components/LabTodo";
-import { LabWriting } from "./components/LabWriting";
 import { Sandbox } from "./components/Sandbox";
 import { RawFragmentsView } from "./components/RawFragmentsView";
 import { RightPanel } from "./components/RightPanel";
@@ -25,6 +23,7 @@ import { LogViewer } from "./components/LogViewer";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { UsemeContainer } from "./components/useme/UsemeContainer";
 import { ExperimentalCanvas } from "./components/ExperimentalCanvas";
+import { SystemPanel } from "./components/SystemPanel";
 import { ViewMode, RightPanelState, ModalState, NexusNode, NexusLink, Task, WritingDraft, ManuscriptFolder, ManuscriptTab, ManuscriptMeta, FeedbackEntry, WikiArticle } from "./types";
 import { uid } from "./utils/ids";
 import { useFileSystemWatcher } from "./fs";
@@ -377,9 +376,7 @@ export function App() {
     feedback, wikiArticles, isLoaded,
   ]);
 
-  const setLabMode = (mode: "todo" | "writing") => {
-    setActiveView(`lab-${mode}` as ViewMode);
-  };
+
 
   const handleNodeSelect = (id: string | null) => {
     setSelectedNodeId(id);
@@ -639,26 +636,13 @@ export function App() {
               />
           )}
 
-          {activeView === "lab-todo" && <LabTodo setLabView={setLabMode} tasks={tasks} setTasks={setTasks} />}
-          {activeView === "lab-writing" && (
-            <LabWriting
-              setLabView={setLabMode}
-              drafts={drafts}
-              setDrafts={setDrafts}
-              manuscriptFolders={manuscriptFolders}
-              setManuscriptFolders={setManuscriptFolders}
-              manuscriptTabs={manuscriptTabs}
-              setManuscriptTabs={setManuscriptTabs}
-              manuscriptMetas={manuscriptMetas}
-              setManuscriptMetas={setManuscriptMetas}
-            />
-          )}
           {activeView === "sandbox" && <Sandbox />}
 
           {/* Useme Automation Engine */}
           {activeView === "useme" && <UsemeContainer />}
           {/* Tryb Eksperymentalny */}
           {activeView === "experimental" && <ExperimentalCanvas />}
+        {activeView === "system" && <SystemPanel />}
           {activeView === "raw-fragments" && (
             <RawFragmentsView 
                 nodes={nodes} 

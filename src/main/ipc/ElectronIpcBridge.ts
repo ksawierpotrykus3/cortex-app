@@ -1,7 +1,7 @@
-// ============================================================================
-// NEXUS — ElectronIpcBridge (Phase 1)
-// Rejestruje IPC handlery dla agentów: CRUD, execute, stop
-// Używa ipcMain.handle (invoke/promise) dla komend
+﻿// ============================================================================
+// NEXUS ÔÇö ElectronIpcBridge (Phase 1)
+// Rejestruje IPC handlery dla agent├│w: CRUD, execute, stop
+// U┼╝ywa ipcMain.handle (invoke/promise) dla komend
 // ============================================================================
 
 import { spawn } from 'child_process';
@@ -29,26 +29,26 @@ import { IAIProvider } from '../ai/IAIProvider';
 import { rateLimiter } from '../ai/RateLimiter';
 import { UsemeHandlerManager, registerUsemeHandlers } from './usemeHandlers';
 
-/** Zastępuje access token w URL-u placeholderem [REDACTED] */
+/** Zast─Öpuje access token w URL-u placeholderem [REDACTED] */
 function sanitizeUrl(url: string, token: string | undefined): string {
   if (!token) return url;
   return url.replace(token, '[REDACTED]');
 }
 
-/** #S6: Sanityzacja nazwy brancha — tylko dozwolone znaki */
+/** #S6: Sanityzacja nazwy brancha ÔÇö tylko dozwolone znaki */
 function sanitizeBranchName(name: string): string {
   // Git branch: litery, cyfry, . - _ /
   return name.replace(/[^a-zA-Z0-9._\-\/]/g, '');
 }
 
-/** #S6: Sanityzacja ścieżki pliku dla git diff */
+/** #S6: Sanityzacja ┼Ťcie┼╝ki pliku dla git diff */
 function sanitizeGitPath(file: string): string {
-  // Pozwala tylko na bezpieczne znaki w ścieżce
+  // Pozwala tylko na bezpieczne znaki w ┼Ťcie┼╝ce
   if (/[/\\]\.\.([/\\]|$)/.test(file)) return '';
   return file.replace(/[^a-zA-Z0-9._\-\/\\@]/g, '');
 }
 
-/** Wykonuje komendę git przez spawn — bezpiecznie, bez shell injection */
+/** Wykonuje komend─Ö git przez spawn ÔÇö bezpiecznie, bez shell injection */
 function gitSpawn(args: string[], opts: { cwd?: string; env?: Record<string, string> }): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn('git', args, {
@@ -84,7 +84,7 @@ export class ElectronIpcBridge {
     for (const [, adapter] of this.providerRegistry['providers'] ?? []) {
       if (adapter.isConfigured()) return adapter;
     }
-    // Ostateczność: pierwszy z listy (nawet bez klucza)
+    // Ostateczno┼Ť─ç: pierwszy z listy (nawet bez klucza)
     const first = this.providerRegistry['providers']?.values().next().value;
     if (first) return first;
     return null;
@@ -131,9 +131,9 @@ export class ElectronIpcBridge {
   // Git Helpers
   // =========================================================================
 
-  /** Wykonuje komendę git w repozytorium przez spawn — BRAK shell injection.
+  /** Wykonuje komend─Ö git w repozytorium przez spawn ÔÇö BRAK shell injection.
    *  Opcjonalny `accessToken` jest przekazywany przez http.extraHeader zamiast w URL-u,
-   *  dzięki czemu nie trafia do logów procesu / menedżera zadań. */
+   *  dzi─Öki czemu nie trafia do log├│w procesu / mened┼╝era zada┼ä. */
   private async gitExec(args: string[], accessToken?: string): Promise<{ stdout: string; stderr: string }> {
     const opts: { cwd?: string; env?: Record<string, string> } = {};
     if (this.repoPath) { opts.cwd = this.repoPath; }
@@ -183,7 +183,7 @@ export class ElectronIpcBridge {
     return stdout.trim();
   }
 
-  /** Ładuje GitConfig z JSON backupu (jeśli istnieje) */
+  /** ┼üaduje GitConfig z JSON backupu (je┼Ťli istnieje) */
   private loadGitConfig(): void {
     try {
       const configPath = path.join(this.repoPath || process.cwd(), '..', 'data', 'config', 'git-config.json');
@@ -199,14 +199,14 @@ export class ElectronIpcBridge {
   private checkGitPermission(agentId?: string, requireWrite: boolean = false): void {
     if (!agentId) return; // UI calls without agent context are always allowed
     const agent = this.orchestrator.getAgent(agentId);
-    if (!agent) return; // Unknown agent — allow (should not happen)
+    if (!agent) return; // Unknown agent ÔÇö allow (should not happen)
     const perms = agent.permissions;
-    if (!perms) return; // No permissions set — allow (legacy behavior)
+    if (!perms) return; // No permissions set ÔÇö allow (legacy behavior)
     if (!perms.gitAccess) {
-      throw new Error(`Agent ${agentId} (${agent.name}) nie ma uprawnień Git Access. Włącz w panelu Uprawnienia.`);
+      throw new Error(`Agent ${agentId} (${agent.name}) nie ma uprawnie┼ä Git Access. W┼é─ůcz w panelu Uprawnienia.`);
     }
     if (requireWrite && !perms.gitWrite) {
-      throw new Error(`Agent ${agentId} (${agent.name}) nie ma uprawnień Git Write. Włącz w panelu Uprawnienia.`);
+      throw new Error(`Agent ${agentId} (${agent.name}) nie ma uprawnie┼ä Git Write. W┼é─ůcz w panelu Uprawnienia.`);
     }
   }
 
@@ -662,7 +662,7 @@ export class ElectronIpcBridge {
     this.ipc.handle('logs:get', async (_event, payload?: { cursor?: string | null; limit?: number }) => {
       try {
         const limit = payload?.limit || 50;
-        // Get logs from storage — for now return empty (placeholder)
+        // Get logs from storage ÔÇö for now return empty (placeholder)
         // TODO: implement actual log storage and retrieval
         return { entries: [], nextCursor: null, hasMore: false };
       } catch (error) {
@@ -1009,7 +1009,7 @@ export class ElectronIpcBridge {
           this.pipelineExecutor.stop(p.id);
         }
         this.killSwitch.register('engine:all', 'All engines', () => {
-          // No-op — already stopped above
+          // No-op ÔÇö already stopped above
         });
         return state;
       } catch (err) {
@@ -1081,7 +1081,7 @@ export class ElectronIpcBridge {
         // Simulate workflow execution
         const wf = payload.workflow;
         if (!wf.actions || wf.actions.length === 0) {
-          warnings.push('Workflow nie ma żadnych akcji');
+          warnings.push('Workflow nie ma ┼╝adnych akcji');
         }
 
         let estimatedTokens = 0;
@@ -1214,7 +1214,7 @@ export class ElectronIpcBridge {
           return { success: false, error: 'Brak URL repozytorium. Skonfiguruj w ustawieniach.' };
         }
         if (!this.repoPath) {
-          return { success: false, error: 'Brak ścieżki repozytorium.' };
+          return { success: false, error: 'Brak ┼Ťcie┼╝ki repozytorium.' };
         }
         await this.gitExec(['ls-remote', '--heads', this.gitConfig.remoteUrl], this.gitConfig.accessToken);
         return { success: true };
@@ -1286,7 +1286,7 @@ export class ElectronIpcBridge {
         if (payload.all) {
           await this.gitExec(['add', '-A']);
         }
-        // Commit message is passed as separate arg — no shell escaping needed
+        // Commit message is passed as separate arg ÔÇö no shell escaping needed
         const { stdout } = await this.gitExec(['commit', '-m', payload.message]);
         return { success: true, error: undefined };
       } catch (err: any) {
@@ -1312,7 +1312,7 @@ export class ElectronIpcBridge {
 
     this.ipc.handle('git:pull', async (_event, payload?: { branch?: string; agentId?: string }) => {
       try {
-        // git:pull is an infra operation — no agent permission check needed
+        // git:pull is an infra operation ÔÇö no agent permission check needed
         // (unlike git:status/log/diff which require gitAccess)
         const remoteUrl = this.gitConfig.remoteUrl;
         if (!remoteUrl) {
@@ -1371,9 +1371,9 @@ export class ElectronIpcBridge {
     this.ipc.handle('nvidia:set-keys', async (_event, payload: { keys: string[] }) => {
       try {
         if (!Array.isArray(payload.keys)) return { success: false, error: 'Invalid payload: keys must be an array' };
-        // Walidacja: każdy klucz musi być stringiem
+        // Walidacja: ka┼╝dy klucz musi by─ç stringiem
         const validKeys = payload.keys.filter(k => typeof k === 'string' && k.trim().length > 0);
-        // Upewnij się że katalog istnieje
+        // Upewnij si─Ö ┼╝e katalog istnieje
         const keysDir = path.dirname(this.nvidiaKeysPath);
         if (!fs.existsSync(keysDir)) fs.mkdirSync(keysDir, { recursive: true });
         fs.writeFileSync(this.nvidiaKeysPath, JSON.stringify(validKeys, null, 2), 'utf-8');
@@ -1388,7 +1388,7 @@ export class ElectronIpcBridge {
       try {
         const resp = await fetch(`http://localhost:${payload.port}/v1/models`, { signal: AbortSignal.timeout(3000) });
         const ok = resp.ok;
-        // Spróbuj odczytać model z odpowiedzi
+        // Spr├│buj odczyta─ç model z odpowiedzi
         let modelName = '';
         try { const json = await resp.json(); if (json?.data?.[0]?.id) modelName = json.data[0].id; } catch {}
         return { alive: ok, model: modelName, port: payload.port };
@@ -1456,7 +1456,7 @@ export class ElectronIpcBridge {
   }
 
   // =========================================================================
-  // Git Scheduler (#23 — cyclic pull/push)
+  // Git Scheduler (#23 ÔÇö cyclic pull/push)
   // =========================================================================
 
   private startPullSchedule(ms: number): void {

@@ -6,6 +6,7 @@ export function ExecutionControl() {
     status,
     mode,
     logs,
+    error,
     startExecution,
     stopExecution,
     clearLogs,
@@ -72,6 +73,11 @@ export function ExecutionControl() {
           )}
           {status === 'ERROR' && (
             <span className="text-xs text-red-400">Error</span>
+          )}
+          {error && (
+            <span className="text-xs text-red-400 max-w-xs truncate" title={error}>
+              {error}
+            </span>
           )}
         </div>
 

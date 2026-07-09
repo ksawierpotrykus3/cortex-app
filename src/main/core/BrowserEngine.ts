@@ -88,6 +88,8 @@ export class BrowserEngine {
     }
 
     this.browser = await this.browserLaunching;
+    // fix(audyt): browserLaunching nie był resetowany — po disconnectcie stara Promise blokowała nowy browser
+    this.browserLaunching = null;
     return this.browser;
   }
 
@@ -104,9 +106,9 @@ export class BrowserEngine {
   }
 
   async close(): Promise<void> {
-    if (this.page && !this.page.isClosed()) await this.page.close();
-    if (this.context) await this.context.close();
-    if (this.browser && this.browser.isConnected()) await this.browser.close();
+    try { if (this.page && !this.page.isClosed()) await this.page.close(); } catch { /* ignore */ }
+    try { if (this.context) await this.context.close(); } catch { /* ignore */ }
+    try { if (this.browser && this.browser.isConnected()) await this.browser.close(); } catch { /* ignore */ }
     this.browser = null;
     this.context = null;
     this.page = null;
@@ -252,7 +254,7 @@ export class BrowserEngine {
             if (step.selector) {
               await page.locator(step.selector).hover();
             }
-            await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+            await page.evaluate((direction) => window.scrollBy(0, direction === 'up' ? -window.innerHeight : window.innerHeight), step.direction);
             await page.waitForTimeout(500);
             break;
           }

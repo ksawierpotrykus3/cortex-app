@@ -5,6 +5,18 @@
 // ============================================================================
 
 import { Agent, AgentOutput, AgentStatus, ProviderAuthConfig, ContextSource, ContextConfig, GitConfig, GitStatusResult, GitLogEntry, GitBranchInfo, Pipeline, FeedbackEntry, WorkspaceEntity, KillSwitchState, SearchResult, SearchConfig, DryRunResult, DryRunConfig, DownloadedFileRecord } from './schema';
+
+/** Public provider config without sensitive apiKey — safe for renderer consumption */
+export interface ProviderAuthConfigPublic {
+  provider: string;
+  label: string;
+  baseUrl?: string;
+  models: string[];
+  isBuiltin: boolean;
+  createdAt: string;
+  updatedAt: string;
+  hasApiKey: boolean;
+}
 import { WorkflowDefinition, WorkflowExecutionResult, WorkflowLogEntry, WorkflowMode } from './workflow';
 
 // ============================================================================
@@ -75,6 +87,9 @@ export interface CommandChannels {
   'git:schedule-status': { payload: void; response: { pullActive: boolean; pushActive: boolean; pullIntervalMs: number; pushIntervalMs: number } };
   'git:schedule-toggle': { payload: { action: 'pull' | 'push'; active: boolean }; response: { success: boolean } };
 
+  // Useme Automation
+  'useme:submit-decision': { payload: { jobId: string; decision: string; proposal?: string }; response: { success: boolean; error?: string } };
+
   // Browser operations (#27 Playwright)
   'browser:extract-dom': { payload: { url: string }; response: { success: boolean; title?: string; cleanText?: string; error?: string } };
   'browser:test-macro': { payload: { steps: any[]; inputs?: Record<string, any> }; response: { success: boolean; output?: any; error?: string } };
@@ -131,6 +146,20 @@ export interface CommandChannels {
   'experimental:global-context:save': { payload: { projectId: string; context: any }; response: {} };
   'experimental:global-context:get': { payload: { projectId: string }; response: any };
   'experimental:node:get-undecomposed': { payload: { projectId: string }; response: import('../../types').ExperimentalNode[] };
+
+  // Project Documents (Plan 01)
+  'experimental:document:import': { payload: { projectId: string; filePath: string }; response: { success: boolean; data?: any; error?: string } };
+  'experimental:document:get': { payload: { projectId: string }; response: any[] };
+  'experimental:document:delete': { payload: { id: string }; response: { success: boolean } };
+  'experimental:document:content': { payload: { id: string }; response: { success: boolean; content?: string; error?: string } };
+  'experimental:document:summarize': { payload: { documentId: string; content: string; tokenCount: number }; response: { success: boolean; summary?: string; error?: string } };
+
+  // System Tab (Plan 02)
+  'system:status': { payload: void; response: any };
+  'system:handlers': { payload: void; response: { channel: string; group: string; description: string }[] };
+  'system:scan-architecture': { payload: void; response: { nodes: { file: string; exports: string[] }[]; edges: { from: string; to: string; type: string }[]; hash: string } };
+  'system:get-logs': { payload: void; response: any[] };
+  'system:events-subscribe': { payload: void; response: { success: boolean } };
 }
 
 // ============================================================================
@@ -236,10 +265,6 @@ export interface NexusBridge {
   // Logs pagination (A7 fix)
   getLogs: (payload?: { cursor?: string | null; limit?: number }) => Promise<{ entries: Array<{ id: string; timestamp: number; payload: any; size: number }>; nextCursor: string | null; hasMore: boolean }>;
 
-  // NVIDIA Key Management
-  getNvidiaKeys: () => Promise<string[]>;
-  setNvidiaKeys: (payload: { keys: string[] }) => Promise<{ success: boolean; count?: number; error?: string }>;
-
   // Bridge Health Status
   bridgeHealth: (payload: { port: number }) => Promise<{ alive: boolean; model: string; port: number }>;
 
@@ -311,8 +336,11 @@ export interface NexusBridge {
   usemeReadPrompt: (payload: { filename: string }) => Promise<{ success: boolean; error?: string; content: string }>;
   usemeSavePrompt: (payload: { filename: string; content: string }) => Promise<{ success: boolean; error?: string }>;
 
+  usemeSubmitDecision: (payload: { jobId: string; decision: string; proposal?: string }) => Promise<{ success: boolean; error?: string }>;
+
   onUsemeLog: (callback: (data: { level: 'info' | 'warn' | 'error'; message: string; timestamp: string }) => void) => () => void;
   onUsemeReviewRequired: (callback: (data: { jobId: string; jobTitle: string; price: string; proposal: string; auditReport: string }) => void) => () => void;
+  onUsemeStatusChanged: (callback: (data: { status: string; error?: string }) => void) => () => void;
 
   // Experimental Mode (Etap 1)
   expGetTableInfo: (payload: { tableName: string }) => Promise<any[]>;
@@ -356,4 +384,18 @@ export interface NexusBridge {
   expSaveGlobalContext: (payload: { projectId: string; context: any }) => Promise<{}>;
   expGetGlobalContext: (payload: { projectId: string }) => Promise<any>;
   expGetUndecomposedNodes: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalNode[]>;
+
+  // Project Documents (Plan 01)
+  expImportDocument: (payload: { projectId: string; filePath: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
+  expGetDocuments: (payload: { projectId: string }) => Promise<any[]>;
+  expDeleteDocument: (payload: { id: string }) => Promise<{ success: boolean }>;
+  expGetDocumentContent: (payload: { id: string }) => Promise<{ success: boolean; content?: string; error?: string }>;
+  expSummarizeDocument: (payload: { documentId: string; content: string; tokenCount: number }) => Promise<{ success: boolean; summary?: string; error?: string }>;
+
+  // System Tab (Plan 02)
+  systemGetStatus: () => Promise<any>;
+  systemGetHandlers: () => Promise<{ channel: string; group: string; description: string }[]>;
+  systemScanArchitecture: () => Promise<{ nodes: { file: string; exports: string[] }[]; edges: { from: string; to: string; type: string }[]; hash: string }>;
+  systemGetLogs: () => Promise<any[]>;
+  systemSubscribeEvents: (callback: (event: any) => void) => () => void;
 }

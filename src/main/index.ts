@@ -4,7 +4,7 @@
 // Inicjalizuje AgentOrchestrator + StorageEngine + ElectronIpcBridge
 // ============================================================================
 
-import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn, ChildProcess } from 'child_process';
@@ -15,10 +15,11 @@ import { ProviderRegistry } from './ai/ProviderRegistry';
 import { AiHealthMonitor } from './ai/AiHealthMonitor';
 import { AgentOutput, AgentStatus } from '../shared/types/schema';
 import { UsemeHandlerManager, registerUsemeHandlers } from './ipc/usemeHandlers';
+import { config } from './config';
+import { initNexusSelfProject } from './services/NexusSelfAnalyzer';
 
 // === Constants =============================================================
 const IS_DEV = !app.isPackaged;
-// ROOT_DIR zawsze względem __dirname — w dev to src/main/, w production to asar/out/main/
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const RESOURCE_DIR = !IS_DEV
   ? path.join(process.resourcesPath, 'app.asar.unpacked')
@@ -27,63 +28,80 @@ const DATA_DIR = !IS_DEV
   ? path.join(app.getPath('userData'), 'NexusData')
   : path.join(ROOT_DIR, 'data');
 
+const DEEPSEEK_PROXY_DIR = path.join(ROOT_DIR, '..', 'deepseek-proxy-clean');
+
 // === State =================================================================
 let mainWindow: BrowserWindow | null = null;
 let orchestrator: AgentOrchestrator | null = null;
 let storage: StorageEngine | null = null;
 let ipcBridge: ElectronIpcBridge | null = null;
 let providerRegistry: ProviderRegistry | null = null;
-let nvidiaProcess: ChildProcess | null = null;
 let usemeManager: UsemeHandlerManager | null = null;
+let deepSeekProxyProcess: ChildProcess | null = null;
 
-// === NVIDIA-Bridge (własne proxy z rotacją kluczy) ===========================
-const NVIDIA_BRIDGE_PORT = 3456;
-const NVIDIA_BRIDGE_BASE_URL = `http://localhost:${NVIDIA_BRIDGE_PORT}/v1`;
-const NVIDIA_KEYS_DIR = path.join(DATA_DIR, 'nvidia-keys');
-const NVIDIA_KEYS_PATH = path.join(NVIDIA_KEYS_DIR, 'keys.json');
-const NVIDIA_PROXY_SCRIPT = path.join(__dirname, 'services', 'nvidia-bridge', 'proxy.cjs');
+// ============================================================================
+// DeepSeek Proxy
+// ============================================================================
+async function startDeepSeekProxy(): Promise<void> {
+  if (!config.deepseekProxy.enabled) return;
 
-async function startNvidiaBridge(): Promise<void> {
-  if (!fs.existsSync(NVIDIA_PROXY_SCRIPT)) {
-    console.debug('[NVIDIA-Bridge] proxy.js nie znaleziony — pomijam');
+  const healthUrl = config.deepseekProxy.healthUrl;
+  try {
+    const res = await fetch(healthUrl);
+    if (res.ok) {
+      console.log('[NEXUS] DeepSeek proxy already running on port', config.deepseekProxy.port);
+      return;
+    }
+  } catch { /* not running, start it */ }
+
+  const proxyScript = path.join(DEEPSEEK_PROXY_DIR, 'server.py');
+  if (!fs.existsSync(proxyScript)) {
+    console.warn('[NEXUS] DeepSeek proxy script not found at', proxyScript);
     return;
   }
-  // Upewnij się że katalog na klucze istnieje
-  if (!fs.existsSync(NVIDIA_KEYS_DIR)) {
-    fs.mkdirSync(NVIDIA_KEYS_DIR, { recursive: true });
-  }
-  // Inicjalizuj pusty keys.json jeśli nie istnieje
-  if (!fs.existsSync(NVIDIA_KEYS_PATH)) {
-    fs.writeFileSync(NVIDIA_KEYS_PATH, '[]', 'utf-8');
-  }
 
-  try {
-    const resp = await fetch(`${NVIDIA_BRIDGE_BASE_URL}/models`);
-    if (resp.ok) { /* console.debug('[NVIDIA-Bridge] już działa'); */ return; }
-  } catch { /* ok */ }
-
-  // Kopiuj proxy.js do data/nvidia-keys żeby czytało keys.json z tego samego folderu
-  const proxyInData = path.join(NVIDIA_KEYS_DIR, 'proxy.cjs');
-  if (!fs.existsSync(proxyInData) || fs.statSync(NVIDIA_PROXY_SCRIPT).mtimeMs > fs.statSync(proxyInData).mtimeMs) {
-    fs.copyFileSync(NVIDIA_PROXY_SCRIPT, proxyInData);
-  }
-
-  console.debug('[NVIDIA-Bridge] Uruchamianie...');
-  nvidiaProcess = spawn('node', [proxyInData], {
+  console.log('[NEXUS] Starting DeepSeek proxy...');
+  const proc = spawn('python', ['-u', proxyScript], {
+    cwd: DEEPSEEK_PROXY_DIR,
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: false, windowsHide: true,
+    shell: false,
   });
-  nvidiaProcess.stdout?.on('data', (d: Buffer) => { /* console.debug('[NVIDIA-Bridge]', d.toString().trim()); */ });
-  nvidiaProcess.stderr?.on('data', (d: Buffer) => { /* console.debug('[NVIDIA-Bridge:err]', d.toString().trim()); */ });
-  nvidiaProcess.on('exit', (code) => { /* console.debug(`[NVIDIA-Bridge] exit ${code}`); */ nvidiaProcess = null; });
-  for (let i = 0; i < 20; i++) {
-    await new Promise(r => setTimeout(r, 500));
-    try { const r = await fetch(`${NVIDIA_BRIDGE_BASE_URL}/models`); if (r.ok) { /* console.debug('[NVIDIA-Bridge] Gotowy!'); */ return; } } catch { /* wait */ }
+
+  deepSeekProxyProcess = proc;
+
+  proc.stdout?.on('data', (data: Buffer) => {
+    console.log(`[deepseek-proxy] ${data.toString().trim()}`);
+  });
+  proc.stderr?.on('data', (data: Buffer) => {
+    console.error(`[deepseek-proxy] ${data.toString().trim()}`);
+  });
+  proc.on('exit', (code) => {
+    console.log(`[NEXUS] DeepSeek proxy exited with code ${code}`);
+    deepSeekProxyProcess = null;
+  });
+
+  for (let i = 0; i < config.deepseekProxy.startupTimeoutMs / 1000; i++) {
+    try {
+      const res = await fetch(healthUrl);
+      if (res.ok) {
+        console.log('[NEXUS] DeepSeek proxy ready');
+        return;
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 1000));
   }
-  // console.warn('[NVIDIA-Bridge] Nie odpowiada po 10s');
+  console.warn('[NEXUS] DeepSeek proxy did not start within timeout');
 }
-function stopNvidiaBridge(): void {
-  if (nvidiaProcess) { console.debug('[NVIDIA-Bridge] Stop'); nvidiaProcess.kill('SIGTERM'); nvidiaProcess = null; }
+
+function stopDeepSeekProxy(): void {
+  const proc = deepSeekProxyProcess;
+  if (!proc) return;
+  if (process.platform === 'win32') {
+    spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { shell: false });
+  } else {
+    proc.kill('SIGTERM');
+  }
+  deepSeekProxyProcess = null;
 }
 
 // ============================================================================
@@ -91,9 +109,6 @@ function stopNvidiaBridge(): void {
 // ============================================================================
 function createMainWindow(): BrowserWindow {
   const preloadPath = path.join(__dirname, '..', 'preload', 'index.js');
-
-  // console.log('[NEXUS] preload path:', preloadPath);
-  // console.log('[NEXUS] preload exists:', fs.existsSync(preloadPath));
 
   const win = new BrowserWindow({
     width: 1400,
@@ -104,17 +119,14 @@ function createMainWindow(): BrowserWindow {
     backgroundColor: '#0a0e14',
     show: false,
     webPreferences: {
-      // === SECURITY ================================================
-      contextIsolation: true,   // Renderer ISOLATED from Node.js
-      nodeIntegration: false,   // No require() in renderer
-      sandbox: false,           // false because preload needs more
-      webSecurity: true,        // CORS
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      webSecurity: true,
       preload: preloadPath,
-      // ====================================================================
     },
   });
 
-  // Content Security Policy
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -140,7 +152,6 @@ function createMainWindow(): BrowserWindow {
     }
   });
 
-  // Load
   if (IS_DEV) {
     win.loadURL('http://localhost:3000');
   } else {
@@ -156,26 +167,20 @@ function createMainWindow(): BrowserWindow {
 async function bootstrap(): Promise<void> {
   console.log('====================================================');
   console.log('  NEXUS — Agent Orchestration System');
-  console.log('  Phase 1: Agents + UI');
   console.log('====================================================\n');
 
-  // === AI Bridge ===
-  await startNvidiaBridge(); // NVIDIA key rotator proxy
+  await startDeepSeekProxy();
 
-  // === Storage ===
   storage = new StorageEngine(DATA_DIR);
   await storage.init();
 
-  // === Provider Registry ===
-  const healthMonitor = new AiHealthMonitor(DATA_DIR);
+  const healthMonitor = new AiHealthMonitor(DATA_DIR, config.deepseekProxy.healthUrl);
   await healthMonitor.init();
   providerRegistry = new ProviderRegistry(healthMonitor);
   providerRegistry.setIpcSender((channel, data) => {
     mainWindow?.webContents.send(channel, data);
   });
-  // console.log('[NEXUS] ProviderRegistry:', providerRegistry.getConfigs().map(c => c.label).join(', '));
 
-  // === Agent Orchestrator ===
   orchestrator = new AgentOrchestrator({
     onStatusChange: (agentId, status) => {
       console.log(`[Orchestrator] ${agentId} → ${status}`);
@@ -194,57 +199,72 @@ async function bootstrap(): Promise<void> {
     },
   }, providerRegistry, storage, clipboard);
 
-  // === IPC Bridge ===
-  ipcBridge = new ElectronIpcBridge(ipcMain, orchestrator, storage, providerRegistry, ROOT_DIR, NVIDIA_KEYS_PATH);
+  ipcBridge = new ElectronIpcBridge(ipcMain, orchestrator, storage, providerRegistry, ROOT_DIR);
   ipcBridge.registerHandlers();
 
-  // === Useme Handlers ===
+  initNexusSelfProject(storage!, path.join(ROOT_DIR, 'src'), path.join(ROOT_DIR, 'STAN_PROJEKTU.md')).catch(err => console.warn('[NexusSelfAnalyzer] init error:', err));
+
   usemeManager = new UsemeHandlerManager();
   if (mainWindow) usemeManager.setMainWindow(mainWindow);
   registerUsemeHandlers(ipcMain, usemeManager);
 
-  // console.log('[NEXUS] System gotowy — AI Providers:', providerRegistry.getConfigs().length);
+  mainWindow = createMainWindow();
+  if (usemeManager && mainWindow) {
+    usemeManager.setMainWindow(mainWindow);
+  }
 }
 
 // ============================================================================
 // App Lifecycle
 // ============================================================================
-app.whenReady().then(async () => {
-  // Ensure data directories exist
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
 
-  mainWindow = createMainWindow();
-  try {
-    await bootstrap();
-    // Set mainWindow after bootstrap (usemeManager may have been created)
-    if (usemeManager && mainWindow) {
-      usemeManager.setMainWindow(mainWindow);
-    }
-  } catch (err) {
-    console.error('[NEXUS] Bootstrap failed:', err);
-  }
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = createMainWindow();
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
-}).catch(err => {
-  console.error('[NEXUS] App ready failed:', err);
-});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  app.whenReady().then(async () => {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    try {
+      await bootstrap();
+    } catch (err) {
+      console.error('[NEXUS] Bootstrap failed:', err);
+      dialog.showErrorBox('Nexus Bootstrap Error', String(err));
+      app.quit();
+      return;
+    }
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createMainWindow();
+      }
+    });
+  }).catch(err => {
+    console.error('[NEXUS] App ready failed:', err);
+    dialog.showErrorBox('Nexus Error', String(err));
     app.quit();
-  }
-});
+  });
 
-app.on('before-quit', () => {
-  orchestrator?.destroy();
-  storage?.destroy();
-  ipcBridge?.destroy();
-  usemeManager?.destroy();
-  stopNvidiaBridge();
-});
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+
+  app.on('before-quit', () => {
+    orchestrator?.destroy();
+    storage?.destroy();
+    ipcBridge?.destroy();
+    usemeManager?.destroy();
+    stopDeepSeekProxy();
+  });
+}

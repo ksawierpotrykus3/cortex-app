@@ -6,7 +6,7 @@ import { PromptRepository } from './PromptRepository';
 import { Terminal, BookOpen } from 'lucide-react';
 
 export function UsemeContainer() {
-  const { activeTab, setActiveTab, addLog } = useUsemeStore();
+  const { activeTab, setActiveTab, addLog, addReview } = useUsemeStore();
 
   // Listen for IPC events from main process
   useEffect(() => {
@@ -21,10 +21,21 @@ export function UsemeContainer() {
       });
     });
 
+    const cleanupReview = bridge.onUsemeReviewRequired((data: { jobId: string; jobTitle: string; price: string; proposal: string; auditReport: string }) => {
+      addReview({
+        jobId: data.jobId,
+        jobTitle: data.jobTitle,
+        price: data.price,
+        proposal: data.proposal,
+        auditReport: data.auditReport,
+      });
+    });
+
     return () => {
       cleanupLog?.();
+      cleanupReview?.();
     };
-  }, []);
+  }, [addLog, addReview]);
 
   return (
     <div className="flex flex-col h-full bg-zinc-950 text-zinc-100 border-t border-zinc-800">

@@ -8,7 +8,7 @@ import { AgentOrchestrator } from './AgentOrchestrator';
 import { evalCondition } from './ConditionEval';
 import { StorageEngine } from '../storage/StorageEngine';
 
-export type PipelineRunStatus = 'idle' | 'running' | 'completed' | 'failed' | 'stopped';
+export type PipelineRunStatus = 'idle' | 'running' | 'completed' | 'completed_with_errors' | 'failed' | 'stopped';
 
 export interface PipelineRunState {
   status: PipelineRunStatus;
@@ -148,6 +148,9 @@ export class PipelineExecutor {
    * Uruchamia pipeline.
    */
   async execute(pipeline: Pipeline): Promise<{ success: boolean; error?: string }> {
+    // Reentrancy guard
+    if (this.runs.has(pipeline.id)) throw new Error('Pipeline already running');
+
     const abortCtrl = new AbortController();
     this.abortController.set(pipeline.id, abortCtrl);
 
@@ -165,6 +168,17 @@ export class PipelineExecutor {
 
     try {
       const { sorted, cycles } = this.topologicalSort(pipeline.nodes, pipeline.connections);
+
+      // Validate connections — warn/throw if targetNodeId doesn't exist
+      const nodeIds = new Set(pipeline.nodes.map(n => n.id));
+      for (const conn of pipeline.connections) {
+        if (!nodeIds.has(conn.targetNodeId)) {
+          console.warn(`[PipelineExecutor] Connection target node "${conn.targetNodeId}" does not exist`);
+        }
+        if (!nodeIds.has(conn.sourceNodeId)) {
+          console.warn(`[PipelineExecutor] Connection source node "${conn.sourceNodeId}" does not exist`);
+        }
+      }
 
       if (cycles.length > 0) {
         runState.status = 'failed';
@@ -265,13 +279,13 @@ export class PipelineExecutor {
 
           case 'browser-automate': {
             // #27 Playwright Browser Automate
+            // fix(audyt): browser.close() poza finally — wyjątek w executeMacro zostawiał żywy proces Chromium
+            const { BrowserEngine } = await import('./BrowserEngine');
+            const browser = new BrowserEngine();
             try {
-              const { BrowserEngine } = await import('./BrowserEngine');
-              const browser = new BrowserEngine();
               const steps = node.config?.steps || [];
               const inputs = node.config?.inputs || {};
               const result = await browser.executeMacro(steps, inputs);
-              await browser.close();
 
               // Zapisz pobrane pliki do storage jeśli jest dostępny
               if (result.success && result.files && result.files.length > 0 && this.storage) {
@@ -291,6 +305,9 @@ export class PipelineExecutor {
               const msg = err instanceof Error ? err.message : String(err);
               runState.errors.set(node.id, msg);
               runState.nodeResults.set(node.id, `[ERROR] ${msg}`);
+            } finally {
+              // fix(audyt): browser.close() poza finally — wyjątek w executeMacro zostawiał żywy proces Chromium
+              browser.close().catch(() => {});
             }
             break;
           }
@@ -320,7 +337,11 @@ export class PipelineExecutor {
       }
 
       runState.progress = 1;
-      runState.status = runState.errors.size > 0 ? 'failed' : 'completed';
+      if (runState.errors.size > 0) {
+        runState.status = 'completed_with_errors';
+      } else {
+        runState.status = 'completed';
+      }
       return { success: runState.errors.size === 0, error: runState.errors.size > 0 ? 'Pipeline completed with errors' : undefined };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -348,7 +369,11 @@ export class PipelineExecutor {
       let skipped = false;
       if (nodeConfig.condition && nodeConfig.condition.mode !== 'always') {
         conditionResult = evalCondition(nodeConfig.condition, predecessorContext, { nodeResults: contextMap as any, currentNodeId: node.id });
-        skipped = conditionResult === (nodeConfig.condition.mode === 'skip-when-true');
+        if (nodeConfig.condition.mode === 'skip-when-true') {
+          skipped = conditionResult === true;
+        } else if (nodeConfig.condition.mode === 'skip-when-false') {
+          skipped = conditionResult === true;
+        }
       }
 
       // Symuluj output

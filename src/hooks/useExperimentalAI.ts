@@ -7,10 +7,13 @@ import type {
 
 export interface PlannerOperation {
   action: 'ADD' | 'UPDATE' | 'DELETE';
+  reason?: string;
   node?: {
     id?: string;
     title: string;
     content: string;
+    node_type?: string;
+    status?: string;
     parent_id?: string | null;
   };
   edge?: {
@@ -23,6 +26,7 @@ export interface PlannerOperation {
 
 export interface PlannerResult {
   operations: PlannerOperation[];
+  parseError?: boolean;
 }
 
 export function useExperimentalAI() {
@@ -81,10 +85,10 @@ export function useExperimentalAI() {
       try {
         return JSON.parse(jsonMatch[0]) as PlannerResult;
       } catch {
-        // ignore
+        return { operations: [], parseError: true };
       }
     }
-    return { operations: [] };
+    return { operations: [], parseError: true };
   }, []);
 
   return {
@@ -93,5 +97,6 @@ export function useExperimentalAI() {
     parsePlannerResponse,
     chatLoading,
     plannerLoading,
+    setPlannerLoading,
   };
 }

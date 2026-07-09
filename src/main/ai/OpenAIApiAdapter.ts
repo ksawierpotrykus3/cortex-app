@@ -12,6 +12,8 @@ interface OpenAIConfig {
   model?: string;
 }
 
+const STREAM_TIMEOUT_MS = 30_000;
+
 export class OpenAIApiAdapter implements IAIProvider {
   readonly name: string;
   private config: OpenAIConfig;
@@ -97,7 +99,12 @@ export class OpenAIApiAdapter implements IAIProvider {
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await Promise.race([
+          reader.read(),
+          new Promise<{ done: boolean; value?: never }>((_, reject) =>
+            setTimeout(() => reject(new Error('Stream read timeout')), STREAM_TIMEOUT_MS)
+          ),
+        ]) as { done: boolean; value?: Uint8Array };
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -111,6 +118,10 @@ export class OpenAIApiAdapter implements IAIProvider {
 
           try {
             const json = JSON.parse(trimmed.slice(6));
+            if (json.error) {
+              yield { token: '', done: true, error: json.error.message || 'Unknown SSE error' };
+              return;
+            }
             const delta = json.choices?.[0]?.delta?.content || '';
             if (delta) {
               yield { token: delta, done: false };
@@ -125,6 +136,10 @@ export class OpenAIApiAdapter implements IAIProvider {
       if (buffer.trim() && buffer.trim().startsWith('data: ')) {
         try {
           const json = JSON.parse(buffer.trim().slice(6));
+          if (json.error) {
+            yield { token: '', done: true, error: json.error.message || 'Unknown SSE error' };
+            return;
+          }
           const delta = json.choices?.[0]?.delta?.content || '';
           if (delta) {
             yield { token: delta, done: false };
@@ -132,7 +147,7 @@ export class OpenAIApiAdapter implements IAIProvider {
         } catch { /* skip */ }
       }
     } finally {
-      if (reader) reader.releaseLock();
+      try { reader?.releaseLock(); } catch { /* reader already released */ }
     }
 
     yield { token: '', done: true };

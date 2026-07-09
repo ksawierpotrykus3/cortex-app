@@ -104,12 +104,13 @@ const nexusBridge: NexusBridge = {
   // Changelog (Renderer → Main, fire-and-forget)
   // ========================================================================
 
+  // fix(audyt): send() nie działa z ipcMain.handle() — zmieniono na invoke()
   approveOutput: (payload) => {
-    ipcRenderer.send('changelog:approve', payload);
+    return ipcRenderer.invoke('changelog:approve', payload);
   },
 
   rejectOutput: (payload) => {
-    ipcRenderer.send('changelog:reject', payload);
+    return ipcRenderer.invoke('changelog:reject', payload);
   },
 
   // ========================================================================
@@ -145,10 +146,6 @@ const nexusBridge: NexusBridge = {
 
   // Bridge Health
   bridgeHealth: (payload) => ipcRenderer.invoke('bridge:health', payload || {}),
-
-  // Network Management (AI Bridges + Keys)
-  getNvidiaKeys: () => ipcRenderer.invoke('nvidia:get-keys'),
-  setNvidiaKeys: (payload) => ipcRenderer.invoke('nvidia:set-keys', payload),
 
   // ========================================================================
   // Context Builder (F6.2)
@@ -235,6 +232,7 @@ const nexusBridge: NexusBridge = {
   usemeListPrompts: () => ipcRenderer.invoke('useme:list-prompts'),
   usemeReadPrompt: (payload) => ipcRenderer.invoke('useme:read-prompt', payload),
   usemeSavePrompt: (payload) => ipcRenderer.invoke('useme:save-prompt', payload),
+  usemeSubmitDecision: (payload) => ipcRenderer.invoke('useme:submit-decision', payload),
 
   onUsemeLog: (callback) => {
     const channel = 'useme:log';
@@ -245,6 +243,12 @@ const nexusBridge: NexusBridge = {
 
   onUsemeReviewRequired: (callback) => {
     const channel = 'useme:review-required';
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on(channel, handler);
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
+  onUsemeStatusChanged: (callback) => {
+    const channel = 'useme:status-changed';
     const handler = (_event: any, data: any) => callback(data);
     ipcRenderer.on(channel, handler);
     return () => { ipcRenderer.removeListener(channel, handler); };
@@ -294,6 +298,26 @@ const nexusBridge: NexusBridge = {
   expSaveGlobalContext: (payload) => ipcRenderer.invoke('experimental:global-context:save', payload),
   expGetGlobalContext: (payload) => ipcRenderer.invoke('experimental:global-context:get', payload),
   expGetUndecomposedNodes: (payload) => ipcRenderer.invoke('experimental:node:get-undecomposed', payload),
+
+  // Project Documents (Plan 01)
+  expImportDocument: (payload) => ipcRenderer.invoke('experimental:document:import', payload),
+  expGetDocuments: (payload) => ipcRenderer.invoke('experimental:document:get', payload),
+  expDeleteDocument: (payload) => ipcRenderer.invoke('experimental:document:delete', payload),
+  expGetDocumentContent: (payload) => ipcRenderer.invoke('experimental:document:content', payload),
+  expSummarizeDocument: (payload) => ipcRenderer.invoke('experimental:document:summarize', payload),
+
+  // System Tab (Plan 02)
+  systemGetStatus: () => ipcRenderer.invoke('system:status'),
+  systemGetHandlers: () => ipcRenderer.invoke('system:handlers'),
+  systemScanArchitecture: () => ipcRenderer.invoke('system:scan-architecture'),
+  systemGetLogs: () => ipcRenderer.invoke('system:get-logs'),
+  systemSubscribeEvents: (callback) => {
+    const channel = 'system:event';
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on(channel, handler);
+    ipcRenderer.invoke('system:events-subscribe');
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
 };
 
 // ============================================================================

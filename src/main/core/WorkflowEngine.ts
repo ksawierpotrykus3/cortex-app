@@ -68,6 +68,7 @@ export class WorkflowEngine {
       const oldest = this.resultInsertionOrder.shift();
       if (oldest) {
         this.results.delete(oldest);
+        this.abortControllers.delete(oldest);
       }
     }
   }
@@ -305,7 +306,7 @@ export class WorkflowEngine {
       case 'eq': return a === b;
       case 'neq': return a !== b;
       case 'contains': return String(a).includes(String(b));
-      case 'matches': return new RegExp(String(b)).test(String(a));
+      case 'matches': try { return new RegExp(String(b)).test(String(a)); } catch { return false; }
       case 'exists': return a !== undefined && a !== null;
       case 'not_exists': return a === undefined || a === null;
       case 'true': return a === true;
@@ -497,7 +498,8 @@ export class WorkflowEngine {
     });
 
     this.registerAction('save_file', async (action, ctx) => {
-      const { path: filePath = '.', filename = 'output_{{date}}', format = 'md', overwrite = true } = action.config;
+      const { path: filePath = '.', filename: rawFilename = 'output_{{date}}', format = 'md', overwrite = true } = action.config;
+      const filename = this.renderTemplate(rawFilename, { output: ctx.output, agent: ctx.agent, workflow: ctx.workflow });
       const fullPath = `${filePath}/${filename}.${format}`.replace(/\/\//g, '/');
       const content = ctx.renderedTemplate || ctx.output.content || '';
 
@@ -584,11 +586,12 @@ export class WorkflowEngine {
     this.registerAction('call_api', async (action, ctx) => {
       const { url, method = 'GET', headers = {} } = action.config;
       if (!url) return { success: false, error: 'No URL configured' };
+      const isJsonBody = ['POST', 'PUT', 'PATCH'].includes(method);
       try {
         const response = await fetch(url, {
           method,
-          headers: { ...headers },
-          body: ['POST', 'PUT', 'PATCH'].includes(method) ? (ctx.renderedTemplate || undefined) : undefined,
+          headers: isJsonBody ? { 'Content-Type': 'application/json', ...headers } : { ...headers },
+          body: isJsonBody ? (ctx.renderedTemplate || undefined) : undefined,
         });
         return { success: response.ok, result: { status: response.status } };
       } catch (err) {

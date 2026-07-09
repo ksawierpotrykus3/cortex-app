@@ -103,7 +103,17 @@ export class StorageEngine {
     if (!this.db) return;
 
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS agents (
+      CREATE TABLE IF NOT EXISTS schema_version (
+        version INTEGER PRIMARY KEY,
+        applied_at TEXT DEFAULT (datetime('now'))
+      );
+    `);
+
+    const currentVersion = (this.db.prepare('SELECT MAX(version) as v FROM schema_version').get() as any)?.v || 0;
+
+    if (currentVersion < 1) {
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS agents (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT DEFAULT '',
@@ -143,6 +153,18 @@ export class StorageEngine {
         content='outputs',
         content_rowid='rowid'
       );
+
+      -- Triggers to keep FTS5 in sync with outputs table
+      CREATE TRIGGER IF NOT EXISTS outputs_ai AFTER INSERT ON outputs BEGIN
+        INSERT INTO outputs_fts(rowid, content, tags) VALUES (new.rowid, new.content, new.tags);
+      END;
+      CREATE TRIGGER IF NOT EXISTS outputs_ad AFTER DELETE ON outputs BEGIN
+        INSERT INTO outputs_fts(outputs_fts, rowid, content, tags) VALUES('delete', old.rowid, old.content, old.tags);
+      END;
+      CREATE TRIGGER IF NOT EXISTS outputs_au AFTER UPDATE ON outputs BEGIN
+        INSERT INTO outputs_fts(outputs_fts, rowid, content, tags) VALUES('delete', old.rowid, old.content, old.tags);
+        INSERT INTO outputs_fts(rowid, content, tags) VALUES (new.rowid, new.content, new.tags);
+      END;
 
       -- Projekty eksperymentalne
       CREATE TABLE IF NOT EXISTS experimental_projects (
@@ -240,7 +262,26 @@ export class StorageEngine {
         created_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
       );
+
+      -- Dokumenty projektu (Plan 01)
+      CREATE TABLE IF NOT EXISTS project_documents (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        file_type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        summary TEXT,
+        token_count INTEGER,
+        file_size INTEGER,
+        imported_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+      );
     `);
+      this.db.prepare('INSERT OR REPLACE INTO schema_version (version) VALUES (1)').run();
+    }
+
+    // Future migrations: add more version checks here
+    // if (currentVersion < 2) { ... INSERT INTO schema_version (version) VALUES (2); }
   }
 
   // =========================================================================
@@ -322,11 +363,13 @@ export class StorageEngine {
     // Per-day JSONL file
     const outputFile = path.join(outputDir, `${date}.jsonl`);
 
+    // fix(audyt): JSONL był zapisywany tylko gdy this.db istnieje - w trybie JSON-only outputy były tracone
+    // JSONL append-first for crash recovery — zawsze zapisywany
+    fs.appendFileSync(outputFile, JSON.stringify(output) + '\n', 'utf8');
+
     // Also save to SQLite
     if (this.db) {
       try {
-        // JSONL append-first for crash recovery
-        fs.appendFileSync(outputFile, JSON.stringify(output) + '\n', 'utf8');
         const stmt = this.db.prepare(`
           INSERT OR REPLACE INTO outputs (id, agent_id, agent_name, status, content, tokens_used, execution_ms,
             trigger_type, model_name, rating, approved, tags, error, created_at, completed_at)
@@ -476,6 +519,23 @@ export class StorageEngine {
       avgExecutionMs: Math.round(sumMs / total),
       errorRate: errors / total,
     };
+  }
+
+  updateOutput(id: string, updates: Partial<AgentOutput>): boolean {
+    if (this.db) {
+      const existing = this.db.prepare('SELECT * FROM outputs WHERE id = ?').get(id) as any;
+      if (!existing) return false;
+      const approved = updates.approved === null ? null : updates.approved ? 1 : 0;
+      const tags = updates.tags ? JSON.stringify(updates.tags) : existing.tags;
+      const content = updates.content !== undefined ? updates.content : existing.content;
+      const rating = updates.rating !== undefined ? updates.rating : existing.rating;
+      this.db.prepare(`
+        UPDATE outputs SET content = ?, rating = ?, approved = ?, tags = ?, completed_at = COALESCE(?, completed_at)
+        WHERE id = ?
+      `).run(content, rating, approved, tags, updates.completedAt || null, id);
+      return true;
+    }
+    return false;
   }
 
   deleteOutput(id: string): void {
@@ -876,6 +936,9 @@ export class StorageEngine {
       `);
       stmt.run(msg.id, msg.project_id, msg.conversation_id || null, msg.role, msg.content, msg.extracted_to_spec ? 1 : 0, msg.extracted_to_canvas ? 1 : 0, msg.id);
     }
+    const dir = path.join(this.basePath, 'experimental', 'chat');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    atomicWriteFileSync(path.join(dir, `${msg.id}.json`), JSON.stringify(msg, null, 2));
   }
 
   getExperimentalChatMessages(projectId: string, conversationId?: string): ExperimentalChatMessage[] {
@@ -897,7 +960,13 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    return [];
+    const dir = path.join(this.basePath, 'experimental', 'chat');
+    if (!fs.existsSync(dir)) return [];
+    const all = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalChatMessage)
+      .filter(m => m.project_id === projectId && (!conversationId || m.conversation_id === conversationId))
+      .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    return all;
   }
 
   getExperimentalUnprocessedMessages(projectId: string, conversationId?: string): ExperimentalChatMessage[] {
@@ -919,7 +988,13 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    return [];
+    const dir = path.join(this.basePath, 'experimental', 'chat');
+    if (!fs.existsSync(dir)) return [];
+    const all = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalChatMessage)
+      .filter(m => m.project_id === projectId && (!conversationId || m.conversation_id === conversationId) && !m.extracted_to_canvas)
+      .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    return all;
   }
 
   markExperimentalMessagesProcessed(messageIds: string[]): void {
@@ -957,6 +1032,9 @@ export class StorageEngine {
         node.collapsed ? 1 : 0, node.source_message_id || null, node.source_conversation_id || null, node.id
       );
     }
+    const dir = path.join(this.basePath, 'experimental', 'nodes');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    atomicWriteFileSync(path.join(dir, `${node.id}.json`), JSON.stringify(node, null, 2));
   }
 
   getExperimentalNodes(projectId: string): ExperimentalNode[] {
@@ -982,7 +1060,12 @@ export class StorageEngine {
         updated_at: r.updated_at,
       }));
     }
-    return [];
+    const dir = path.join(this.basePath, 'experimental', 'nodes');
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalNode)
+      .filter(n => n.project_id === projectId)
+      .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   }
 
   getExperimentalUndecomposedNodes(projectId: string): ExperimentalNode[] {
@@ -1027,6 +1110,9 @@ export class StorageEngine {
       `);
       stmt.run(conv.id, conv.project_id, conv.name, conv.id);
     }
+    const dir = path.join(this.basePath, 'experimental', 'conversations');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    atomicWriteFileSync(path.join(dir, `${conv.id}.json`), JSON.stringify(conv, null, 2));
   }
 
   getExperimentalConversations(projectId: string): ExperimentalConversation[] {
@@ -1039,12 +1125,66 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    return [];
+    const dir = path.join(this.basePath, 'experimental', 'conversations');
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalConversation)
+      .filter(c => c.project_id === projectId)
+      .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   }
 
   deleteExperimentalConversation(id: string): void {
     if (this.db) {
       this.db.prepare('DELETE FROM experimental_conversations WHERE id = ?').run(id);
+    }
+  }
+
+  // =========================================================================
+  // Project Documents (Plan 01)
+  // =========================================================================
+
+  importDocument(projectId: string, name: string, fileType: string, content: string, tokenCount: number, fileSize: number, summary?: string): any {
+    const id = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    if (this.db) {
+      try {
+        this.db.prepare(`
+          INSERT INTO project_documents (id, project_id, name, file_type, content, summary, token_count, file_size, imported_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `).run(id, projectId, name, fileType, content, summary || null, tokenCount, fileSize);
+        console.debug('[StorageEngine] Document imported:', name);
+      } catch (error) {
+        console.error('[StorageEngine] Document import failed:', error);
+        throw new Error(`Błąd zapisu dokumentu: ${(error as Error).message}`);
+      }
+    }
+    return { id, project_id: projectId, name, file_type: fileType, content, summary, token_count: tokenCount, file_size: fileSize, imported_at: new Date().toISOString() };
+  }
+
+  getDocuments(projectId: string): any[] {
+    if (this.db) {
+      const rows = this.db.prepare('SELECT * FROM project_documents WHERE project_id = ? ORDER BY imported_at DESC').all(projectId) as any[];
+      return rows;
+    }
+    return [];
+  }
+
+  deleteDocument(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM project_documents WHERE id = ?').run(id);
+    }
+  }
+
+  getDocumentContent(id: string): string | null {
+    if (this.db) {
+      const row = this.db.prepare('SELECT content FROM project_documents WHERE id = ?').get(id) as any;
+      return row ? row.content : null;
+    }
+    return null;
+  }
+
+  updateDocumentSummary(id: string, summary: string): void {
+    if (this.db) {
+      this.db.prepare('UPDATE project_documents SET summary = ? WHERE id = ?').run(summary, id);
     }
   }
 
@@ -1057,6 +1197,9 @@ export class StorageEngine {
       `);
       stmt.run(ann.id, ann.node_id, ann.project_id, ann.content, ann.id);
     }
+    const dir = path.join(this.basePath, 'experimental', 'annotations');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    atomicWriteFileSync(path.join(dir, `${ann.id}.json`), JSON.stringify(ann, null, 2));
   }
 
   getExperimentalNodeAnnotations(nodeId: string): ExperimentalNodeAnnotation[] {
@@ -1070,7 +1213,12 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    return [];
+    const dir = path.join(this.basePath, 'experimental', 'annotations');
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalNodeAnnotation)
+      .filter(a => a.node_id === nodeId)
+      .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   }
 
   deleteExperimentalNodeAnnotation(id: string): void {
@@ -1115,6 +1263,9 @@ export class StorageEngine {
       stmt.run(edge.id, edge.project_id, edge.source_node_id, edge.target_node_id,
         edge.label || '', edge.relation_type || 'depends_on', edge.source_handle || null, edge.target_handle || null, edge.id);
     }
+    const dir = path.join(this.basePath, 'experimental', 'edges');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    atomicWriteFileSync(path.join(dir, `${edge.id}.json`), JSON.stringify(edge, null, 2));
   }
 
   getExperimentalEdges(projectId: string): ExperimentalEdge[] {
@@ -1132,7 +1283,11 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    return [];
+    const dir = path.join(this.basePath, 'experimental', 'edges');
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalEdge)
+      .filter(e => e.project_id === projectId);
   }
 
   deleteExperimentalEdge(id: string): void {
@@ -1169,7 +1324,12 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    return [];
+    const dir = path.join(this.basePath, 'experimental', 'changelog');
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalChangelog)
+      .filter(c => c.project_id === projectId)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
   }
 
   // =========================================================================

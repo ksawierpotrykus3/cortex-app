@@ -1,4 +1,4 @@
-export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'agents' | 'mermaid-plan' | 'changes' | 'wiki' | 'git' | 'feedback' | 'useme' | 'experimental';
+export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'agents' | 'mermaid-plan' | 'changes' | 'wiki' | 'git' | 'feedback' | 'useme' | 'experimental' | 'system';
 export type RightPanelState = 'none' | 'properties';
 export type ModalState = 'none' | 'export' | 'settings';
 
@@ -211,6 +211,7 @@ export interface ExperimentalChatMessage {
   extracted_to_spec?: number;
   extracted_to_canvas?: number;
   created_at?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export type NodeType = 'root' | 'domain' | 'component' | 'task' | 'integration' | 'note';

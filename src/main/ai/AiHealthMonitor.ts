@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { systemEventBus } from '../services/SystemEventBus';
 
 export type FailoverMode = 'strict' | 'interactive' | 'automatic';
 
@@ -23,6 +24,8 @@ export class AiHealthMonitor {
 
   public onStatusChange?: (modelName: string, status: 'ONLINE' | 'OFFLINE') => void;
 
+  private healthUrl: string;
+
   private modelStates: Map<string, ModelHealth> = new Map([
     ['deepseek-ai/deepseek-v4-pro', { status: 'ONLINE', ping: 0, consecutiveFailures: 0 }],
     ['deepseek-ai/deepseek-v4-flash', { status: 'ONLINE', ping: 0, consecutiveFailures: 0 }]
@@ -31,8 +34,9 @@ export class AiHealthMonitor {
   private checkInterval: ReturnType<typeof setInterval> | null = null;
   private isChecking = false;
 
-  constructor(dataDir: string) {
+  constructor(dataDir: string, healthUrl: string = 'http://localhost:4570/health') {
     this.settingsPath = path.join(dataDir, 'failover-settings.json');
+    this.healthUrl = healthUrl;
   }
 
   async init(): Promise<void> {
@@ -157,28 +161,25 @@ export class AiHealthMonitor {
   private async checkModelHealth(modelName: string): Promise<void> {
     const startTime = Date.now();
     try {
-      // Send a minimal request to verify actual inference
-      const response = await fetch('http://localhost:3456/v1/chat/completions', {
-        method: 'POST',
+      const response = await fetch(this.healthUrl, {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [{ role: 'user', content: '1' }],
-          max_tokens: 1
-        }),
-        signal: AbortSignal.timeout(30000), // 30 seconds health check timeout (prevent false-offline on high latency)
+        signal: AbortSignal.timeout(30000),
       });
 
       if (response.ok) {
         const ping = Date.now() - startTime;
         this.recordSuccess(modelName, ping);
+        systemEventBus.push({ type: 'health:ping', timestamp: Date.now(), model: modelName, pingMs: ping, status: 'ONLINE' });
       } else {
         console.warn(`[AiHealthMonitor] Health check failed for ${modelName}: HTTP ${response.status}`);
         this.recordFailure(modelName);
+        systemEventBus.push({ type: 'health:ping', timestamp: Date.now(), model: modelName, pingMs: 0, status: 'OFFLINE' });
       }
     } catch (err) {
       console.warn(`[AiHealthMonitor] Health check failed for ${modelName}:`, err instanceof Error ? err.message : String(err));
       this.recordFailure(modelName);
+      systemEventBus.push({ type: 'health:ping', timestamp: Date.now(), model: modelName, pingMs: 0, status: 'OFFLINE' });
     }
   }
 }

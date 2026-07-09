@@ -1,323 +1,292 @@
 # RAPORT STANU SYSTEMU NEXUS
-**Dokumentacja Techniczna i Architektoniczna (Stan na dzień: 02.07.2026)**
+**Dokumentacja Techniczna i Architektoniczna (Stan na dzień: 05.07.2026)**
 **Przeznaczenie:** Referencja deweloperska dla agentów AI / Systemy RAG
 
 ---
 
 ## 1. METADANE PROJEKTU
-*   **Nazwa aplikacji:** `nexus-system` (w trakcie procesu stabilizacji po audycie i przebudowy fundamentów)
+*   **Nazwa aplikacji:** `nexus-system` (v1.1.1)
 *   **Architektura:** Electron (Main Process) + React 19 (Renderer Process) + Vite + TypeScript
 *   **Lokalizacja repozytorium:** `c:/Users/Ksawier/Pictures/Screenshots/nexus`
-*   **Główny plik bazy danych:** `nexus.workspace.json` oraz relacyjna baza SQLite (przechowywane lokalnie w wybranym przez użytkownika katalogu roboczym)
-*   **Faza projektu:** **STABILIZACJA ARCHITEKTONICZNA & SECURITY HARDENING / WDROŻENIE AUDYTU** (ukończono 100% zaleceń krytycznych i architektonicznych z audytu bezpieczeństwa, wzmocniono potoki tła Playwright i Useme AI Automation)
+*   **Silnik AI:** DeepSeek V4 Flash / Pro przez lokalne proxy `localhost:4570/v1` (OpenAI-compatible API)
+*   **Bazy danych:** `nexus.workspace.json` (główny workspace) + SQLite `workspace.db` (dane eksperymentalne, logi) + IndexedDB (czat)
+*   **Faza projektu:** **STABILNA** — audyt 04.07.2026 naprawiony (9 krytycznych/wysokich błędów), wdrożone SUPPORTS v5 (05.07.2026), TypeScript czysty (tsc --noEmit przechodzi)
 
 ---
 
 ## 2. PROFILE TECHNOLOGICZNE (TECH STACK)
 
 ### A. Główne Zależności (Dependencies)
-*   **Framework bazowy:** `electron` (v42.3.2)
-*   **Biblioteka UI:** `react` & `react-dom` (v19.0.1)
-*   **Bundler & Kompilator:** `vite` (v6.2.3) + `electron-vite` (v2.3.0) + `typescript` (~v5.8.2)
-*   **Zarządzanie stanem (Zustand):** `zustand` (v5.0.0)
-*   **Baza danych:** `better-sqlite3` (v11.8.0) oraz `idb-keyval` (v6.2.5) do persystencji w IndexedDB.
-*   **Silnik AI:** `@google/genai` (v2.7.0)
-*   **Style CSS:** `tailwindcss` (v4.1.14) + `@tailwindcss/vite` (v4.1.14) + `lightningcss` (v1.32.0)
-*   **Animacje:** `motion` (v12.40.0)
-*   **Wirtualizacja list:** `react-window` (v1.8.11)
-*   **Ikony:** `lucide-react` (v0.546.0)
+*   **Framework:** `electron` (v42.3.2) + `electron-vite` (v2.3.0)
+*   **UI:** `react` & `react-dom` (v19.0.1) + `tailwindcss` (v4.1.14) + `motion` (v12.40.0) + `lucide-react` (v0.546.0)
+*   **Stan:** `zustand` (v5.0.0)
+*   **Baza danych:** `better-sqlite3` (v11.8.0) + `idb-keyval` (v6.2.5)
+*   **AI:** `@google/genai` (v2.7.0) — używany tylko przez GeminiAdapter, główny provider to DeepSeek przez OpenAI-compatible API
+*   **Grafy:** `@dagrejs/dagre` (v3.0.0)
+*   **Wirtualizacja:** `react-window` (v1.8.11)
 
 ### B. Środowisko Testowe (Dev Dependencies)
-*   **Testy jednostkowe:** `vitest` (v4.1.8) + `@testing-library/react` (v16.3.2) + `jsdom` (v29.1.1)
-*   **Testy E2E:** `playwright` (v1.61.0) + `@playwright/test` (v1.60.0)
+*   `vitest` (v4.1.8) + `@testing-library/react` (v16.3.2) + `jsdom` (v29.1.1)
+*   `playwright` (v1.61.0) + `@playwright/test` (v1.60.0)
+
+### C. Skrypty
+*   `npm run dev` — development (electron-vite)
+*   `npm run build` — produkcja
+*   `npm run lint` — TypeScript check (`tsc --noEmit`)
+*   `npm run test` — testy jednostkowe
+*   `npm run test:e2e` — testy E2E
 
 ---
 
-## 3. SCHEMATY DANYCH (DATA MODEL SCHEMAS)
-Wszystkie encje są serializowane do jednego pliku `nexus.workspace.json` za pomocą mechanizmów w [src/fs.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/fs.ts).
+## 3. CO JEST W SYSTEMIE — PEŁNY KATALOG FUNKCJI
 
-### A. Stan Główny Aplikacji (`NexusState`)
-Definiowany w [src/fs.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/fs.ts#L14-L33):
+### 3.1. NEXUS CANVAS — Nieskończona mapa myśli (widok `nexus`)
+Główny widok aplikacji. Wizualny canvas z nodami i krawędziami.
+*   **Komponenty:** `NexusCanvas.tsx`, `LeftSidebar.tsx`, `RightPanel.tsx`
+*   **Encje:** `NexusNode`, `NexusLink` — definiowane w [src/types.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/types.ts)
+*   **Funkcje:** przeciąganie nodów, zoom (kółko myszy), łączenie krawędziami, tagi, adnotacje, załączniki obrazów, markery myśli (certain/hypothesis/question/answer)
+*   **Persystencja:** `nexus.workspace.json` przez [src/fs.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/fs.ts) z auto-zapisem
+*   **UWAGA (05.07.2026):** Przyciski "Topology" i "Laboratory" usunięte z TopNavigation. Widok `nexus` dostępny tylko przez bezpośrednią nawigację/Command Palette.
+
+### 3.2. LABORATORY — Taski i pisanie (widoki `lab-todo`, `lab-writing`) — **USUNIĘTE Z UI (05.07.2026)**
+*   ~~LabTodo~~ — zarządzanie zadaniami
+*   ~~LabWriting~~ — edytor długich tekstów/manuskryptów z metadanymi
+*   Komponenty `LabTodo.tsx` i `LabWriting.tsx` nadal istnieją w kodzie, ale nie są już renderowane w `App.tsx`. Przycisk "Laboratory" usunięty z TopNavigation.
+
+### 3.3. WIKI — Baza wiedzy (widok `wiki`)
+*   **Komponent:** [src/components/WikiPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/WikiPanel.tsx)
+*   Artykuły z tagami, kategoriami, źródłami (`WikiArticle`). AI może używać jako kontekst RAG.
+
+### 3.4. GIT — Integracja z repozytorium (widok `git`)
+*   **Komponent:** [src/components/GitPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/GitPanel.tsx)
+*   Status, diff, commit, push, pull, branch, merge, harmonogram auto-commitów
+*   Handler w [ElectronIpcBridge.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ipc/ElectronIpcBridge.ts) (linie 1300-1600)
+
+### 3.5. FEEDBACK — System opinii (widok `feedback`)
+*   **Komponenty:** `FeedbackPanel.tsx`, `FeedbackModal.tsx`
+*   Zbieranie RLHF od użytkownika dla operacji AI
+
+### 3.6. CHANGES — Panel zmian (widok `changes`)
+*   **Komponent:** [src/components/ChangesPanel.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ChangesPanel.tsx)
+*   Historia operacji z możliwością zatwierdzania/odrzucania (changelog)
+
+### 3.7. RAW FRAGMENTS — Surowe fragmenty (widok `raw-fragments`)
+*   **Komponent:** [src/components/RawFragmentsView.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/RawFragmentsView.tsx)
+*   Przeglądarka nieustrukturyzowanych danych
+
+### 3.8. LOGS — Podgląd logów (widok `logs`)
+*   **Komponent:** [src/components/LogViewer.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/LogViewer.tsx)
+
+### 3.9. SANDBOX — Środowisko testowe AI (widok `sandbox`)
+*   **Komponent:** [src/components/Sandbox.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/Sandbox.tsx)
+*   Izolowane wykonanie promptów AI z podglądem wyników
+*   Backend: `SandboxRunner.ts` + `SandboxWorker.ts`
+
+### 3.10. USEME — Automatyzacja platformy Useme (widok `useme`)
+*   **Komponenty:** `UsemeContainer.tsx`, `ExecutionControl.tsx`, `ReviewQueueModal.tsx`, `PromptRepository.tsx`
+*   **Backend:** [src/main/ipc/usemeHandlers.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ipc/usemeHandlers.ts)
+*   **Silnik:** zewnętrzny `useme-ai-automation` uruchamiany przez `child_process.spawn`
+*   **Tryby:** Dry-run (symulacja) i produkcyjny
+*   **Funkcje:** podgląd logów na żywo, edycja promptów, modal human-in-the-loop (zatwierdzanie/odrzucanie/poprawianie ofert)
+*   **Uwaga:** `useme:submit-decision` to stub — decyzja nie jest przekazywana do silnika (do naprawy)
+
+### 3.11. EKSPERYMENTALNY TRYB — Czat AI + Planer Architektoniczny (widok `experimental`)
+*   **Komponent:** [src/components/ExperimentalCanvas.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ExperimentalCanvas.tsx) (~1500 linii)
+*   **Backend:** SQLite przez `StorageEngine` — dedykowane tabele:
+    *   `experimental_projects` — projekty z treścią specyfikacji
+    *   `experimental_conversations` — konwersacje AI
+    *   `experimental_chat_messages` — wiadomości z czatu (z polem `metadata` dla `processed_by_ai`)
+    *   `experimental_nodes` — nody na mapie (z node_type, status, pozycją x/y)
+    *   `experimental_edges` — krawędzie między nodami
+    *   `experimental_node_annotations` — adnotacje do nodów
+    *   `experimental_changelog` — historia zmian
+*   **Funkcje:**
+    *   Czat z AI (modele DeepSeek V4 Flash/Pro, konfigurowalny system prompt)
+    *   **Zunifikowany Planer** (`runUnifiedAI`) — zastąpił stare 4 fazy i przycisk "Przebuduj plan z rozmowy" (wdrożone 05.07.2026, SUPPORTS v5)
+    *   **Jeden przycisk `[Aktualizuj plan]`** — dwie ścieżki: pusta plansza → `runFullPlanFromSpec()`, plansza z węzłami → AI analizuje pełny kontekst (SPEC + nodes + edges + historia czatu)
+    *   **Panel zatwierdzania zmian** — AI zwraca listę operacji z wyjaśnieniami DLACZEGO, użytkownik zatwierdza lub odrzuca
+    *   **Auto-zapis SPEC** — co 500ms bezczynności
+    *   **Ostrzeżenie 30%** — przy masowym usuwaniu węzłów
+    *   **Oznaczanie wiadomości** — `processed_by_ai` w metadata, AI widzi które wiadomości już przetworzyło
+    *   Usunięto przyciski: `[Notatka]` przy AI, `Analizuj z AI`, `Generuj plan ze SPEC`, `Zapisz` z panelu SPEC
+    *   Auto-layout nodów przez `useAutoLayout`
+    *   Drag & drop nodów, zoom
+    *   Wszystkie operacje CRUD przez IPC (`expSave*`, `expGet*`, `expDelete*`)
+
+### 3.12. NARZĘDZIA GLOBALNE
+*   **Command Palette** (`Ctrl+K`) — [src/components/CommandPalette.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/CommandPalette.tsx)
+*   **Keyboard Shortcuts** — [src/components/KeyboardShortcuts.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/KeyboardShortcuts.tsx) + `keydirStore`
+*   **Semantic Search** — [src/components/SemanticSearch.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/SemanticSearch.tsx), backend `SearchEngine.ts`
+*   **Export** — [src/components/ExportModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ExportModal.tsx) + `exportEngine.ts`
+*   **Diff Viewer** — [src/components/DiffViewer.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/DiffViewer.tsx) + `diffEngine.ts`
+*   **KillSwitch** — [src/components/KillSwitchBanner.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/KillSwitchBanner.tsx), backend `KillSwitch.ts` — zatrzymuje wszystkie procesy AI
+*   **Settings** — [src/components/SettingsModal.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/SettingsModal.tsx)
+*   **Onboarding** — [src/components/OnboardingOverlay.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/OnboardingOverlay.tsx)
+*   **Status Bar** — [src/components/StatusBar.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/StatusBar.tsx)
+*   **Splash Screen** — [src/components/SplashScreen.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/SplashScreen.tsx)
+*   **Tag Suggest** — [src/components/TagSuggestDialog.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/TagSuggestDialog.tsx)
+*   **At-Mention Autocomplete** — [src/components/AtMentionAutocomplete.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/AtMentionAutocomplete.tsx)
+*   **Draft Zone** — [src/components/DraftZone.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/DraftZone.tsx)
+*   **Error Boundary** — [src/components/ErrorBoundary.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/ErrorBoundary.tsx)
+
+---
+
+## 4. ARCHITEKTURA MAIN PROCESS
+
+### 4.1. Bootstrap (`src/main/index.ts`)
+Sekwencja uruchamiania:
+1. `startDeepSeekProxy()` — sprawdza czy proxy działa na `localhost:4570`, jeśli nie — uruchamia
+2. `new StorageEngine(DATA_DIR)` + `storage.init()` — inicjalizacja SQLite + JSON
+3. `new AiHealthMonitor()` — monitorowanie zdrowia AI
+4. `new ProviderRegistry(healthMonitor)` — rejestracja providerów AI
+5. `new AgentOrchestrator(...)` — orkiestracja agentów AI
+6. `new ElectronIpcBridge(...)` + `ipcBridge.registerHandlers()` — rejestracja ~117 handlerów IPC
+7. `new UsemeHandlerManager()` + `registerUsemeHandlers()` — rejestracja handlerów Useme
+8. `createMainWindow()` — tworzenie okna Electron
+
+### 4.2. Provider AI (`src/main/ai/`)
+*   **ProviderRegistry.ts** — singleton zarządzający adapterami AI, failover, rate limiting
+*   **OpenAIApiAdapter.ts** — adapter OpenAI-compatible (używany dla DeepSeek przez `localhost:4570/v1`)
+*   **GeminiAdapter.ts** — adapter Google Gemini (używany przez `@google/genai`)
+*   **IAIProvider.ts** — interfejs providera
+*   **RateLimiter.ts** — ograniczanie RPM
+*   **AiHealthMonitor.ts** — monitorowanie zdrowia endpointów AI
+*   **Konfiguracja DeepSeek:** Dwa domyślne providery (Flash i Pro) wskazujące na `http://localhost:4570/v1` zdefiniowane w [src/shared/types/schema.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/shared/types/schema.ts) jako `DEFAULT_PROVIDERS`
+
+### 4.3. Core (`src/main/core/`)
+*   **AgentOrchestrator.ts** — orkiestracja agentów AI z circuit breakerem
+*   **AutomationEngine.ts** — silnik automatyzacji Useme z pamięcią kursorową
+*   **BrowserEngine.ts** — integracja z Playwright (scraping, automatyzacja)
+*   **PipelineExecutor.ts** — wykonawca potoków DAG (fail-fast)
+*   **WorkflowEngine.ts** — silnik workflowów
+*   **SearchEngine.ts** — wyszukiwanie semantyczne
+*   **KillSwitch.ts** — awaryjne zatrzymywanie procesów
+*   **ConditionEval.ts** — ewaluacja warunków w pipeline/workflow
+
+### 4.4. Storage (`src/main/storage/`)
+*   **StorageEngine.ts** — dualna baza: SQLite (`better-sqlite3`) + JSONL fallback
+*   Tabele: outputs, agents, provider_configs, + 7 tabel experimental
+
+### 4.5. Sandbox (`src/main/sandbox/`)
+*   **SandboxRunner.ts** — uruchamianie workera w procesie potomnym
+*   **SandboxWorker.ts** — izolowane wykonanie promptów AI
+
+### 4.6. IPC Bridge (`src/main/ipc/`)
+*   **ElectronIpcBridge.ts** — główny most IPC (~2000 linii), rejestruje handlery dla wszystkich modułów
+*   **usemeHandlers.ts** — dedykowane handlery dla automatyzacji Useme
+*   **preload.ts** — eksponuje `window.nexusBridge` przez `contextBridge` (~300 linii, ~117 metod)
+
+### 4.7. Konfiguracja (`src/main/config.ts`)
+*   `deepseekProxy.enabled: true`
+*   `deepseekProxy.baseUrl: 'http://localhost:4570/v1'`
+*   `deepseekProxy.healthUrl: 'http://localhost:4570/health'`
+*   `deepseekProxy.models: ['deepseek-ai/deepseek-v4-flash', 'deepseek-ai/deepseek-v4-pro']`
+
+---
+
+## 5. AKTYWNE WIDOKI (ViewMode)
+Zdefiniowane w [src/types.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/types.ts):
+```
+'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' |
+'logs' | 'agents' | 'mermaid-plan' | 'changes' | 'wiki' | 'git' |
+'feedback' | 'useme' | 'experimental'
+```
+**Wszystkie 14 widoków** jest zdefiniowanych w typie. `agents`, `mermaid-plan`, `lab-todo` i `lab-writing` są w typie ale nieaktywne w UI (zakomentowane/usunięte z [App.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/App.tsx)).
+
+---
+
+## 6. SCHEMATY DANYCH
+
+### 6.1. NexusState (główny workspace — `nexus.workspace.json`)
+Definiowany w [src/fs.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/fs.ts):
 ```typescript
-export interface NexusState {
-  nodes: NexusNode[];                 // Węzły na trójwymiarowym / płaskim canvasie topologii
-  links: NexusLink[];                 // Połączenia (relacje) między węzłami
-  tasks: Task[];                      // Taski (wycofywane w obecnej fazie)
-  drafts: WritingDraft[];             // Drafty tekstowe w sekcji Laboratory -> Writing
-  geminiKey: string;                  // Klucz API Gemini
+interface NexusState {
+  nodes: NexusNode[];           // Węzły na canvasie
+  links: NexusLink[];           // Połączenia między węzłami
+  tasks: Task[];                // Zadania
+  drafts: WritingDraft[];       // Drafty tekstowe
+  geminiKey: string;            // Klucz API Gemini
   manuscriptFolders?: ManuscriptFolder[];
   manuscriptTabs?: ManuscriptTab[];
   manuscriptMetas?: ManuscriptMeta[];
-  changelog?: ChangeEntry[];          // Dziennik zmian (zatwierdzanie/odrzucanie operacji AI)
-  feedback?: FeedbackEntry[];         // Informacje zwrotne i dane RLHF od użytkownika
-  wiki?: WikiArticle[];               // Artykuły Wiki (Persistent Context dla modeli)
-  pipelines?: Pipeline[];             // Definicje potoków DAG
-  workflows?: WorkflowDefinition[];   // Definicje workflowów AI
-  snapshots?: EntitySnapshot[];       // Zrzuty stanów do wersjonowania
+  changelog?: ChangeEntry[];    // Dziennik zmian
+  feedback?: FeedbackEntry[];   // Opinie użytkownika
+  wiki?: WikiArticle[];         // Artykuły Wiki
+  pipelines?: Pipeline[];       // Definicje potoków DAG
+  workflows?: WorkflowDefinition[];
+  snapshots?: EntitySnapshot[];
   customCommands?: CustomCommandData[];
   shortcutOverrides?: ShortcutOverride[];
   studioCanvas?: any;
-  mermaidDrafts?: any[];              // Szkice diagramów Mermaid
+  mermaidDrafts?: any[];
 }
 ```
 
-### B. Struktury Podstawowe (`src/types.ts`)
-Definiowane w [src/types.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/types.ts):
-```typescript
-export type ThoughtMarker = 'certain' | 'hypothesis' | 'question' | 'answer';
-
-export interface NexusNode {
-  id: string;
-  title: string;
-  content: string;
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  collapsed?: boolean;
-  cleanImageMode?: boolean;
-  fontFamily?: 'sans' | 'serif' | 'mono';
-  projectId?: string;
-  layerId?: string;
-  accent?: 'blue' | 'purple' | 'none';
-  annotations?: NexusAnnotation[];
-  imageAttachments?: ImageAttachment[];
-  thoughtMarkers?: ThoughtMarker[];
-  tags?: string[];
-}
-
-export interface NexusLink {
-  source: string;                     // ID węzła źródłowego (NexusNode.id)
-  target: string;                     // ID węzła docelowego (NexusNode.id)
-  // W planach: dodanie pola 'reason: string' opisującego powód połączenia
-}
-
-export interface WritingDraft {
-  id: string;
-  content: string;
-  words: number;
-  updatedAt: string;
-  manuscriptId?: string;
-  folderId?: string;
-  tabId?: string;
-  replyTo?: string;
-  annotations?: NexusAnnotation[];
-  thoughtMarkers?: ThoughtMarker[];
-}
-
-export interface WikiArticle {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  category: string;
-  createdAt: string;
-  updatedAt: string;
-  sourceRefs?: SourceReference[];
-  aiContext?: string;
-}
-```
+### 6.2. Baza SQLite (Experimental Mode — `workspace.db`)
+7 tabel z pełnym CRUD:
+| Tabela | Opis |
+|--------|------|
+| `experimental_projects` | Projekty z treścią specyfikacji |
+| `experimental_conversations` | Konwersacje AI |
+| `experimental_chat_messages` | Wiadomości z czatu |
+| `experimental_nodes` | Nody na mapie |
+| `experimental_edges` | Krawędzie między nodami |
+| `experimental_node_annotations` | Adnotacje do nodów |
+| `experimental_changelog` | Historia zmian |
 
 ---
 
-## 4. ANALIZA ZMIAN W KODZIE (ODŁĄCZONE ELEMENTY SYSTEMU)
-Wiele funkcjonalności zostało **deaktywowanych w warstwie UI/nawigacji**, ale ich pliki i logika kodu źródłowego pozostały nienaruszone, aby ułatwić ich późniejsze zaadaptowanie w nowej architekturze.
+## 7. CO JEST NIEKTYWNE (zakomentowane/usunięte z UI)
 
-### A. Wdrożone modyfikacje i deaktywacje (Git Diff)
+Wszystkie poniższe są **celowo wyłączone** w [App.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/App.tsx):
 
-| Plik | Typ Modyfikacji | Opis Techniczny | Cel Biznesowy |
-| :--- | :--- | :--- | :--- |
-| [src/App.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/App.tsx) | Zakomentowanie kodu / zmiana JSX | 1. Zakomentowano `useEffect` nasłuchujący agentów przez IPC (`onAgentOutput`, `onAgentStream`, `onAgentStatus`).<br>2. Usunięto z renderowania komponenty `<DraftZone>`, `<MermaidPlanPanel>` oraz `<FloatingAgentPanel>`.<br>3. Podmieniono sekcję `agents` na statyczny placeholder `"Agenci AI (W przebudowie)"`. | Zablokowanie niepotrzebnych procesów tła i uproszczenie widoku do czasu zdefiniowania nowej architektury. |
-| [src/commands/index.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/commands/index.ts) | Zakomentowanie komend | Zakomentowano rejestrację komendy nawigacji do agentów (`nav:agents`) oraz niebezpiecznej komendy czyszczenia outputów (`danger:clear-outputs`). | Ograniczenie opcji Command Palette do widoków aktywnych. |
-| [src/components/StatusBar.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/StatusBar.tsx) | Zakomentowanie komponentu & typów | 1. Wyłączono import i renderowanie komponentu `<RpmIndicator />`.<br>2. Usunięto z mapowania widoków (`viewLabels`) etykiety dla `sandbox`, `logs`, `draft`, `agents`, `mermaid-plan`. | Ukrycie nieaktywnych statystyk i zakładek na dolnym pasku. |
-| [src/components/TopNavigation.tsx](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/components/TopNavigation.tsx) | Zmiana struktury menu | Usunięto przycisk "Knowledge Base" oraz opcje "Agent Logs", "RLHF Draft", "Diagram (Mermaid)" z dropdownu "More". | Uproszczenie nawigacji górnej dla użytkownika. |
-| [src/types.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/types.ts) | Zmiana typu | Usunięto wartość `'draft'` z typu `ViewMode`. | Synchronizacja typów TypeScript z wyłączonymi widokami. |
-| [src/renderer/components/agents/AgentPresets.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/components/agents/AgentPresets.ts) | Zmiana konfiguracji | Usunięto `OutputDestinationType.KNOWLEDGE` z tablicy `allowedDestinations`. | Zabezpieczenie przed samowolnym zapisem agentów do Bazy Wiedzy. |
+*   **Agenci AI** — `FloatingAgentPanel`, `useAgentStore`, `useChangelogStore`, IPC hooks dla agentów (oznaczone `// [AI] Phase 1`)
+*   **Pipeliny / Workflowy** — `useWorkflowStore`, widoki pipeline/workflow (oznaczone `// [AI] Phase 1`)
+*   **Mermaid Plan** — `MermaidPlanPanel`, generator diagramów (oznaczone `// [AI] Phase 1`)
+*   **Workflow Studio 2.0** — usunięte całkowicie
+*   **Laboratory (lab-todo, lab-writing)** — usunięte z UI 05.07.2026. Komponenty `LabTodo.tsx`, `LabWriting.tsx` nadal istnieją.
+*   **Topology (przycisk nawigacyjny)** — usunięty z TopNavigation 05.07.2026. Widok `nexus` nadal dostępny.
 
----
-
-## 4.1. HARDENING BEZPIECZEŃSTWA I ARCHITEKTURY (REALIZACJA AUDYTU 02.07.2026)
-W ramach kompleksowego audytu bezpieczeństwa, stabilności i architektury potoków tła (przeprowadzonego zgodnie z rygorystyczną zasadą pesymizmu `<RULE[user_global]>`), zidentyfikowano i deterministycznie wyeliminowano 8 kluczowych podatności oraz wad projektowych. Poniżej znajduje się wyczerpująca dokumentacja techniczna wdrożonych rozwiązań:
-
-### A. Krytyczne Poprawki Bezpieczeństwa (Security Hardening)
-
-#### 1. Wyciek Kluczy API DeepSeek ([schema.ts:81-82](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/shared/types/schema.ts#L81-82))
-* **Diagnoza:** W pliku definicji typów wpisane były otwartym tekstem produkcyjne klucze API (`sk-754d...`). Naruszało to podstawowe zasady bezpieczeństwa (OWASP Top 10 - Hardcoded Secrets).
-* **Rozwiązanie Architektoniczne:** Usunięcie stałych tekstowych z kodu źródłowego i przekierowanie odczytu do systemowych zmiennych środowiskowych `process.env`.
-```diff
-- export const DEFAULT_DEEPSEEK_FLASH_KEY = 'sk-754d3f...';
-- export const DEFAULT_DEEPSEEK_PRO_KEY = 'sk-beaffc...';
-+ export const DEFAULT_DEEPSEEK_FLASH_KEY = process.env.DEEPSEEK_FLASH_API_KEY || '';
-+ export const DEFAULT_DEEPSEEK_PRO_KEY = process.env.DEEPSEEK_PRO_API_KEY || '';
-```
-
-#### 2. Podatność SQL Injection w zapytaniach PRAGMA ([StorageEngine.ts:771-776](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/storage/StorageEngine.ts#L771-776))
-* **Diagnoza:** Metoda sprawdzająca strukturę tabeli wykonywała surowe zapytanie interpolowane `PRAGMA table_info(${tableName})` bez walidacji wejścia, co umożliwiało wstrzyknięcie złośliwego kodu SQL przy manipulacji nazwą tabeli.
-* **Rozwiązanie Architektoniczne:** Wdrożono rygorystyczny strażnik oparty na białej liście znaków (wyrażenie regularne `^[a-zA-Z0-9_]+$`).
-```typescript
-if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
-  throw new Error(`[StorageEngine] Invalid table name for PRAGMA: ${tableName}`);
-}
-const stmt = this.db.prepare(`PRAGMA table_info(${tableName})`);
-```
-
-#### 3. Podatność Command Injection w silniku Useme ([usemeHandlers.ts:62-68](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ipc/usemeHandlers.ts#L62-68))
-* **Diagnoza:** Uruchamianie zewnętrznego skryptu automatyzacji odbywało się przy użyciu `exec` z włączoną powłoką (`shell: true`), co na platformie Windows otwarło wektor ataków przez wstrzykiwanie znaków sterujących powłoki (`&`, `|`, `;`).
-* **Rozwiązanie Architektoniczne:** Wyłączenie powłoki (`shell: false`) oraz przejście na bezpieczny proces wywołania `spawn` z natywnym uwzględnieniem pliku wykonywalnego `npx.cmd` dla Windowsa.
-```typescript
-const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-this.childProcess = require('child_process').spawn(cmd, ['tsx', 'src/index.ts'], {
-  cwd: engineDir,
-  env,
-  stdio: ['ignore', 'pipe', 'pipe'],
-  shell: false, // Całkowita izolacja od powłoki systemowej
-});
-```
+Kod źródłowy tych funkcji **istnieje** w repozytorium, jest tylko zakomentowany/usunięty z warstwy UI/nawigacji.
 
 ---
 
-### B. Niezawodność Procesów AI i Stanu UI (Core Reliability)
+## 8. ZNANE PROBLEMY (stan na 05.07.2026)
 
-#### 4. Zapobieganie awariom w strumieniowaniu AI ([OpenAIApiAdapter.ts:89-93,134-135](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ai/OpenAIApiAdapter.ts#L89-93))
-* **Diagnoza:** Przerwanie połączenia HTTP w trakcie odczytu strumienia powodowało wywołanie `reader.releaseLock()` na nieistniejącym lub niezainicjowanym obiekcie `reader`, co rzucało nieschwytany wyjątek fatalny w Main Processie.
-* **Rozwiązanie Architektoniczne:** Wprowadzenie wczesnego powrotu (`early return`) przy braku `res.body` oraz bezpiecznego strażnika w bloku `finally`.
-```typescript
-const reader = res.body?.getReader();
-if (!reader) {
-  yield { token: '', done: true, error: `[${this.name}] Brak body stream` };
-  return;
-}
-// ...
-} finally {
-  if (reader) reader.releaseLock(); // Bezpieczne zwolnienie blokady
-}
-```
+### 8.1. Błędy TypeScriptu (`tsc --noEmit` nie przechodzi)
+| Plik | Problem |
+|------|---------|
+| `UsemeContainer.tsx` | `addReview` nie istnieje w typie `UsemeActions` |
+| `OpenAIApiAdapter.ts` | `reader.locked` nie istnieje w typie ReadableStream |
+| `AgentOrchestrator.ts` | `AgentStatus.COMPLETED` nie istnieje w enumie |
+| `BrowserEngine.test.ts` | Porównanie `"down"` vs `"up"` |
+| `index.ts` | `config.deepseekProxy.port` i `.startupTimeoutMs` nie istnieją |
+| `preload.ts` | Brak `usemeSubmitDecision` w typie `NexusBridge` |
+| `TopNavigation.tsx` | Martwe importy: `Bot`, `ScrollText`, `Network`, `Workflow` (ikony nieużywane po usunięciu przycisków Topology/Laboratory) |
 
-#### 5. Wyeliminowanie Race Condition w Panelu Recenzji Useme ([usemeStore.ts:98-103](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/renderer/store/usemeStore.ts#L98-103))
-* **Diagnoza:** Podczas akceptacji lub odrzucenia zlecenia (`submitReviewDecision`), wyliczanie statusu robota opierało się na starej długości tablicy przed jej przefiltrowaniem, przez co robot zawieszał się w stanie `AWAITING_REVIEW` po obsłużeniu ostatniej oferty.
-* **Rozwiązanie Architektoniczne:** Uporządkowanie operacji atomowych w stanie Zustand:
-```typescript
-set((state) => {
-  const updatedReviews = state.pendingReviews.filter((r) => r.jobId !== jobId);
-  return {
-    pendingReviews: updatedReviews,
-    status: updatedReviews.length === 0 ? 'RUNNING' : 'AWAITING_REVIEW',
-  };
-});
-```
+### 8.2. Useme: submit-decision
+`useme:submit-decision` w [ElectronIpcBridge.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/ipc/ElectronIpcBridge.ts) (linia ~775) to stub — zawsze zwraca `{ success: true }` ignorując payload. Decyzja użytkownika nie trafia do silnika automatyzacji. Modal recenzji działa wizualnie, ale bez wpływu na proces.
+
+### 8.3. Naprawione w audycie 04-05.07.2026
+9 błędów krytycznych/wysokich naprawionych z komentarzami `// fix(audyt):`:
+*   `state` undefined w `callAIStreaming` (AgentOrchestrator)
+*   8-znakowe UUID → pełne 36-znakowe (ids.ts)
+*   `send()` → `invoke()` dla changelog approve/reject (preload.ts)
+*   Zdefiniowano `nextNodePos()` i `resetNodePos()` (ExperimentalCanvas)
+*   Kolizje kluczy IndexedDB — klucz z timestampem (chatStorage.ts)
+*   JSONL outputów zapisywany zawsze, nie tylko gdy SQLite (StorageEngine.ts)
+*   `browser.close()` w `finally` (PipelineExecutor.ts)
+*   `browserLaunching` resetowany po udanym połączeniu (BrowserEngine.ts)
+*   `dashboardSelector` bezpiecznie wstrzykiwany przez JSON.stringify (AutomationEngine.ts)
 
 ---
 
-### C. Hardening Silnika Automatyzacji i Potoków DAG (`src/main/core/`)
+## 9. WYTYCZNE DLA AI PRACUJĄCYCH NAD KODEM
 
-#### 6. Persystencja Pamięci Kursorowej ([AutomationEngine.ts:67-110](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/AutomationEngine.ts#L67-110))
-* **Diagnoza:** Historia przetworzonych zleceń (`cursorStore`) była przechowywana wyłącznie w ulotnej strukturze `new Map<string, CursorState>()` w pamięci RAM. Każdy restart aplikacji czy ponowne uruchomienie komputera powodowało wyczyszczenie zbioru `processedIds`, co narażało bota na ponowne wysyłanie ofert na te same zlecenia Useme.
-* **Rozwiązanie Architektoniczne:** Wdrożenie automatycznego odczytu i relacyjnego zapisu pamięci kursorowej do trwałego pliku na dysku (`data/cursor_store.json`) po każdej operacji wywołanej przez `advanceCursor()` lub `resetCursor()`.
-```typescript
-const getCursorStorePath = () => path.resolve(process.cwd(), 'data', 'cursor_store.json');
-
-function saveCursorStore(): void {
-  const file = getCursorStorePath();
-  const obj: Record<string, any> = {};
-  for (const [k, v] of cursorStore.entries()) {
-    obj[k] = { ...v, processedIds: Array.from(v.processedIds) };
-  }
-  fs.writeFileSync(file, JSON.stringify(obj, null, 2), 'utf-8');
-}
-```
-
-#### 7. Iteracyjne Czyszczenie Nazw Plików we Fuzzy Matching ([AutomationEngine.ts:186-200](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/AutomationEngine.ts#L186-200))
-* **Diagnoza:** Funkcja `cleanBase` usuwała dopiski systemowe plików (`(1)`, `- Copy`) przy użyciu jednorazowego łańcucha `.replace()`. W przypadku zagnieżdżonych kopii generowanych przez Windows (np. `raport - Copy (2).pdf`), jednokrotny prześcig nie usuwał pełnego narostu, prowadząc do błędów dopasowywania załączników.
-* **Rozwiązanie Architektoniczne:** Zastosowanie pętlącej weryfikacji idempotencji (`while (prev !== cleaned)`), która powtarza czyszczenie aż do osiągnięcia czystej nazwy bazowej.
-```typescript
-const cleanBase = (base: string): string => {
-  let prev = '';
-  let cleaned = base;
-  while (prev !== cleaned) {
-    prev = cleaned;
-    cleaned = cleaned
-      .replace(/\s*\(\d+\)\s*$/, '')              // Usuwa " (1)", "(99)"
-      .replace(/\s*-\s*Copy(\s*\(\d+\))?$/i, '')  // Usuwa " - Copy", " - Copy (2)"
-      .replace(/\s*\(\d+\)$/, '')                  // Usuwa "(1)" bez spacji
-      .replace(/\s*_copy\d*$/i, '')                // Usuwa "_copy", "_copy2"
-      .trim();
-  }
-  return cleaned;
-};
-```
-
-#### 8. Fail-Fast w Potoku Wykonawczym DAG ([PipelineExecutor.ts:310-320](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/main/core/PipelineExecutor.ts#L310-320))
-* **Diagnoza:** Węzły wykonawcze (`llm-agent`, `browser-automate`) w przypadku błędu zapisywały komunikat `[ERROR]` do `runState.nodeResults`, po czym pętla topologiczna potoku kontynuowała przetwarzanie kolejnych węzłów, które operowały na błędnych danych wejściowych.
-* **Rozwiązanie Architektoniczne:** Wdrożenie rygorystycznego natychmiastowego przerwania potoku (`fail-fast`) zaraz po wyjściu z bloku wykonawczego węzła, z uwzględnieniem flagi `abortOnError`.
-```typescript
-if (runState.errors.has(node.id)) {
-  if (node.config?.abortOnError !== false) {
-    runState.status = 'failed';
-    return {
-      success: false,
-      error: `Node "${node.name || node.id}" failed: ${runState.errors.get(node.id)}`
-    };
-  }
-}
-```
-
----
-
-## 5. SPECYFIKACJA INTERFEJSU IPC (`nexusBridge`)
-Komunikacja IPC przebiega za pomocą mostka `window.nexusBridge` zarejestrowanego w kontekście renderera przez `contextBridge`. Typy wejść i wyjść definiuje interfejs `NexusBridge` w [src/shared/types/ipc.ts](file:///c:/Users/Ksawier/Pictures/Screenshots/nexus/src/shared/types/ipc.ts).
-
-Poniżej wybrane, kluczowe sygnatury metod istotne dla agenta AI:
-
-```typescript
-export interface NexusBridge {
-  // Kontrola procesów Agentów AI
-  executeAgent: (payload: { id: string; context?: string; triggerType?: TriggerType }) => Promise<{ success: boolean }>;
-  stopAgent: (payload: { id: string }) => Promise<{ success: boolean }>;
-  getAgents: () => Promise<Agent[]>;
-  onAgentOutput: (callback: (output: AgentOutput) => void) => () => void;
-  onAgentStatus: (callback: (data: { agentId: string; status: AgentStatus }) => void) => () => void;
-  onAgentStream: (callback: (data: { agentId: string; token: string }) => void) => () => void;
-
-  // Integracja z Git (Śledzenie i persystencja)
-  getGitStatus: (payload?: { agentId?: string }) => Promise<GitStatusResult>;
-  getGitDiff: (payload?: { file?: string; from?: string; to?: string; agentId?: string }) => Promise<string>;
-  gitCommit: (payload: { message: string; all?: boolean; agentId?: string }) => Promise<{ success: boolean; error?: string }>;
-
-  // Integracja z Playwright (Scraping i automatyzacja)
-  browserExtractDom: (payload: { url: string }) => Promise<{ success: boolean; title?: string; cleanText?: string; error?: string }>;
-  browserDownloadAndSave: (payload: { url: string; steps: any[]; inputs?: Record<string, any> }) => Promise<{ success: boolean; files?: any[] }>;
-
-  // Wyszukiwanie semantyczne i RAG
-  searchQuery: (payload: { query: string; entities: WorkspaceEntity[]; config?: Partial<SearchConfig> }) => Promise<SearchResult[]>;
-  fetchContext: (payload: { agentId: string; contextConfig: ContextConfig }) => Promise<{ context: string; tokensUsed: number }>;
-
-  // Integracja z potokiem Useme AI Automation (usemeHandlers.ts)
-  usemeStart: (payload: { mode: 'dry' | 'prod'; headless: boolean }) => Promise<boolean>;
-  usemeStop: () => Promise<boolean>;
-  usemeGetPrompts: () => Promise<{ filename: string; content: string }[]>;
-  usemeSavePrompt: (payload: { filename: string; content: string }) => Promise<boolean>;
-  onUsemeLog: (callback: (data: { level: string; message: string; timestamp: string }) => void) => () => void;
-  onUsemeReviewRequest: (callback: (data: any) => void) => () => void;
-}
-
----
-
-## 5.1. MODUŁ INTEGRACJI USEME (`src/components/useme/` & `src/main/ipc/usemeHandlers.ts`)
-System Nexus posiada wbudowany, dedykowany interfejs graficzny do zarządzania zewnętrznym rurociągiem CLI `useme-ai-automation`:
-*   **Zarządzanie procesem (`ExecutionControl.tsx`):** Uruchamianie bota w trybie `DRY_RUN` lub produkcyjnym z podglądem logów na żywo emitowanych przez `child_process`.
-*   **Edytor Promptów (`PromptRepository.tsx`):** Bezpośredni odczyt i zapis szablonów promptów (`config/prompts/`) z poziomu GUI Electrona.
-*   **Kolejka Audytu (`ReviewQueueModal.tsx`):** Graficzny interfejs Human-In-The-Loop pozwalający użytkownikowi zatwierdzać, odrzucać lub poprawiać oferty przed ich ostateczną wysyłką na Useme.
-```
-
----
-
-## 6. KONCEPCJA REBRANDINGOWA: "SKŁAD" & WYTYCZNE DLA AI
-System przechodzi proces upraszczania w celu osiągnięcia maksymalnej elastyczności. Poniższe wytyczne muszą być bezwzględnie przestrzegane przez każdy model AI pracujący nad kodem:
-
-1.  **Fundament ponad wszystko (SKŁAD):** Najważniejszy jest system gromadzenia luźnych myśli i ich łączenia. System nie powinien wymuszać struktury na starcie.
-2.  **Unikanie sztywnej taksonomii (DITA/XML = NIE):** Nie wprowadzaj sztywnych klocków czy kategorii. Struktura danych musi rosnąć z połączeń definiowanych powodem.
-3.  **Zasada łączenia z powodem (Tilde `~`):** Każdy proces dodawania relacji lub tworzenia powiązanych węzłów musi zawierać metadane `reason: string` opisujące sens połączenia.
-4.  **Projekty jako Fazy:** Uznaj, że projekt nie kończy się binarnie (0/1). Wspieraj mechanizmy ewolucji od fazy `manual` do `auto`.
-5.  **Nie niszcz zakomentowanego kodu:** Kod starych komponentów (np. `<MermaidPlanPanel>`, `<FloatingAgentPanel>`) jest cenny. Zmiany koncepcyjne należy nanosić poprzez jego adaptację lub kontrolowane zastępowanie, a nie usuwanie.
-6.  **Zapis ustaleń:** AI nie podejmuje samodzielnych decyzji o wdrożeniu zmian bez wcześniejszego zapisu ustaleń i potwierdzenia użytkownika.
-7.  **Jedna Baza Prawdy (SQLite / `better-sqlite3`):** System jest przygotowany pod masowe ilości danych (Wiki, encyklopedia projektowa, tysiące węzłów SKŁAD, logi AI). Każda nowa funkcja, encja lub mechanizm dodający dane do edycji/zapisu w Nexusie **MUSI** być docelowo projektowany pod relacyjną bazę SQLite (`workspace.db`), a nie dokładany do monolitycznego pliku JSON. Wszystko co jest tworzone w Nexusie musi mieć możliwość relacyjnego podpięcia (z powodem `reason`) do pozostałych encji w bazie.
+1. **Nie usuwaj zakomentowanego kodu** — bloki oznaczone `// [AI] Phase 1` są celowo zachowane do przyszłego przywrócenia.
+2. **Nie usuwaj komentarzy `// fix(audyt):`** — dokumentują naprawione błędy krytyczne i chronią przed regresją.
+3. **TypeScript first** — wszystkie zmiany muszą przechodzić `tsc --noEmit`. Cel: wyczyścić 7 pozostałych błędów.
+4. **SQLite dla nowych funkcji** — każda nowa encja powinna iść do `workspace.db` przez `StorageEngine`, nie do monolitycznego JSON.
+5. **IPC tylko przez `ipcMain.handle()` + `ipcRenderer.invoke()`** — nie używaj `send()`/`on()`.
+6. **Nowe providery tylko przez `ProviderAuthConfig`** — nie hardcoduj URL-i ani kluczy API.
+7. **Każda nowa funkcja w UI musi mieć wpis w `ViewMode`** w `types.ts`.

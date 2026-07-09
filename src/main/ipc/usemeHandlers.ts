@@ -1,4 +1,4 @@
-import { ChildProcess } from 'child_process';
+import child_process, { ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
@@ -42,7 +42,6 @@ export class UsemeHandlerManager {
       path.resolve(appPath, '..', 'useme-ai-automation'),
       path.resolve(process.cwd(), '..', 'useme-ai-automation'),
       path.resolve(process.cwd(), 'useme-ai-automation'),
-      'C:/Users/Ksawier/Pictures/Screenshots/useme-ai-automation',
       path.resolve(app.getPath('home'), 'Pictures', 'Screenshots', 'useme-ai-automation')
     ];
     for (const cand of candidates) {
@@ -75,11 +74,11 @@ export class UsemeHandlerManager {
 
     // Użyj tsx do uruchomienia TypeScript bez kompilacji (zabezpieczone przed command injection: shell=false)
     const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-    const child = require('child_process').spawn(cmd, ['tsx', 'src/index.ts'], {
+    const child = child_process.spawn(cmd, ['tsx', 'src/index.ts'], {
       cwd: engineDir,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: process.platform === 'win32',
+      shell: false,
     });
 
     this.process = child;
@@ -112,6 +111,7 @@ export class UsemeHandlerManager {
         message: `[Engine] Proces zakończony z kodem ${code}`,
         timestamp: new Date().toISOString(),
       } as UsemeLogEntry);
+      child.removeAllListeners();
       this.process = null;
     });
 
@@ -121,6 +121,7 @@ export class UsemeHandlerManager {
         message: `[Engine] Błąd procesu: ${err.message}`,
         timestamp: new Date().toISOString(),
       } as UsemeLogEntry);
+      child.removeAllListeners();
       this.process = null;
     });
 
@@ -129,7 +130,21 @@ export class UsemeHandlerManager {
 
   stopExecution(): boolean {
     if (!this.process) return false;
-    this.process.kill('SIGTERM');
+    const proc = this.process;
+    this.process.removeAllListeners();
+    if (process.platform === 'win32') {
+      child_process.exec(`taskkill /F /T /PID ${proc.pid}`);
+    } else {
+      proc.kill('SIGTERM');
+    }
+    const timeout = setTimeout(() => {
+      if (proc.exitCode === null) {
+        proc.kill('SIGKILL');
+      }
+    }, 5000);
+    proc.on('exit', () => {
+      clearTimeout(timeout);
+    });
     this.process = null;
     return true;
   }

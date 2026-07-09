@@ -13,6 +13,7 @@ export enum AgentStatus {
   DISABLED = 'DISABLED',   // Agent wyłączony na stałe (limit restartów)
   COOLDOWN = 'COOLDOWN',   // Agent odpoczywa po crashu przed restartem
   AWAITING_APPROVAL = 'AWAITING_APPROVAL', // Agent czeka na akceptację outputu
+  COMPLETED = 'COMPLETED',         // Agent zakończył zadanie
 }
 
 // === Trigger Types =========================================================
@@ -78,9 +79,9 @@ export const DEFAULT_PROVIDERS: ProviderAuthConfig[] = [
   {
     provider: AIProvider.OPENROUTER,
     label: 'DeepSeek V4 Flash',
-    apiKey: process.env.DEEPSEEK_FLASH_API_KEY || '',
-    baseUrl: 'https://api.deepseek.com/v1',
-    models: ['deepseek-chat', 'deepseek-v4-flash'],
+    apiKey: 'not-needed',
+    baseUrl: 'http://localhost:4570/v1',
+    models: ['deepseek-ai/deepseek-v4-flash', 'deepseek-v4-flash', 'deepseek-chat'],
     isBuiltin: true,
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: '2026-07-01T00:00:00.000Z',
@@ -88,9 +89,9 @@ export const DEFAULT_PROVIDERS: ProviderAuthConfig[] = [
   {
     provider: AIProvider.OPENROUTER,
     label: 'DeepSeek V4 Pro',
-    apiKey: process.env.DEEPSEEK_PRO_API_KEY || '',
-    baseUrl: 'https://api.deepseek.com/v1',
-    models: ['deepseek-reasoner', 'deepseek-v4-pro'],
+    apiKey: 'not-needed',
+    baseUrl: 'http://localhost:4570/v1',
+    models: ['deepseek-ai/deepseek-v4-pro', 'deepseek-v4-pro', 'deepseek-reasoner'],
     isBuiltin: true,
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: '2026-07-01T00:00:00.000Z',
@@ -370,6 +371,7 @@ export interface SearchResult {
 export interface SearchConfig {
   searchPrompt: string;
   maxResults: number;
+  modelName: string;
 }
 
 export const DEFAULT_SEARCH_CONFIG: SearchConfig = {
@@ -381,6 +383,7 @@ Dla każdej relevantnej encji podaj: jej ID, krótki snippet (2-3 zdania) dlacze
 Odpowiadaj w formacie JSON: [{"entityId":"...","entityType":"...","title":"...","snippet":"...","relevance":0.0}]
 Jeśli żadna encja nie pasuje, zwróć pustą tablicę [].`,
   maxResults: 10,
+  modelName: 'gemini-2.5-flash',
 };
 
 // === Dry-Run (#10) ==========================================================

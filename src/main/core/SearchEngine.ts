@@ -71,7 +71,7 @@ export class SearchEngine {
         model: {
           provider: AIProvider.GEMINI,
           providerLabel: this.provider.name,
-          modelName: 'gemini-2.5-flash',
+          modelName: cfg.modelName,
           temperature: 0.1,
           maxTokens: 4096,
           topP: 0.9,

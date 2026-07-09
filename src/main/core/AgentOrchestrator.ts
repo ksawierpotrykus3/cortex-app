@@ -6,6 +6,7 @@
 import { Agent, AgentStatus, AgentOutput, TriggerType, ContextConfig, ContextSource, WorkspaceEntity } from '../../shared/types/schema';
 import { TelemetryMessage, FirehoseMessage } from '../../shared/types/ipc';
 import { ProviderRegistry } from '../ai/ProviderRegistry';
+import { systemEventBus } from '../services/SystemEventBus';
 import { StorageEngine } from '../storage/StorageEngine';
 import { SandboxRunner } from '../sandbox/SandboxRunner';
 import * as fs from 'fs';
@@ -174,6 +175,7 @@ export class AgentOrchestrator {
     state.startTime = startTime;
     state.currentOutput = '';
     state.tokensUsed = 0;
+    systemEventBus.push({ type: 'agent:started', timestamp: startTime, agentId, agentName: state.agent.name });
 
     this.setStatus(agentId, AgentStatus.RUNNING);
     this.startHeartbeat(agentId);
@@ -282,7 +284,7 @@ export class AgentOrchestrator {
         content = sandboxResult.output?.content || '';
       } else {
         // === Standard Execution (live) ======================================
-        content = await this.callAIStreaming(state.agent, finalContext, agentId, isPipeline);
+        content = await this.callAIStreaming(state.agent, finalContext, agentId, state, isPipeline);
       }
 
       // === Output ==========================================================
@@ -321,6 +323,7 @@ export class AgentOrchestrator {
 
       output.tokensUsed = state.tokensUsed;
       output.executionMs = executionMs;
+      output.status = AgentStatus.COMPLETED;
       output.completedAt = new Date().toISOString();
 
       // === Success =========================================================
@@ -333,6 +336,7 @@ export class AgentOrchestrator {
       state.agent.lastRunAt = output.createdAt;
       state.agent.runCount++;
       state.agent.updatedAt = new Date().toISOString();
+      systemEventBus.push({ type: 'agent:completed', timestamp: Date.now(), agentId, durationMs: executionMs });
 
       this.setStatus(agentId, AgentStatus.ACTIVE);
       this.stopHeartbeat(agentId);
@@ -345,6 +349,7 @@ export class AgentOrchestrator {
     } catch (error) {
       // === Error Handling ==================================================
       const errorMsg = error instanceof Error ? error.message : String(error);
+      systemEventBus.push({ type: 'agent:error', timestamp: Date.now(), agentId, error: errorMsg });
       const executionMs = Date.now() - startTime;
 
       output.status = AgentStatus.CRASHED;
@@ -460,7 +465,8 @@ export class AgentOrchestrator {
    * Emituje każdy token przez onStream callback (live do changeloga).
    * Na końcu zwraca pełny skumulowany tekst.
    */
-  private async callAIStreaming(agent: Agent, context: string, agentId: string, isPipeline?: boolean): Promise<string> {
+  // fix(audyt): state był undefined w zasięgu callAIStreaming, powodował ReferenceError
+  private async callAIStreaming(agent: Agent, context: string, agentId: string, state: AgentRuntimeState, isPipeline?: boolean): Promise<string> {
     const prompt = agent.promptTemplate
       .replace(/\{\{SCHOWEK\}\}/g, context || '(brak zawartości schowka)')
       .replace(/\{\{DATA\}\}/g, new Date().toLocaleDateString('pl-PL'))
@@ -492,6 +498,7 @@ export class AgentOrchestrator {
         }
 
         this.providerRegistry.recordSend(agent.model.providerLabel, agent.model.modelName);
+        state.tokensUsed += Math.ceil((fullContent.length + prompt.length) / 4);
         return fullContent;
       }
 
@@ -504,7 +511,7 @@ export class AgentOrchestrator {
 
     } catch (error) {
       console.error(`[AgentOrchestrator] AI call failed for "${agent.name}":`, error);
-      if (this.providerRegistry.healthMonitor && (agent.model.providerLabel === 'NVIDIA (DeepSeek / Kimi / Qwen)' || agent.model.providerLabel.includes('NVIDIA'))) {
+      if (this.providerRegistry.healthMonitor) {
         this.providerRegistry.healthMonitor.recordFailure(agent.model.modelName);
       }
       throw error;

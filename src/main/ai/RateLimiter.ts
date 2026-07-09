@@ -1,6 +1,8 @@
 // ============================================================================
 // NEXUS — RateLimiter
 // Ogranicza liczbę zapytań na minutę (RPM) dla każdego klucza API
+
+import { systemEventBus } from '../services/SystemEventBus';
 // ============================================================================
 
 export class RateLimiter {
@@ -12,6 +14,21 @@ export class RateLimiter {
     } else {
       this.keys.get(key)!.rpmLimit = limit;
     }
+  }
+
+  /** Atomic: checks rate limit AND records the send in one operation. Returns true if allowed. */
+  tryAcquire(key: string): boolean {
+    const entry = this.keys.get(key);
+    if (!entry) return true;
+    if (entry.rpmLimit <= 0) return false;
+    const now = Date.now();
+    entry.timestamps = entry.timestamps.filter(ts => now - ts < 60000);
+    if (entry.timestamps.length < entry.rpmLimit) {
+      entry.timestamps.push(now);
+      return true;
+    }
+    systemEventBus.push({ type: 'rate-limit:hit', timestamp: Date.now(), key, used: entry.timestamps.length, limit: entry.rpmLimit });
+    return false;
   }
 
   recordSend(key: string): void {
@@ -49,6 +66,18 @@ export class RateLimiter {
 
   removeKey(key: string): void {
     this.keys.delete(key);
+  }
+
+  reset(): void {
+    this.keys.clear();
+  }
+
+  /** Periodic cleanup of stale entries (timestamps older than 60s) to prevent memory leaks */
+  cleanupStaleEntries(): void {
+    const now = Date.now();
+    for (const [, entry] of this.keys) {
+      entry.timestamps = entry.timestamps.filter(ts => now - ts < 60000);
+    }
   }
 }
 

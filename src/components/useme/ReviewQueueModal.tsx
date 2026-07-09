@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUsemeStore } from '../../renderer/store/usemeStore';
 import { X, Check, RefreshCw, Trash2 } from 'lucide-react';
 
@@ -7,6 +7,10 @@ export function ReviewQueueModal() {
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
   const [editProposal, setEditProposal] = useState('');
   const [editMode, setEditMode] = useState(false);
+
+  useEffect(() => {
+    setActiveReviewIndex(0);
+  }, [pendingReviews.length]);
 
   if (pendingReviews.length === 0) return null;
 

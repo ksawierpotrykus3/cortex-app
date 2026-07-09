@@ -43,7 +43,8 @@ export async function saveChatSessions(agents: {
         collapsed: agent.collapsed,
         lastActive: new Date().toISOString(),
       };
-      await set(agent.id, session, chatStore);
+      // fix(audyt): 8-znakowe ID agenta powodowało kolizje kluczy w IndexedDB, nadpisując dane czatu
+      await set(agent.id + '_' + Date.now(), session, chatStore);
     }
     // Update the index of all agent IDs
     const allIds = agents.map(a => a.id);

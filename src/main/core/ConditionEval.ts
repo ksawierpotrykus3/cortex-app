@@ -110,7 +110,7 @@ function evaluateExpression(
     return context.trim().length > 0;
   }
 
-  // Nieznane wyrażenie — domyślnie nie pomijaj
+  // Nieznane wyrażenie — loguj ostrzeżenie, nie pomijaj
   console.warn(`[ConditionEval] Unknown expression: "${trimmed}" — treating as false`);
-  return null;
+  return false;
 }

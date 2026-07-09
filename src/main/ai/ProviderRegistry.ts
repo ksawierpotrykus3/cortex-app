@@ -9,6 +9,7 @@ import { GeminiAdapter } from './GeminiAdapter';
 import { AIProvider, ProviderAuthConfig, ModelConfig, DEFAULT_PROVIDERS } from '../../shared/types/schema';
 import { rateLimiter } from './RateLimiter';
 import { AiHealthMonitor } from './AiHealthMonitor';
+import { systemEventBus } from '../services/SystemEventBus';
 
 // === Provider Factory ======================================================
 function createAdapter(config: ProviderAuthConfig): IAIProvider | null {
@@ -42,7 +43,7 @@ export class ProviderRegistry {
   /** Zwraca domyślny limit RPM dla danego providera */
   private static getDefaultRpmLimit(label: string): number {
     if (label.includes('Gemini')) return 60;
-    if (label.includes('DeepSeek') || label.includes('NVIDIA')) return 40;
+    if (label.includes('DeepSeek')) return 40;
     if (label.includes('Ollama')) return 0; // lokalny — bez limitu
     return 30; // domyślny bezpieczny limit
   }
@@ -151,8 +152,8 @@ export class ProviderRegistry {
 
   private getPaidAdapter(modelName: string): { label: string; adapter: IAIProvider } | null {
     for (const cfg of this.configs) {
-      // Paid provider is not the Nvidia proxy or default free model
-      if (cfg.baseUrl?.includes('localhost:3456') || cfg.label.includes('NVIDIA') || (cfg.label === 'DeepSeek V4 Flash' && cfg.isBuiltin)) {
+      // Paid provider is not the default free DeepSeek proxy
+      if (cfg.baseUrl?.includes('localhost:4570') || (cfg.label === 'DeepSeek V4 Flash' && cfg.isBuiltin) || (cfg.label === 'DeepSeek V4 Pro' && cfg.isBuiltin)) {
         continue;
       }
       if (cfg.models.includes(modelName) && cfg.apiKey && cfg.apiKey !== 'not-needed') {
@@ -169,8 +170,12 @@ export class ProviderRegistry {
   // Provider Configuration Management
   // =========================================================================
 
-  getConfigs(): ProviderAuthConfig[] {
-    return [...this.configs];
+  getConfigs(): (ProviderAuthConfig & { hasApiKey: boolean })[] {
+    return this.configs.map(cfg => ({
+      ...cfg,
+      apiKey: cfg.apiKey ? '***' : '',
+      hasApiKey: !!cfg.apiKey,
+    }));
   }
 
   getConfig(label: string): ProviderAuthConfig | undefined {
@@ -225,8 +230,8 @@ export class ProviderRegistry {
     const label = modelConfig.providerLabel;
     const modelName = modelConfig.modelName;
 
-    // Check if this is a free model on the local Nvidia proxy or default free model
-    const isFreeModel = (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA') || label === 'DeepSeek V4 Flash') &&
+    // Check if this is a default free DeepSeek model
+    const isFreeModel = (label === 'DeepSeek V4 Flash' || label === 'DeepSeek V4 Pro') &&
       (modelName === 'deepseek-ai/deepseek-v4-pro' || modelName === 'deepseek-ai/deepseek-v4-flash' || modelName === 'deepseek-v4-flash' || modelName === 'deepseek-v4-pro');
 
     if (isFreeModel && this.healthMonitor) {
@@ -291,14 +296,16 @@ export class ProviderRegistry {
 
   /** Rejestruje udane wysłanie zapytania do RateLimiter */
   recordSend(label: string, modelName?: string): void {
-    if (modelName && this.activeFailovers.has(modelName) && (label === 'NVIDIA (DeepSeek / Kimi / Qwen)' || label.includes('NVIDIA') || label === 'DeepSeek V4 Flash')) {
+    if (modelName && this.activeFailovers.has(modelName) && label === 'DeepSeek V4 Flash') {
       const paid = this.getPaidAdapter(modelName);
       if (paid) {
         rateLimiter.recordSend(paid.label);
+        systemEventBus.push({ type: 'ai:response-received', timestamp: Date.now(), provider: paid.label, durationMs: 0, tokenCount: 0 });
         return;
       }
     }
     rateLimiter.recordSend(label);
+    systemEventBus.push({ type: 'ai:response-received', timestamp: Date.now(), provider: label, durationMs: 0, tokenCount: 0 });
   }
 
   // =========================================================================

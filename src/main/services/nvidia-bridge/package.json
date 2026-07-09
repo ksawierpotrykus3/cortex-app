@@ -1,9 +1,0 @@
-{
-  "name": "nexus-nvidia-bridge",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "express": "^4.22.2",
-    "undici": "^6.21.1"
-  }
-}

@@ -37,6 +37,9 @@ export function getOrCreateBrowserProfile(personaId: string, basePath: string): 
 export function deleteBrowserProfile(personaId: string): void {
   const dir = profileRegistry.get(personaId);
   if (dir && fs.existsSync(dir)) {
+    if (!dir.includes('browser-profiles')) {
+      throw new Error('Path validation failed: not a browser profile directory');
+    }
     fs.rmSync(dir, { recursive: true, force: true });
   }
   profileRegistry.delete(personaId);
@@ -84,20 +87,24 @@ function loadCursorStore(): void {
   } catch { /* ignore load errors */ }
 }
 
+let writeQueue: Promise<void> = Promise.resolve();
+
 function saveCursorStore(): void {
-  try {
-    const file = getCursorStorePath();
-    const dir = path.dirname(file);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const obj: Record<string, any> = {};
-    for (const [k, v] of cursorStore.entries()) {
-      obj[k] = {
-        ...v,
-        processedIds: Array.from(v.processedIds),
-      };
-    }
-    fs.writeFileSync(file, JSON.stringify(obj, null, 2), 'utf-8');
-  } catch { /* ignore save errors */ }
+  writeQueue = writeQueue.then(() => {
+    try {
+      const file = getCursorStorePath();
+      const dir = path.dirname(file);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const obj: Record<string, any> = {};
+      for (const [k, v] of cursorStore.entries()) {
+        obj[k] = {
+          ...v,
+          processedIds: Array.from(v.processedIds),
+        };
+      }
+      fs.writeFileSync(file, JSON.stringify(obj, null, 2), 'utf-8');
+    } catch { /* ignore save errors */ }
+  });
 }
 
 // Load initially
@@ -364,20 +371,10 @@ export function wrapWithAuthGuard(
   steps: any[],
   config: AuthGuardConfig,
 ): any[] {
+  // fix(audyt): dashboardSelector nie był przekazywany do page.evaluate — auth guard nigdy nie wykrywał dashboardu
   const authCheck: any = {
     action: 'EVALUATE',
-    script: `
-      const dashboard = document.querySelector('${config.dashboardSelector}');
-      if (!dashboard) {
-        throw new Error('SESSION_AUTH_LOST:' + JSON.stringify({
-          reason: 'Dashboard autoryzacji nie został wykryty',
-          dashboardSelector: '${config.dashboardSelector}',
-          currentUrl: window.location.href,
-          pageTitle: document.title,
-        }));
-      }
-      return JSON.stringify({ authorized: true, currentUrl: window.location.href });
-    `,
+    script: `(function() { const selector = ${JSON.stringify(config.dashboardSelector)}; const dashboard = document.querySelector(selector); if (!dashboard) { throw new Error('SESSION_AUTH_LOST:' + JSON.stringify({ reason: 'Dashboard autoryzacji nie został wykryty', dashboardSelector: selector, currentUrl: window.location.href, pageTitle: document.title })); } return JSON.stringify({ authorized: true, currentUrl: window.location.href }); })()`,
     description: 'Weryfikacja autoryzacji sesji',
   };
 

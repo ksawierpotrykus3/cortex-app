@@ -25,16 +25,7 @@ const parseAiConfig = (raw: any): ExperimentalAIConfig => {
 
 const AI_MODELS = ['DeepSeek V4 Flash', 'DeepSeek V4 Pro'] as const;
 
-// Licznik do pozycjonowania nowych wezlow — rozklada je w rzedach
-const nodeCounter = { col: 0, row: 0 };
-const resetNodePos = () => { nodeCounter.col = 0; nodeCounter.row = 0; };
-const nextNodePos = () => {
-  const x = 60 + nodeCounter.col * 260;
-  const y = 60 + nodeCounter.row * 180;
-  nodeCounter.col++;
-  if (nodeCounter.col > 5) { nodeCounter.col = 0; nodeCounter.row++; }
-  return { x, y };
-};
+
 
 const NODE_BORDER: Record<string, string> = {
   note: 'border-yellow-500 bg-yellow-900/10',
@@ -50,6 +41,7 @@ export function ExperimentalCanvas() {
   const [projects, setProjects] = useState<ExperimentalProject[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [projectLoaded, setProjectLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showNewProjectInput, setShowNewProjectInput] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [renameProjectId, setRenameProjectId] = useState<string | null>(null);
@@ -95,7 +87,7 @@ export function ExperimentalCanvas() {
   const [annotationText, setAnnotationText] = useState('');
 
   // -- planner --
-  const { invokeChat, invokePlanner, parsePlannerResponse, chatLoading, plannerLoading } = useExperimentalAI();
+  const { invokeChat, invokePlanner, parsePlannerResponse, chatLoading, plannerLoading, setPlannerLoading } = useExperimentalAI();
   const { applyLayout } = useAutoLayout();
   const [diffProposal, setDiffProposal] = useState<{ operations: PlannerOperation[] } | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -104,6 +96,17 @@ export function ExperimentalCanvas() {
   const [plannerPhase, setPlannerPhase] = useState<'idle' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'done'>('idle');
   const [plannerProgress, setPlannerProgress] = useState({ current: 0, total: 0 });
   const [globalContext, setGlobalContext] = useState<GlobalContext | null>(null);
+
+  // fix(audyt): funkcje nie były zdefiniowane, powodowały ReferenceError
+  const nodePosCounter = useRef(0);
+  const nextNodePos = () => {
+    const cols = 4;
+    const x = 200 + (nodePosCounter.current % cols) * 280;
+    const y = 200 + Math.floor(nodePosCounter.current / cols) * 200;
+    nodePosCounter.current++;
+    return { x, y };
+  };
+  const resetNodePos = () => { nodePosCounter.current = 0; };
 
   // ==========================================================================
   // Ladowanie
@@ -142,40 +145,44 @@ export function ExperimentalCanvas() {
     setActiveProjectId(id);
     localStorage.setItem('exp_last_project_id', id);
 
-    const cfg = parseAiConfig(proj.ai_config);
-    setChatModel(cfg.chatModel || 'DeepSeek V4 Flash');
-    setPlannerModel(cfg.plannerModel || 'DeepSeek V4 Flash');
-    if (cfg.chatSystemPrompt) setChatSystemPrompt(cfg.chatSystemPrompt);
-    if (cfg.mapPlannerSystemPrompt) setPlannerSystemPrompt(cfg.mapPlannerSystemPrompt);
-    // Wczytaj global_context jesli istnieje
-    if ((cfg as any).global_context) setGlobalContext((cfg as any).global_context as GlobalContext);
-    setSpecContent(proj.spec_content || '');
+    try {
+      const cfg = parseAiConfig(proj.ai_config);
+      setChatModel(cfg.chatModel || 'DeepSeek V4 Flash');
+      setPlannerModel(cfg.plannerModel || 'DeepSeek V4 Flash');
+      if (cfg.chatSystemPrompt) setChatSystemPrompt(cfg.chatSystemPrompt);
+      if (cfg.mapPlannerSystemPrompt) setPlannerSystemPrompt(cfg.mapPlannerSystemPrompt);
+      // Wczytaj global_context jesli istnieje
+      if ((cfg as any).global_context) setGlobalContext((cfg as any).global_context as GlobalContext);
+      setSpecContent(proj.spec_content || '');
 
-    const b = window.nexusBridge;
-    let convs: ExperimentalConversation[] = [];
-    if (b?.expGetConversations) {
-      convs = await b.expGetConversations({ projectId: id });
-    }
-    if (convs.length === 0) {
-      const def: ExperimentalConversation = { id: genId(), project_id: id, name: 'Rozmowa 1' };
-      if (b?.expSaveConversation) await b.expSaveConversation({ conversation: def });
-      convs = [def];
-    }
-    setConversations(convs);
-    setActiveConversationId(convs[0].id);
-    setAiError(null);
+      const b = window.nexusBridge;
+      let convs: ExperimentalConversation[] = [];
+      if (b?.expGetConversations) {
+        convs = await b.expGetConversations({ projectId: id });
+      }
+      if (convs.length === 0) {
+        const def: ExperimentalConversation = { id: genId(), project_id: id, name: 'Rozmowa 1' };
+        if (b?.expSaveConversation) await b.expSaveConversation({ conversation: def });
+        convs = [def];
+      }
+      setConversations(convs);
+      setActiveConversationId(convs[0].id);
+      setAiError(null);
 
-    if (b?.expGetChatMessages) {
-      const msgs = await b.expGetChatMessages({ projectId: id, conversationId: convs[0].id });
-      setMessages(msgs);
-    }
-    if (b?.expGetNodes) {
-      const nds = await b.expGetNodes({ projectId: id });
-      setNodes(nds);
-    }
-    if (b?.expGetEdges) {
-      const eds = await b.expGetEdges({ projectId: id });
-      setEdges(eds);
+      if (b?.expGetChatMessages) {
+        const msgs = await b.expGetChatMessages({ projectId: id, conversationId: convs[0].id });
+        setMessages(msgs);
+      }
+      if (b?.expGetNodes) {
+        const nds = await b.expGetNodes({ projectId: id });
+        setNodes(nds);
+      }
+      if (b?.expGetEdges) {
+        const eds = await b.expGetEdges({ projectId: id });
+        setEdges(eds);
+      }
+    } catch (err: any) {
+      setAiError(err.message || 'Blad ladowania projektu');
     }
   };
 
@@ -324,7 +331,7 @@ export function ExperimentalCanvas() {
       project_id: activeProjectId,
       conversation_id: activeConversationId || undefined,
       role: 'user',
-      content: `[Analiza SPEC] Przeanalizuj specyfikacje projektu.`,
+      content: prompt,
     };
     setMessages(prev => [...prev, userMsg]);
     const b = window.nexusBridge;
@@ -413,8 +420,6 @@ ${JSON.stringify(readyNodes)}`;
       setAiError(err.message);
     }
 
-    // Auto-layout i zakonczenie fazy 3
-    runAutoLayout();
     setPlannerPhase('done');
   };
 
@@ -704,6 +709,8 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
           project_id: activeProjectId,
           title: op.node.title,
           content: op.node.content,
+          node_type: (op.node.node_type as NodeType) || 'component',
+          status: (op.node.status as NodeStatus) || 'new',
           parent_id: op.node.parent_id || null,
           x: pos.x,
           y: pos.y,
@@ -725,9 +732,18 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
         }
       }
       if (op.action === 'DELETE' && op.nodeId) {
-        localNodes = localNodes.filter(n => n.id !== op.nodeId);
-        setNodes(prev => prev.filter(n => n.id !== op.nodeId));
-        if (b?.expDeleteNode) await b.expDeleteNode({ id: op.nodeId });
+        const idsToDelete = new Set<string>();
+        const collectChildren = (parentId: string) => {
+          idsToDelete.add(parentId);
+          localNodes.filter(n => n.parent_id === parentId).forEach(child => collectChildren(child.id));
+        };
+        collectChildren(op.nodeId);
+        localNodes = localNodes.filter(n => !idsToDelete.has(n.id));
+        setNodes(prev => prev.filter(n => !idsToDelete.has(n.id)));
+        for (const nid of idsToDelete) {
+          if (b?.expDeleteNode) await b.expDeleteNode({ id: nid });
+        }
+        setEdges(prev => prev.filter(e => !idsToDelete.has(e.source_node_id) && !idsToDelete.has(e.target_node_id)));
       }
       if (op.edge) {
         const edge: ExperimentalEdge = {
@@ -744,8 +760,147 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
     }
     setDiffProposal(null);
 
+    // Oznacz wiadomości jako przetworzone
+    const updatedMessages = messages.map(m => ({
+      ...m,
+      metadata: { ...((m.metadata || {}) as any), processed_by_ai: true }
+    }));
+    setMessages(updatedMessages);
+
     // Auto-layout po zatwierdzeniu diffa (z lokalna lista)
     runAutoLayout(localNodes);
+  };
+
+  // ==========================================================================
+  // Zunifikowane AI: Aktualizuj plan
+  // ==========================================================================
+  const runUnifiedAI = async () => {
+    if (!activeProjectId) return;
+    setAiError(null);
+
+    // ŚCIEŻKA A: Plansza pusta + SPEC niepusty → wywołaj runFullPlanFromSpec
+    if (nodes.length === 0 && specContent.trim().length > 0) {
+      await runFullPlanFromSpec();
+      return;
+    }
+
+    // ŚCIEŻKA B: Zunifikowane AI z pełnym kontekstem
+    setPlannerLoading(true);
+    try {
+      const b = window.nexusBridge;
+
+      const techNodes = nodes.filter(n => n.node_type !== 'note');
+      const noteNodes = nodes.filter(n => n.node_type === 'note');
+
+      const MAX_PROMPT_MSGS = 20;
+      const unprocessed = messages.filter(m => !m.metadata?.processed_by_ai);
+      const recent = messages.slice(-MAX_PROMPT_MSGS);
+      const promptMessages = [...new Map([...unprocessed, ...recent].map(m => [m.id, m])).values()];
+
+      const prompt = `Jesteś Architektem Projektu. Masz pełny obraz sytuacji:
+
+SPECYFIKACJA PROJEKTU (tylko do odczytu):
+"""
+${specContent || '(brak)'}
+"""
+
+WĘZŁY TECHNICZNE (ID, typ, tytuł, treść):
+${JSON.stringify(techNodes.map(n => ({id: n.id, type: n.node_type, title: n.title, content: n.content})))}
+
+NOTATKI (ID, tytuł, treść):
+${JSON.stringify(noteNodes.map(n => ({id: n.id, title: n.title, content: n.content})))}
+
+KRAWĘDZIE:
+${JSON.stringify(edges.map(e => ({id: e.id, source: e.source_node_id, target: e.target_node_id, type: e.relation_type, label: e.label})))}
+
+HISTORIA CZATU:
+${(promptMessages as ExperimentalChatMessage[]).map(m => `[${m.role === 'user' ? 'UŻYTKOWNIK' : 'AI'}] (processed: ${!!m.metadata?.processed_by_ai}): ${m.content}`).join('\n\n')}
+
+ZWROĆ TABLICĘ JSON Z OPERACJAMI. Format:
+[{
+  "action": "create_note" | "update_note" | "delete_node" | "create_edge" | "delete_edge" | "nothing",
+  "reason": "krótkie wyjaśnienie DLACZEGO ta zmiana (po polsku, prostym językiem)",
+  "node": {"label": "...", "description": "..."},
+  "target_ids": ["id1"],
+  "update_node_id": "...",
+  "delete_node_id": "...",
+  "edge": {"source_node_id": "...", "target_node_id": "...", "relation_type": "supports", "label": "supports"},
+  "delete_edge_id": "..."
+}]
+
+ZASADY:
+- Notatka: node_type "note", max 3 zdania
+- Krawędź supports: notatka → węzeł techniczny
+- Jeśli podobna notatka istnieje → action: "update_note"
+- Jeśli wiadomość zmienia ustalenie → możesz usunąć nieaktualne węzły
+- Dla wiadomości processed=true nie duplikuj notatek, chyba że nowy kontekst zmienia znaczenie
+- Zwróć TYLKO tablicę JSON, bez tekstu przed/po`;
+
+      const reply = await invokeChat(prompt, promptMessages, chatModel);
+      const jsonMatch = reply.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        setAiError('AI nie zwróciło poprawnego formatu JSON. Spróbuj ponownie.');
+        return;
+      }
+
+      let operations: any[];
+      try {
+        operations = JSON.parse(jsonMatch[0]);
+      } catch {
+        setAiError('AI zwróciło odpowiedź w nieprawidłowym formacie. Spróbuj ponownie.');
+        return;
+      }
+
+      if (!Array.isArray(operations) || operations.length === 0) {
+        return;
+      }
+
+      const deleteCount = operations.filter((op: any) => op.action === 'delete_node').length;
+      const totalNodes = nodes.length;
+      const massiveDelete = totalNodes > 0 && deleteCount / totalNodes > 0.3;
+
+      const plannerOps: PlannerOperation[] = operations
+        .filter((op: any) => op.action !== 'nothing')
+        .map((op: any) => {
+          const base: PlannerOperation = {
+            action: op.action === 'create_note' ? 'ADD' :
+                     op.action === 'update_note' ? 'UPDATE' :
+                     op.action === 'delete_node' ? 'DELETE' :
+                     op.action === 'create_edge' ? 'ADD' :
+                     op.action === 'delete_edge' ? 'DELETE' : 'ADD',
+            reason: op.reason || '',
+          };
+
+          if (op.action === 'create_note') {
+            base.node = { title: op.node?.label || '', content: op.node?.description || '', node_type: 'note', status: 'ready' };
+          }
+          if (op.action === 'update_note') {
+            base.node = { id: op.update_node_id, title: op.node?.label || '', content: op.node?.description || '' };
+          }
+          if (op.action === 'delete_node') {
+            base.nodeId = op.delete_node_id;
+          }
+          if (op.action === 'create_edge' && op.edge) {
+            base.edge = { source_node_id: op.edge.source_node_id, target_node_id: op.edge.target_node_id, label: op.edge.label || 'supports' };
+          }
+          if (op.action === 'delete_edge') {
+            base.nodeId = op.delete_edge_id;
+          }
+
+          return base;
+        });
+
+      setDiffProposal({
+        operations: plannerOps,
+        _massiveDelete: massiveDelete,
+        _deleteCount: deleteCount,
+        _totalNodes: totalNodes,
+      } as any);
+    } catch (err: any) {
+      setAiError(err.message || 'Nieznany błąd');
+    } finally {
+      setPlannerLoading(false);
+    }
   };
 
   // ==========================================================================
@@ -1005,22 +1160,8 @@ ${message.content}`;
         {/* === Panel SPEC (lewy) === */}
         {specPanelOpen && activeProject && (
           <div className="w-[360px] min-w-[360px] border-r border-gray-700 bg-[#111] flex flex-col shrink-0">
-            <div className="h-10 px-4 border-b border-gray-700 flex items-center justify-between shrink-0">
+            <div className="h-10 px-4 border-b border-gray-700 flex items-center shrink-0">
               <span className="text-sm font-medium text-gray-300">Specyfikacja projektu</span>
-              <div className="flex gap-1.5">
-                <button onClick={analyzeSpec} className="px-2.5 py-1 text-xs bg-gray-700 text-gray-200 rounded hover:bg-gray-600">
-                  Analizuj z AI
-                </button>
-                <button onClick={runFullPlanFromSpec}
-                  disabled={plannerPhase !== 'idle' || !specContent.trim()}
-                  className="px-2.5 py-1 text-xs bg-blue-700 text-gray-200 rounded hover:bg-blue-600 disabled:opacity-40"
-                >
-                  Generuj plan ze SPEC
-                </button>
-                <button onClick={saveSpec} className="px-2.5 py-1 text-xs bg-gray-700 text-gray-200 rounded hover:bg-gray-600">
-                  Zapisz
-                </button>
-              </div>
             </div>
             <div className="flex-1 p-3">
               <textarea
@@ -1244,15 +1385,7 @@ ${message.content}`;
                   <div className={`whitespace-pre-wrap break-words ${m.role === 'user' ? 'text-gray-100' : m.role === 'system' ? 'text-yellow-600' : 'text-gray-300'}`}>
                     {m.content}
                   </div>
-                  {/* Przycisk Notatka dla wiadomosci AI */}
-                  {m.role === 'ai' && (
-                    <button
-                      onClick={() => generateNote(m)}
-                      disabled={plannerPhase !== 'idle'}
-                      className="mt-1 text-xs px-2 py-0.5 text-gray-500 hover:text-blue-400 rounded hover:bg-gray-800 transition-colors disabled:opacity-40"
-                    >[Notatka]</button>
-                  )}
-                </div>
+                  </div>
               ))}
               {chatLoading && <div className="text-sm text-gray-500 animate-pulse">Asystent odpowiada...</div>}
               <div ref={messagesEndRef} />
@@ -1277,17 +1410,16 @@ ${message.content}`;
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={runPhase4Diff}
-                  disabled={plannerLoading || messages.length === 0 || plannerPhase !== 'idle'}
-                  className="flex-1 px-3 py-2 bg-gray-700 text-gray-200 text-sm rounded hover:bg-gray-600 disabled:opacity-40 border border-gray-600"
+                  onClick={runUnifiedAI}
+                  disabled={plannerLoading || plannerPhase !== 'idle'}
+                  className="flex-1 px-3 py-2 bg-blue-700 text-white text-sm rounded hover:bg-blue-600 disabled:opacity-40"
                 >
-                  {plannerLoading ? 'Planowanie...' : 'Przebuduj plan z rozmowy'}
+                  {plannerLoading ? 'Planowanie...' : 'Aktualizuj plan'}
                 </button>
                 <select
-                  value={plannerModel}
-                  onChange={e => { setPlannerModel(e.target.value); setTimeout(saveAiConfig, 0); }}
+                  value={chatModel}
+                  onChange={e => { setChatModel(e.target.value); setTimeout(saveAiConfig, 0); }}
                   className="bg-[#1a1a1a] text-xs text-gray-400 border border-gray-700 rounded px-1.5 py-2 outline-none"
-                  title="Model Planera"
                 >
                   {AI_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
@@ -1360,7 +1492,7 @@ ${message.content}`;
       )}
 
       {/* ===== Ekran startowy ===== */}
-      {projectLoaded && projects.length === 0 && (
+      {projectLoaded && projects.length === 0 && !loadError && (
         <div className="fixed inset-0 z-50 bg-[#0d0d0d] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-lg font-medium text-gray-300 mb-4">Nowy projekt</h2>
@@ -1373,6 +1505,14 @@ ${message.content}`;
               autoFocus
             />
             <button onClick={createProject} className="block mx-auto mt-4 px-5 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-500">Utworz</button>
+          </div>
+        </div>
+      )}
+      {loadError && (
+        <div className="fixed inset-0 z-50 bg-[#0d0d0d] flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-lg font-medium text-red-400 mb-2">Blad ladowania</h2>
+            <p className="text-sm text-gray-400">{loadError}</p>
           </div>
         </div>
       )}

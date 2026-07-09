@@ -42,6 +42,7 @@ export interface UsemeActions {
   savePrompt: (relativePath: string, content: string) => Promise<void>;
   setPromptContent: (content: string) => void;
   addLog: (entry: LogEntry) => void;
+  addReview: (review: ReviewItem) => void;
   clearLogs: () => void;
 }
 
@@ -69,11 +70,13 @@ export const useUsemeStore = create<UsemeState & UsemeActions>((set, get) => ({
   // Actions
   startExecution: async (mode, headless) => {
     try {
-      set({ status: 'RUNNING', mode, error: null });
+      set({ mode, error: null });
       const b = await getBridge();
       const result = await b.usemeStart({ mode, headless });
       if (!result.success) {
         set({ status: 'ERROR', error: result.error || 'Failed to start' });
+      } else {
+        set({ status: 'RUNNING' });
       }
     } catch (err) {
       set({ status: 'ERROR', error: String(err) });
@@ -161,6 +164,13 @@ export const useUsemeStore = create<UsemeState & UsemeActions>((set, get) => ({
   addLog: (entry) => {
     set((state) => ({
       logs: [...state.logs.slice(-499), entry],
+    }));
+  },
+
+  addReview: (review: ReviewItem) => {
+    set((state) => ({
+      pendingReviews: [...state.pendingReviews, review],
+      status: 'AWAITING_REVIEW',
     }));
   },
 

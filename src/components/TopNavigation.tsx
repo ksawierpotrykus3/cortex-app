@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Download, Settings, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Tags, ChevronDown, MessageSquareMore } from "lucide-react";
+import { Download, Settings, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Tags, ChevronDown, MessageSquareMore, Monitor } from "lucide-react";
 import { ViewMode, RightPanelState, ModalState } from "../types";
 
 export function TopNavigation({
@@ -44,26 +44,6 @@ export function TopNavigation({
 
         {/* Core navigation — always visible */}
         <div className="flex gap-2 h-14">
-          <button
-            onClick={() => setActiveView("nexus")}
-            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
-              activeView === "nexus"
-                ? "text-[rgb(var(--accent))] border-[rgb(var(--accent))]"
-                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
-            }`}
-          >
-            Topology
-          </button>
-          <button
-            onClick={() => setActiveView("lab-todo")}
-            className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
-              activeView.startsWith("lab")
-                ? "text-[rgb(var(--accent))] border-[rgb(var(--accent))]"
-                : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
-            }`}
-          >
-            Laboratory
-          </button>
 
           {/* Useme Automation */}
           <button
@@ -153,6 +133,7 @@ function NavGroup({ label, activeView, setActiveView }: { label: string; activeV
     { id: 'wiki', label: 'Wiki', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'git', label: 'Git', icon: <GitBranch className="w-3.5 h-3.5" /> },
     { id: 'feedback', label: 'Feedback', icon: <MessageSquareMore className="w-3.5 h-3.5" /> },
+    { id: 'system', label: 'System', icon: <Monitor className="w-3.5 h-3.5" /> },
   ];
 
   return (
