@@ -1,24 +1,23 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ExperimentalProject,
-  ExperimentalConversation,
-  ExperimentalChatMessage,
-  ExperimentalNode,
-  ExperimentalEdge,
-  ExperimentalNodeAnnotation,
-  ExperimentalAIConfig,
+  Projekt,
+  ProjektyConversation,
+  ProjektyChatMessage,
+  ProjektyNode,
+  ProjektyEdge,
+  ProjektyNodeAnnotation,
+  ProjektyAIConfig,
   GlobalContext,
   NodeType,
   NodeStatus,
   RelationType,
-  NoteGenerationResult,
 } from '../types';
 import { useExperimentalAI, PlannerOperation } from '../hooks/useExperimentalAI';
 import { useAutoLayout } from '../hooks/useAutoLayout';
 
 const genId = () => `exp_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-const parseAiConfig = (raw: any): ExperimentalAIConfig => {
+const parseAiConfig = (raw: any): ProjektyAIConfig => {
   if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
   return raw || {};
 };
@@ -28,7 +27,6 @@ const AI_MODELS = ['DeepSeek V4 Flash', 'DeepSeek V4 Pro'] as const;
 
 
 const NODE_BORDER: Record<string, string> = {
-  note: 'border-yellow-500 bg-yellow-900/10',
   root: 'border-white',
   domain: 'border-blue-500',
   component: 'border-gray-400',
@@ -38,24 +36,25 @@ const NODE_BORDER: Record<string, string> = {
 
 export function ExperimentalCanvas() {
   // -- projekty --
-  const [projects, setProjects] = useState<ExperimentalProject[]>([]);
+  const [projects, setProjects] = useState<Projekt[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [projectLoaded, setProjectLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'unsaved'>('saved');
   const [showNewProjectInput, setShowNewProjectInput] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [renameProjectId, setRenameProjectId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
   // -- konwersacje --
-  const [conversations, setConversations] = useState<ExperimentalConversation[]>([]);
+  const [conversations, setConversations] = useState<ProjektyConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   // -- dane projektu --
   const [specContent, setSpecContent] = useState('');
-  const [messages, setMessages] = useState<ExperimentalChatMessage[]>([]);
-  const [nodes, setNodes] = useState<ExperimentalNode[]>([]);
-  const [edges, setEdges] = useState<ExperimentalEdge[]>([]);
+  const [messages, setMessages] = useState<ProjektyChatMessage[]>([]);
+  const [nodes, setNodes] = useState<ProjektyNode[]>([]);
+  const [edges, setEdges] = useState<ProjektyEdge[]>([]);
 
   // -- panele boczne --
   const [specPanelOpen, setSpecPanelOpen] = useState(true);
@@ -64,7 +63,8 @@ export function ExperimentalCanvas() {
   // -- AI config --
   const [chatModel, setChatModel] = useState<string>('DeepSeek V4 Flash');
   const [plannerModel, setPlannerModel] = useState<string>('DeepSeek V4 Flash');
-  const [chatSystemPrompt, setChatSystemPrompt] = useState('Jestes architektem AI. Odpowiadaj krotko i rzeczowo.');
+  // Chat AI
+  const [chatSystemPrompt, setChatSystemPrompt] = useState('');
   const [plannerSystemPrompt, setPlannerSystemPrompt] = useState(
     'Jestes Planerem Architektury. Analizujesz rozmowe i istniejący plan, proponujesz zmiany w wezlach. Zwracasz JSON z operacjami.'
   );
@@ -108,6 +108,53 @@ export function ExperimentalCanvas() {
   };
   const resetNodePos = () => { nodePosCounter.current = 0; };
 
+  // -- undo (Faza 2: ostatnie 10 operacji, Ctrl+Z) --
+  const [undoStack, setUndoStack] = useState<{ nodes: ProjektyNode[]; edges: ProjektyEdge[] }[]>([]);
+  const pushUndo = useCallback(() => {
+    setUndoStack(s => {
+      const stack = [...s, { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }];
+      if (stack.length > 10) stack.shift();
+      return stack;
+    });
+  }, [nodes, edges]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'z' && !e.shiftKey && undoStack.length > 0) {
+        e.preventDefault();
+        const prev = undoStack[undoStack.length - 1];
+        setUndoStack(s => s.slice(0, -1));
+        setNodes(prev.nodes);
+        setEdges(prev.edges);
+        setSaveStatus('unsaved');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undoStack]);
+
+  // -- dirty nodes auto-save (Faza 2: co 30s) --
+  const [dirtyNodeIds, setDirtyNodeIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (dirtyNodeIds.size === 0) return;
+    const interval = setInterval(async () => {
+      setSaveStatus('saving');
+      try {
+        for (const id of dirtyNodeIds) {
+          const node = nodes.find(n => n.id === id);
+          if (node && window.nexusBridge?.projSaveNode) {
+            await window.nexusBridge.projSaveNode({ node });
+          }
+        }
+        setDirtyNodeIds(new Set());
+        setSaveStatus('saved');
+      } catch {
+        setSaveStatus('error');
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [dirtyNodeIds, nodes]);
+
   // ==========================================================================
   // Ladowanie
   // ==========================================================================
@@ -128,8 +175,8 @@ export function ExperimentalCanvas() {
   const loadProjects = async () => {
     try {
       const b = window.nexusBridge;
-      if (b?.expGetProjects) {
-        const list = await b.expGetProjects();
+      if (b?.projGetProjects) {
+        const list = await b.projGetProjects();
         setProjects(list);
       }
     } catch { /* ignore */ }
@@ -156,29 +203,29 @@ export function ExperimentalCanvas() {
       setSpecContent(proj.spec_content || '');
 
       const b = window.nexusBridge;
-      let convs: ExperimentalConversation[] = [];
-      if (b?.expGetConversations) {
-        convs = await b.expGetConversations({ projectId: id });
+      let convs: ProjektyConversation[] = [];
+      if (b?.projGetConversations) {
+        convs = await b.projGetConversations({ projectId: id });
       }
       if (convs.length === 0) {
-        const def: ExperimentalConversation = { id: genId(), project_id: id, name: 'Rozmowa 1' };
-        if (b?.expSaveConversation) await b.expSaveConversation({ conversation: def });
+        const def: ProjektyConversation = { id: genId(), project_id: id, name: 'Rozmowa 1', enabled: true, deleted: false };
+        if (b?.projSaveConversation) await b.projSaveConversation({ conversation: def });
         convs = [def];
       }
       setConversations(convs);
       setActiveConversationId(convs[0].id);
       setAiError(null);
 
-      if (b?.expGetChatMessages) {
-        const msgs = await b.expGetChatMessages({ projectId: id, conversationId: convs[0].id });
+      if (b?.projGetChatMessages) {
+        const msgs = await b.projGetChatMessages({ projectId: id, conversationId: convs[0].id });
         setMessages(msgs);
       }
-      if (b?.expGetNodes) {
-        const nds = await b.expGetNodes({ projectId: id });
+      if (b?.projGetNodes) {
+        const nds = await b.projGetNodes({ projectId: id });
         setNodes(nds);
       }
-      if (b?.expGetEdges) {
-        const eds = await b.expGetEdges({ projectId: id });
+      if (b?.projGetEdges) {
+        const eds = await b.projGetEdges({ projectId: id });
         setEdges(eds);
       }
     } catch (err: any) {
@@ -192,7 +239,7 @@ export function ExperimentalCanvas() {
   const createProject = async () => {
     const name = newProjectName.trim() || `Projekt ${projects.length + 1}`;
     const id = genId();
-    const proj: ExperimentalProject = {
+    const proj: Projekt = {
       id, name,
       spec_content: '# Plan projektu\n\nOpisz czego dotyczy projekt.',
       ai_config: { chatModel, plannerModel, chatSystemPrompt, mapPlannerSystemPrompt: plannerSystemPrompt },
@@ -200,7 +247,7 @@ export function ExperimentalCanvas() {
       updated_at: new Date().toISOString(),
     };
     const b = window.nexusBridge;
-    if (b?.expSaveProject) await b.expSaveProject({ project: proj });
+    if (b?.projSaveProject) await b.projSaveProject({ project: proj });
     setProjects(prev => [...prev, proj]);
     setNewProjectName('');
     setShowNewProjectInput(false);
@@ -209,7 +256,7 @@ export function ExperimentalCanvas() {
 
   const deleteProject = async (id: string) => {
     const b = window.nexusBridge;
-    if (b?.expDeleteProject) await b.expDeleteProject({ id });
+    if (b?.projDeleteProject) await b.projDeleteProject({ id });
     const list = projects.filter(p => p.id !== id);
     setProjects(list);
     if (activeProjectId === id) {
@@ -224,7 +271,7 @@ export function ExperimentalCanvas() {
     const proj = projects.find(p => p.id === id);
     if (!proj) return;
     const updated = { ...proj, name: renameValue.trim(), updated_at: new Date().toISOString() };
-    if (b?.expSaveProject) await b.expSaveProject({ project: updated });
+    if (b?.projSaveProject) await b.projSaveProject({ project: updated });
     setProjects(prev => prev.map(p => p.id === id ? updated : p));
     setRenameProjectId(null);
     setRenameValue('');
@@ -237,21 +284,23 @@ export function ExperimentalCanvas() {
     if (!activeProjectId) return;
     setActiveConversationId(convId);
     const b = window.nexusBridge;
-    if (b?.expGetChatMessages) {
-      const msgs = await b.expGetChatMessages({ projectId: activeProjectId, conversationId: convId });
+    if (b?.projGetChatMessages) {
+      const msgs = await b.projGetChatMessages({ projectId: activeProjectId, conversationId: convId });
       setMessages(msgs);
     }
   };
 
   const addConversation = async () => {
     if (!activeProjectId) return;
-    const conv: ExperimentalConversation = {
+    const conv: ProjektyConversation = {
       id: genId(),
       project_id: activeProjectId,
       name: `Rozmowa ${conversations.length + 1}`,
+      enabled: true,
+      deleted: false,
     };
     const b = window.nexusBridge;
-    if (b?.expSaveConversation) await b.expSaveConversation({ conversation: conv });
+    if (b?.projSaveConversation) await b.projSaveConversation({ conversation: conv });
     setConversations(prev => [...prev, conv]);
     setActiveConversationId(conv.id);
     setMessages([]);
@@ -264,14 +313,27 @@ export function ExperimentalCanvas() {
     if (!activeProjectId) return;
     const proj = projects.find(p => p.id === activeProjectId);
     if (!proj) return;
-    const updated = { ...proj, spec_content: specContent, updated_at: new Date().toISOString() };
-    const b = window.nexusBridge;
-    if (b?.expSaveProject) await b.expSaveProject({ project: updated });
-    setProjects(prev => prev.map(p => p.id === activeProjectId ? updated : p));
+    setSaveStatus('saving');
+    try {
+      const updated = { ...proj, spec_content: specContent, updated_at: new Date().toISOString() };
+      const b = window.nexusBridge;
+      if (b?.projSaveProject) await b.projSaveProject({ project: updated });
+      setProjects(prev => prev.map(p => p.id === activeProjectId ? updated : p));
+      setSaveStatus('saved');
+    } catch {
+      setSaveStatus('error');
+    }
   };
 
+  // Auto-zapis SPEC co 500ms bezczynnosci (Faza 2)
+  useEffect(() => {
+    if (!activeProjectId) return;
+    const timer = setTimeout(() => { saveSpec(); }, 500);
+    return () => clearTimeout(timer);
+  }, [specContent]);
+
   // ==========================================================================
-  // Wysylanie wiadomosci (Chat AI #1)
+  // Chat AI: tylko pisanie, bez system promptu, NIE modyfikuje nodów
   // ==========================================================================
   const sendMessage = async () => {
     if (!chatInput.trim() || !activeProjectId || !activeConversationId) return;
@@ -279,7 +341,7 @@ export function ExperimentalCanvas() {
     setChatInput('');
     setAiError(null);
 
-    const userMsg: ExperimentalChatMessage = {
+    const userMsg: ProjektyChatMessage = {
       id: genId(),
       project_id: activeProjectId,
       conversation_id: activeConversationId || undefined,
@@ -290,11 +352,11 @@ export function ExperimentalCanvas() {
 
     setMessages(prev => [...prev, userMsg]);
     const b = window.nexusBridge;
-    if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: userMsg });
+    if (b?.projSaveChatMessage) await b.projSaveChatMessage({ message: userMsg });
 
     try {
-      const reply = await invokeChat(chatSystemPrompt, [...messages, userMsg], chatModel);
-      const aiMsg: ExperimentalChatMessage = {
+      const reply = await invokeChat('', [...messages, userMsg], chatModel); // Chat AI bez system promptu — tylko pisanie
+      const aiMsg: ProjektyChatMessage = {
         id: genId(),
         project_id: activeProjectId,
         conversation_id: activeConversationId || undefined,
@@ -303,10 +365,10 @@ export function ExperimentalCanvas() {
         created_at: new Date().toISOString(),
       };
       setMessages(prev => [...prev, aiMsg]);
-      if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: aiMsg });
+      if (b?.projSaveChatMessage) await b.projSaveChatMessage({ message: aiMsg });
     } catch (err: any) {
       setAiError(err.message || 'Blad polaczenia z AI');
-      const errMsg: ExperimentalChatMessage = {
+      const errMsg: ProjektyChatMessage = {
         id: genId(),
         project_id: activeProjectId,
         conversation_id: activeConversationId || undefined,
@@ -326,7 +388,7 @@ export function ExperimentalCanvas() {
 
     const prompt = `Przeanalizuj ponizsza specyfikacje projektu. Zaproponuj konkretne kroki, komponenty architektoniczne, technologie i strukture danych. Odpowiedz zwięźle.\n\nSPEC:\n${specContent}`;
 
-    const userMsg: ExperimentalChatMessage = {
+    const userMsg: ProjektyChatMessage = {
       id: genId(),
       project_id: activeProjectId,
       conversation_id: activeConversationId || undefined,
@@ -335,11 +397,11 @@ export function ExperimentalCanvas() {
     };
     setMessages(prev => [...prev, userMsg]);
     const b = window.nexusBridge;
-    if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: userMsg });
+    if (b?.projSaveChatMessage) await b.projSaveChatMessage({ message: userMsg });
 
     try {
       const reply = await invokeChat(chatSystemPrompt, [...messages, userMsg], chatModel);
-      const aiMsg: ExperimentalChatMessage = {
+      const aiMsg: ProjektyChatMessage = {
         id: genId(),
         project_id: activeProjectId,
         conversation_id: activeConversationId || undefined,
@@ -347,7 +409,7 @@ export function ExperimentalCanvas() {
         content: reply,
       };
       setMessages(prev => [...prev, aiMsg]);
-      if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: aiMsg });
+      if (b?.projSaveChatMessage) await b.projSaveChatMessage({ message: aiMsg });
     } catch (err: any) {
       setAiError(err.message);
     }
@@ -356,7 +418,7 @@ export function ExperimentalCanvas() {
   // ==========================================================================
   // Auto-layout helper (przyjmuje aktualne wezly, zeby uniknac stale closure)
   // ==========================================================================
-  const runAutoLayout = useCallback((newNodes?: ExperimentalNode[], newEdges?: ExperimentalEdge[]) => {
+  const runAutoLayout = useCallback((newNodes?: ProjektyNode[], newEdges?: ProjektyEdge[]) => {
     const targetNodes = newNodes || nodes;
     const targetEdges = newEdges || edges;
     const laidOut = applyLayout(targetNodes, targetEdges);
@@ -366,7 +428,7 @@ export function ExperimentalCanvas() {
   // ==========================================================================
   // Faza 3: Krawedzie (edges)
   // ==========================================================================
-  const runPhase3Edges = async (nodesToUse?: ExperimentalNode[]) => {
+  const runPhase3Edges = async (nodesToUse?: ProjektyNode[]) => {
     const effectiveNodes = nodesToUse || nodes;
     if (!activeProjectId) return;
     setPlannerPhase('phase3');
@@ -387,7 +449,7 @@ export function ExperimentalCanvas() {
 WEZLY:
 ${JSON.stringify(readyNodes)}`;
 
-      const phase3Msg: ExperimentalChatMessage = {
+      const phase3Msg: ProjektyChatMessage = {
         id: genId(),
         project_id: activeProjectId,
         conversation_id: activeConversationId || undefined,
@@ -399,9 +461,9 @@ ${JSON.stringify(readyNodes)}`;
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         const b = window.nexusBridge;
-        const allNewEdges: ExperimentalEdge[] = [];
+        const allNewEdges: ProjektyEdge[] = [];
         for (const e of parsed.edges || []) {
-          const edge: ExperimentalEdge = {
+          const edge: ProjektyEdge = {
             id: genId(),
             project_id: activeProjectId,
             source_node_id: e.source_node_id,
@@ -411,7 +473,7 @@ ${JSON.stringify(readyNodes)}`;
           };
           allNewEdges.push(edge);
           setEdges(prev => [...prev, edge]);
-          if (b?.expSaveEdge) await b.expSaveEdge({ edge });
+          if (b?.projSaveEdge) await b.projSaveEdge({ edge });
         }
         // Auto-layout z lokalna lista krawedzi (unikamy stale closure)
         runAutoLayout(effectiveNodes, allNewEdges);
@@ -426,7 +488,7 @@ ${JSON.stringify(readyNodes)}`;
   // ==========================================================================
   // Faza 2: Dekompozycja wezlow
   // ==========================================================================
-  const runPhase2Decompose = async (initialNodes?: ExperimentalNode[]) => {
+  const runPhase2Decompose = async (initialNodes?: ProjektyNode[]) => {
     if (!activeProjectId || !activeConversationId) return;
     setPlannerPhase('phase2');
 
@@ -478,7 +540,7 @@ Zwroc TYLKO JSON:
 }
 Jesli is_leaf = true, children = [].`;
 
-        const phase2Msg: ExperimentalChatMessage = {
+        const phase2Msg: ProjektyChatMessage = {
           id: genId(),
           project_id: activeProjectId,
           conversation_id: activeConversationId || undefined,
@@ -492,15 +554,15 @@ Jesli is_leaf = true, children = [].`;
         const parsed = JSON.parse(jsonMatch[0]);
 
         if (parsed.is_leaf) {
-          const updated: ExperimentalNode = { ...wezel, status: 'ready' };
+          const updated: ProjektyNode = { ...wezel, status: 'ready' };
           allNodes = allNodes.map(n => n.id === wezel.id ? updated : n);
           setNodes(prev => prev.map(n => n.id === wezel.id ? updated : n));
-          if (b?.expSaveNode) await b.expSaveNode({ node: updated });
+          if (b?.projSaveNode) await b.projSaveNode({ node: updated });
         } else if (parsed.children && parsed.children.length > 0) {
           resetNodePos();
           for (const child of parsed.children) {
             const pos = nextNodePos();
-            const childNode: ExperimentalNode = {
+            const childNode: ProjektyNode = {
               id: genId(),
               project_id: activeProjectId,
               title: child.title,
@@ -516,12 +578,12 @@ Jesli is_leaf = true, children = [].`;
             };
             allNodes.push(childNode);
             setNodes(prev => [...prev, childNode]);
-            if (b?.expSaveNode) await b.expSaveNode({ node: childNode });
+            if (b?.projSaveNode) await b.projSaveNode({ node: childNode });
           }
-          const updated: ExperimentalNode = { ...wezel, status: 'ready' };
+          const updated: ProjektyNode = { ...wezel, status: 'ready' };
           allNodes = allNodes.map(n => n.id === wezel.id ? updated : n);
           setNodes(prev => prev.map(n => n.id === wezel.id ? updated : n));
-          if (b?.expSaveNode) await b.expSaveNode({ node: updated });
+          if (b?.projSaveNode) await b.projSaveNode({ node: updated });
         }
       } catch (err: any) {
         setAiError(err.message);
@@ -553,7 +615,7 @@ Jesli is_leaf = true, children = [].`;
 }
 SPEC: ${specContent}`;
 
-      const phase1Msg: ExperimentalChatMessage = {
+      const phase1Msg: ProjektyChatMessage = {
         id: genId(),
         project_id: activeProjectId,
         conversation_id: activeConversationId || undefined,
@@ -572,10 +634,10 @@ SPEC: ${specContent}`;
       setGlobalContext(ctx);
 
       const b = window.nexusBridge;
-      if (b?.expSaveGlobalContext) await b.expSaveGlobalContext({ projectId: activeProjectId, context: ctx });
+      if (b?.projSaveGlobalContext) await b.projSaveGlobalContext({ projectId: activeProjectId, context: ctx });
 
       // Utworz wezel root
-      const rootNode: ExperimentalNode = {
+      const rootNode: ProjektyNode = {
         id: genId(),
         project_id: activeProjectId,
         title: ctx.project_name,
@@ -591,7 +653,7 @@ SPEC: ${specContent}`;
       };
       const newNodes = [...nodes, rootNode];
       setNodes(newNodes);
-      if (b?.expSaveNode) await b.expSaveNode({ node: rootNode });
+      if (b?.projSaveNode) await b.projSaveNode({ node: rootNode });
 
       // Przejdz do fazy 2 (przekaz nowa liste wezlow, zeby Faza 2 widziala rootNode)
       await runPhase2Decompose(newNodes);
@@ -610,9 +672,9 @@ SPEC: ${specContent}`;
     setPlannerPhase('phase4');
 
     const b = window.nexusBridge;
-    let unprocessed: ExperimentalChatMessage[] = [];
-    if (b?.expGetUnprocessedMessages) {
-      unprocessed = await b.expGetUnprocessedMessages({ projectId: activeProjectId, conversationId: activeConversationId });
+    let unprocessed: ProjektyChatMessage[] = [];
+    if (b?.projGetUnprocessedMessages) {
+      unprocessed = await b.projGetUnprocessedMessages({ projectId: activeProjectId, conversationId: activeConversationId });
     } else {
       unprocessed = messages.filter(m => m.role === 'user' && !m.extracted_to_canvas);
     }
@@ -657,7 +719,7 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
       const result = parsePlannerResponse(raw);
 
       if (result.operations.length === 0) {
-        const sysMsg: ExperimentalChatMessage = {
+        const sysMsg: ProjektyChatMessage = {
           id: genId(),
           project_id: activeProjectId,
           conversation_id: activeConversationId || undefined,
@@ -665,19 +727,19 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
           content: `[Planer] Brak operacji (intencja: NONE lub nie rozpoznano). Surowa odpowiedz:\n${raw.slice(0, 500)}`,
         };
         setMessages(prev => [...prev, sysMsg]);
-        if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: sysMsg });
+        if (b?.projSaveChatMessage) await b.projSaveChatMessage({ message: sysMsg });
         setPlannerPhase('idle');
         return;
       }
 
       setDiffProposal(result);
 
-      if (unprocessed.length > 0 && b?.expMarkMessagesProcessed) {
-        await b.expMarkMessagesProcessed({ ids: unprocessed.map(m => m.id) });
+      if (unprocessed.length > 0 && b?.projMarkMessagesProcessed) {
+        await b.projMarkMessagesProcessed({ ids: unprocessed.map(m => m.id) });
       }
     } catch (err: any) {
       setAiError(err.message);
-      const errMsg: ExperimentalChatMessage = {
+      const errMsg: ProjektyChatMessage = {
         id: genId(),
         project_id: activeProjectId,
         conversation_id: activeConversationId || undefined,
@@ -699,12 +761,12 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
 
     // Lokalne tablice, zeby uniknac stale closure
     let localNodes = [...nodes];
-    const allNewEdges: ExperimentalEdge[] = [];
+    const allNewEdges: ProjektyEdge[] = [];
 
     for (const op of diffProposal.operations) {
       if (op.action === 'ADD' && op.node) {
         const pos = nextNodePos();
-        const node: ExperimentalNode = {
+        const node: ProjektyNode = {
           id: op.node.id || genId(),
           project_id: activeProjectId,
           title: op.node.title,
@@ -720,7 +782,7 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
         };
         localNodes.push(node);
         setNodes(prev => [...prev, node]);
-        if (b?.expSaveNode) await b.expSaveNode({ node });
+        if (b?.projSaveNode) await b.projSaveNode({ node });
       }
       if (op.action === 'UPDATE' && op.node?.id) {
         const existing = localNodes.find(n => n.id === op.node!.id);
@@ -728,7 +790,7 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
           const updated = { ...existing, title: op.node.title, content: op.node.content };
           localNodes = localNodes.map(n => n.id === op.node!.id ? updated : n);
           setNodes(prev => prev.map(n => n.id === op.node!.id ? updated : n));
-          if (b?.expSaveNode) await b.expSaveNode({ node: updated });
+          if (b?.projSaveNode) await b.projSaveNode({ node: updated });
         }
       }
       if (op.action === 'DELETE' && op.nodeId) {
@@ -741,12 +803,12 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
         localNodes = localNodes.filter(n => !idsToDelete.has(n.id));
         setNodes(prev => prev.filter(n => !idsToDelete.has(n.id)));
         for (const nid of idsToDelete) {
-          if (b?.expDeleteNode) await b.expDeleteNode({ id: nid });
+          if (b?.projDeleteNode) await b.projDeleteNode({ id: nid });
         }
         setEdges(prev => prev.filter(e => !idsToDelete.has(e.source_node_id) && !idsToDelete.has(e.target_node_id)));
       }
       if (op.edge) {
-        const edge: ExperimentalEdge = {
+        const edge: ProjektyEdge = {
           id: genId(),
           project_id: activeProjectId,
           source_node_id: op.edge.source_node_id,
@@ -755,7 +817,7 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
         };
         allNewEdges.push(edge);
         setEdges(prev => [...prev, edge]);
-        if (b?.expSaveEdge) await b.expSaveEdge({ edge });
+        if (b?.projSaveEdge) await b.projSaveEdge({ edge });
       }
     }
     setDiffProposal(null);
@@ -772,9 +834,9 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
   };
 
   // ==========================================================================
-  // Zunifikowane AI: Aktualizuj plan
+  // Planer AI: Analizuje SPEC + nodes + edges + historię czatu, tworzy nody na planszy
   // ==========================================================================
-  const runUnifiedAI = async () => {
+  const runPlannerAI = async () => {
     if (!activeProjectId) return;
     setAiError(null);
 
@@ -784,59 +846,20 @@ Jesli STRUCTURAL → ADD nowych wezlow.`;
       return;
     }
 
-    // ŚCIEŻKA B: Zunifikowane AI z pełnym kontekstem
+    // ŚCIEŻKA B: Planer tworzy nody od razu na planszę
     setPlannerLoading(true);
     try {
       const b = window.nexusBridge;
 
-      const techNodes = nodes.filter(n => n.node_type !== 'note');
-      const noteNodes = nodes.filter(n => n.node_type === 'note');
+      const systemMsg: ProjektyChatMessage = {
+        id: genId(),
+        project_id: activeProjectId,
+        conversation_id: activeConversationId || undefined,
+        role: 'system',
+        content: `SPEC: ${specContent || '(brak)'}\n\nNODES: ${JSON.stringify(nodes)}\n\nEDGES: ${JSON.stringify(edges)}`,
+      };
 
-      const MAX_PROMPT_MSGS = 20;
-      const unprocessed = messages.filter(m => !m.metadata?.processed_by_ai);
-      const recent = messages.slice(-MAX_PROMPT_MSGS);
-      const promptMessages = [...new Map([...unprocessed, ...recent].map(m => [m.id, m])).values()];
-
-      const prompt = `Jesteś Architektem Projektu. Masz pełny obraz sytuacji:
-
-SPECYFIKACJA PROJEKTU (tylko do odczytu):
-"""
-${specContent || '(brak)'}
-"""
-
-WĘZŁY TECHNICZNE (ID, typ, tytuł, treść):
-${JSON.stringify(techNodes.map(n => ({id: n.id, type: n.node_type, title: n.title, content: n.content})))}
-
-NOTATKI (ID, tytuł, treść):
-${JSON.stringify(noteNodes.map(n => ({id: n.id, title: n.title, content: n.content})))}
-
-KRAWĘDZIE:
-${JSON.stringify(edges.map(e => ({id: e.id, source: e.source_node_id, target: e.target_node_id, type: e.relation_type, label: e.label})))}
-
-HISTORIA CZATU:
-${(promptMessages as ExperimentalChatMessage[]).map(m => `[${m.role === 'user' ? 'UŻYTKOWNIK' : 'AI'}] (processed: ${!!m.metadata?.processed_by_ai}): ${m.content}`).join('\n\n')}
-
-ZWROĆ TABLICĘ JSON Z OPERACJAMI. Format:
-[{
-  "action": "create_note" | "update_note" | "delete_node" | "create_edge" | "delete_edge" | "nothing",
-  "reason": "krótkie wyjaśnienie DLACZEGO ta zmiana (po polsku, prostym językiem)",
-  "node": {"label": "...", "description": "..."},
-  "target_ids": ["id1"],
-  "update_node_id": "...",
-  "delete_node_id": "...",
-  "edge": {"source_node_id": "...", "target_node_id": "...", "relation_type": "supports", "label": "supports"},
-  "delete_edge_id": "..."
-}]
-
-ZASADY:
-- Notatka: node_type "note", max 3 zdania
-- Krawędź supports: notatka → węzeł techniczny
-- Jeśli podobna notatka istnieje → action: "update_note"
-- Jeśli wiadomość zmienia ustalenie → możesz usunąć nieaktualne węzły
-- Dla wiadomości processed=true nie duplikuj notatek, chyba że nowy kontekst zmienia znaczenie
-- Zwróć TYLKO tablicę JSON, bez tekstu przed/po`;
-
-      const reply = await invokeChat(prompt, promptMessages, chatModel);
+      const reply = await invokePlanner(plannerSystemPrompt, [systemMsg, ...messages], nodes, edges, specContent, plannerModel);
       const jsonMatch = reply.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
         setAiError('AI nie zwróciło poprawnego formatu JSON. Spróbuj ponownie.');
@@ -855,47 +878,87 @@ ZASADY:
         return;
       }
 
-      const deleteCount = operations.filter((op: any) => op.action === 'delete_node').length;
-      const totalNodes = nodes.length;
-      const massiveDelete = totalNodes > 0 && deleteCount / totalNodes > 0.3;
+      // Wykonaj operacje od razu na planszy — bez panelu diff
+      resetNodePos();
+      const localNodes = [...nodes];
+      const newEdges: ProjektyEdge[] = [];
 
-      const plannerOps: PlannerOperation[] = operations
-        .filter((op: any) => op.action !== 'nothing')
-        .map((op: any) => {
-          const base: PlannerOperation = {
-            action: op.action === 'create_note' ? 'ADD' :
-                     op.action === 'update_note' ? 'UPDATE' :
-                     op.action === 'delete_node' ? 'DELETE' :
-                     op.action === 'create_edge' ? 'ADD' :
-                     op.action === 'delete_edge' ? 'DELETE' : 'ADD',
-            reason: op.reason || '',
+      for (const op of operations) {
+        if (op.action === 'add_node') {
+          const pos = nextNodePos();
+          const node: ProjektyNode = {
+            id: genId(),
+            project_id: activeProjectId,
+            title: op.title || '',
+            content: op.content || '',
+            node_type: (op.node_type as NodeType) || 'component',
+            status: 'new',
+            parent_id: op.parent_id || null,
+            x: pos.x,
+            y: pos.y,
+            width: 240,
+            height: 100,
+            ai_suggestion: op.is_ai_idea === true,
+            ai_suggestion_reason: op.is_ai_idea === true ? (op.reason || '') : undefined,
+            source_conversation_id: activeConversationId,
           };
+          localNodes.push(node);
+          setNodes(prev => [...prev, node]);
+          if (b?.projSaveNode) await b.projSaveNode({ node });
+        }
+        if (op.action === 'update_node' && op.node_id) {
+          const existing = localNodes.find(n => n.id === op.node_id);
+          if (existing) {
+            const updated = {
+              ...existing,
+              title: op.title || existing.title,
+              content: op.content || existing.content,
+              node_type: (op.node_type as NodeType) || existing.node_type,
+              ai_suggestion: op.is_ai_idea !== undefined ? op.is_ai_idea : existing.ai_suggestion,
+              ai_suggestion_reason: op.is_ai_idea ? (op.reason || '') : existing.ai_suggestion_reason,
+            };
+            const idx = localNodes.findIndex(n => n.id === op.node_id);
+            if (idx >= 0) localNodes[idx] = updated;
+            setNodes(prev => prev.map(n => n.id === op.node_id ? updated : n));
+            if (b?.projSaveNode) await b.projSaveNode({ node: updated });
+          }
+        }
+        if (op.action === 'delete_node' && op.node_id) {
+          const idsToDelete = new Set<string>();
+          const collectChildren = (parentId: string) => {
+            idsToDelete.add(parentId);
+            localNodes.filter(n => n.parent_id === parentId).forEach(child => collectChildren(child.id));
+          };
+          collectChildren(op.node_id);
+          for (const nid of idsToDelete) {
+            if (b?.projDeleteNode) await b.projDeleteNode({ id: nid });
+          }
+          setNodes(prev => prev.filter(n => !idsToDelete.has(n.id)));
+          setEdges(prev => prev.filter(e => !idsToDelete.has(e.source_node_id) && !idsToDelete.has(e.target_node_id)));
+        }
+        if (op.action === 'add_edge' && op.source_node_id && op.target_node_id) {
+          const edge: ProjektyEdge = {
+            id: genId(),
+            project_id: activeProjectId,
+            source_node_id: op.source_node_id,
+            target_node_id: op.target_node_id,
+            label: op.edge_label || 'supports',
+          };
+          newEdges.push(edge);
+          setEdges(prev => [...prev, edge]);
+          if (b?.projSaveEdge) await b.projSaveEdge({ edge });
+        }
+      }
 
-          if (op.action === 'create_note') {
-            base.node = { title: op.node?.label || '', content: op.node?.description || '', node_type: 'note', status: 'ready' };
-          }
-          if (op.action === 'update_note') {
-            base.node = { id: op.update_node_id, title: op.node?.label || '', content: op.node?.description || '' };
-          }
-          if (op.action === 'delete_node') {
-            base.nodeId = op.delete_node_id;
-          }
-          if (op.action === 'create_edge' && op.edge) {
-            base.edge = { source_node_id: op.edge.source_node_id, target_node_id: op.edge.target_node_id, label: op.edge.label || 'supports' };
-          }
-          if (op.action === 'delete_edge') {
-            base.nodeId = op.delete_edge_id;
-          }
+      // Oznacz wiadomości jako przetworzone
+      const updatedMessages = messages.map(m => ({
+        ...m,
+        metadata: { ...((m.metadata || {}) as any), processed_by_ai: true }
+      }));
+      setMessages(updatedMessages);
 
-          return base;
-        });
-
-      setDiffProposal({
-        operations: plannerOps,
-        _massiveDelete: massiveDelete,
-        _deleteCount: deleteCount,
-        _totalNodes: totalNodes,
-      } as any);
+      // Auto-layout
+      runAutoLayout(localNodes);
     } catch (err: any) {
       setAiError(err.message || 'Nieznany błąd');
     } finally {
@@ -904,73 +967,23 @@ ZASADY:
   };
 
   // ==========================================================================
-  // Generowanie notatki z wiadomosci AI
-  // ==========================================================================
-  const generateNote = async (message: ExperimentalChatMessage) => {
-    if (!activeProjectId || !activeConversationId) return;
-    setAiError(null);
-
-    try {
-      const prompt = `Utworz krotka notatke z tej wypowiedzi. Notatka ma byc maksymalnie 2 zdania, czytelna dla czlowieka. Zwroc JSON:
-{
-  "label": "tytul notatki",
-  "description": "tresc notatki"
-}
-
-WIADOMOSC:
-${message.content}`;
-
-      const reply = await invokeChat('Generujesz notatki.', [message], chatModel);
-      const jsonMatch = reply.match(/\{[\s\S]*"label"[\s\S]*"description"[\s\S]*\}/);
-      if (!jsonMatch) return;
-
-      const parsed = JSON.parse(jsonMatch[0]);
-      const noteNode: ExperimentalNode = {
-        id: genId(),
-        project_id: activeProjectId,
-        title: parsed.label,
-        content: parsed.description,
-        node_type: 'note',
-        status: 'ready',
-        parent_id: null,
-        x: 200,
-        y: 200,
-        width: 240,
-        height: 100,
-        source_conversation_id: activeConversationId,
-        metadata: { author: 'ai', timestamp: new Date().toISOString(), associated_task_id: undefined },
-      };
-
-      const b = window.nexusBridge;
-      const newNodes = [...nodes, noteNode];
-      setNodes(newNodes);
-      if (b?.expSaveNode) await b.expSaveNode({ node: noteNode });
-
-      // Auto-layout po dodaniu notatki
-      runAutoLayout(newNodes);
-    } catch (err: any) {
-      setAiError(err.message);
-    }
-  };
-
-  // ==========================================================================
   // Adnotacja do wezla
   // ==========================================================================
   const submitAnnotation = async (nodeId: string) => {
     if (!annotationText.trim() || !activeProjectId) return;
-    const ann: ExperimentalNodeAnnotation = {
+    const ann: ProjektyNodeAnnotation = {
       id: genId(),
       node_id: nodeId,
       project_id: activeProjectId,
       content: annotationText.trim(),
     };
     const b = window.nexusBridge;
-    if (b?.expSaveAnnotation) await b.expSaveAnnotation({ annotation: ann });
+    if (b?.projSaveAnnotation) await b.projSaveAnnotation({ annotation: ann });
 
     const node = nodes.find(n => n.id === nodeId);
     if (node) {
       const prompt = `Uzytkownik skomentowal wezel "${node.title}": "${annotationText.trim()}". Zaktualizuj tresc tego wezla.`;
-      const userMsg: ExperimentalChatMessage = {
+      const userMsg: ProjektyChatMessage = {
         id: genId(),
         project_id: activeProjectId,
         conversation_id: activeConversationId || undefined,
@@ -978,11 +991,11 @@ ${message.content}`;
         content: prompt,
       };
       setMessages(prev => [...prev, userMsg]);
-      if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: userMsg });
+      if (b?.projSaveChatMessage) await b.projSaveChatMessage({ message: userMsg });
 
       try {
         const reply = await invokeChat(chatSystemPrompt, [...messages, userMsg], chatModel);
-        const aiMsg: ExperimentalChatMessage = {
+        const aiMsg: ProjektyChatMessage = {
           id: genId(),
           project_id: activeProjectId,
           conversation_id: activeConversationId || undefined,
@@ -990,12 +1003,12 @@ ${message.content}`;
           content: reply,
         };
         setMessages(prev => [...prev, aiMsg]);
-        if (b?.expSaveChatMessage) await b.expSaveChatMessage({ message: aiMsg });
+        if (b?.projSaveChatMessage) await b.projSaveChatMessage({ message: aiMsg });
       } catch { /* cicha obsluga bledu */ }
 
       const updated = { ...node, content: annotationText.trim() };
       setNodes(prev => prev.map(n => n.id === nodeId ? updated : n));
-      if (b?.expSaveNode) await b.expSaveNode({ node: updated });
+      if (b?.projSaveNode) await b.projSaveNode({ node: updated });
     }
 
     setAnnotationNode(null);
@@ -1027,8 +1040,13 @@ ${message.content}`;
     setIsPanning(false);
     if (dragNode) {
       const node = nodes.find(n => n.id === dragNode);
-      if (node && window.nexusBridge?.expSaveNode) {
-        window.nexusBridge.expSaveNode({ node });
+      if (node) {
+        // Faza 2: locked_position = true po recznym przesunieciu
+        const updated = { ...node, locked_position: true };
+        setNodes(prev => prev.map(n => n.id === dragNode ? updated : n));
+        if (window.nexusBridge?.projSaveNode) {
+          window.nexusBridge.projSaveNode({ node: updated });
+        }
       }
       setDragNode(null);
     }
@@ -1055,13 +1073,13 @@ ${message.content}`;
     if (!activeProjectId) return;
     const proj = projects.find(p => p.id === activeProjectId);
     if (!proj) return;
-    const aiConfig: ExperimentalAIConfig & { global_context?: GlobalContext } = {
+    const aiConfig: ProjektyAIConfig & { global_context?: GlobalContext } = {
       chatModel, plannerModel, chatSystemPrompt, mapPlannerSystemPrompt: plannerSystemPrompt,
     };
     if (globalContext) aiConfig.global_context = globalContext;
     const updated = { ...proj, ai_config: aiConfig, updated_at: new Date().toISOString() };
     const b = window.nexusBridge;
-    if (b?.expSaveProject) await b.expSaveProject({ project: updated });
+    if (b?.projSaveProject) await b.projSaveProject({ project: updated });
     setProjects(prev => prev.map(p => p.id === activeProjectId ? updated : p));
   };
 
@@ -1251,11 +1269,13 @@ ${message.content}`;
               const isParent = nodes.some(n => n.parent_id === node.id);
               const depth = node.parent_id ? 1 : 0;
               const borderClass = NODE_BORDER[node.node_type || ''] || 'border-gray-700';
+              const isAiSuggestion = node.ai_suggestion === true;
 
               return (
                 <div
                   key={node.id}
                   className={`absolute bg-[#161616] border-2 rounded-lg group ${
+                    isAiSuggestion ? 'border-dashed border-purple-500' :
                     annotationNode === node.id ? 'border-blue-500' : borderClass
                   } ${node.node_type === 'root' ? 'font-bold' : ''}`}
                   style={{
@@ -1285,7 +1305,7 @@ ${message.content}`;
                           e.stopPropagation();
                           setNodes(prev => prev.filter(n => n.id !== node.id));
                           const b = window.nexusBridge;
-                          if (b?.expDeleteNode) await b.expDeleteNode({ id: node.id });
+                          if (b?.projDeleteNode) await b.projDeleteNode({ id: node.id });
                         }}
                         className="text-xs px-2 py-0.5 text-gray-400 hover:text-red-400 rounded hover:bg-gray-800"
                       >X</button>
@@ -1410,15 +1430,15 @@ ${message.content}`;
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={runUnifiedAI}
+                  onClick={runPlannerAI}
                   disabled={plannerLoading || plannerPhase !== 'idle'}
                   className="flex-1 px-3 py-2 bg-blue-700 text-white text-sm rounded hover:bg-blue-600 disabled:opacity-40"
                 >
                   {plannerLoading ? 'Planowanie...' : 'Aktualizuj plan'}
                 </button>
                 <select
-                  value={chatModel}
-                  onChange={e => { setChatModel(e.target.value); setTimeout(saveAiConfig, 0); }}
+                  value={plannerModel}
+                  onChange={e => { setPlannerModel(e.target.value); setTimeout(saveAiConfig, 0); }}
                   className="bg-[#1a1a1a] text-xs text-gray-400 border border-gray-700 rounded px-1.5 py-2 outline-none"
                 >
                   {AI_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
@@ -1466,30 +1486,7 @@ ${message.content}`;
         </div>
       )}
 
-      {/* ===== Modal: Diff Planera ===== */}
-      {diffProposal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-          <div className="bg-[#161616] border border-gray-700 rounded-lg w-full max-w-xl p-6 max-h-[75vh] overflow-y-auto">
-            <h3 className="text-base font-medium text-gray-200 mb-4">Propozycje Planera</h3>
-            <div className="space-y-3 mb-5">
-              {diffProposal.operations.map((op, i) => (
-                <div key={i} className="border border-gray-700 rounded p-3 text-sm">
-                  <span className={`font-semibold ${op.action === 'ADD' ? 'text-green-400' : op.action === 'DELETE' ? 'text-red-400' : 'text-yellow-400'}`}>
-                    {op.action === 'ADD' ? '+ Dodaj' : op.action === 'DELETE' ? '- Usun' : '~ Zmodyfikuj'}
-                  </span>
-                  {op.node && <span className="text-gray-200 ml-2">{op.node.title}</span>}
-                  {op.node?.content && <p className="text-gray-400 mt-1 text-sm">{op.node.content}</p>}
-                  {op.nodeId && <span className="text-gray-500 ml-2">ID: {op.nodeId}</span>}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setDiffProposal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-white rounded">Odrzuc</button>
-              <button onClick={acceptPlannerDiff} className="px-4 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-500">Zatwierdz</button>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* ===== Ekran startowy ===== */}
       {projectLoaded && projects.length === 0 && !loadError && (

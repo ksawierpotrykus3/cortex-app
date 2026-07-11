@@ -32,8 +32,8 @@ export function DocumentPanel({ projectId, onUseFullContent }: DocumentPanelProp
     if (!projectId) return;
     try {
       const bridge = (window as any).nexusBridge;
-      if (bridge?.expGetDocuments) {
-        const docs = await bridge.expGetDocuments({ projectId });
+      if (bridge?.projGetDocuments) {
+        const docs = await bridge.projGetDocuments({ projectId });
         setDocuments(docs || []);
       }
     } catch (err) {
@@ -58,7 +58,7 @@ export function DocumentPanel({ projectId, onUseFullContent }: DocumentPanelProp
     if (!files || files.length === 0) return;
 
     const bridge = (window as any).nexusBridge;
-    if (!bridge?.expImportDocument) {
+    if (!bridge?.projImportDocument) {
       setError('Bridge IPC nie jest dostępny.');
       return;
     }
@@ -88,7 +88,7 @@ export function DocumentPanel({ projectId, onUseFullContent }: DocumentPanelProp
       setImportingFiles(new Set(newImporting));
 
       try {
-        const result = await bridge.expImportDocument({ projectId, filePath });
+        const result = await bridge.projImportDocument({ projectId, filePath });
         if (!result.success) {
           setError(`Błąd importu ${file.name}: ${result.error}`);
         }
@@ -108,8 +108,8 @@ export function DocumentPanel({ projectId, onUseFullContent }: DocumentPanelProp
   const handleDelete = async (docId: string) => {
     try {
       const bridge = (window as any).nexusBridge;
-      if (bridge?.expDeleteDocument) {
-        await bridge.expDeleteDocument({ id: docId });
+      if (bridge?.projDeleteDocument) {
+        await bridge.projDeleteDocument({ id: docId });
         setDocuments(prev => prev.filter(d => d.id !== docId));
       }
     } catch (err) {
@@ -120,8 +120,8 @@ export function DocumentPanel({ projectId, onUseFullContent }: DocumentPanelProp
   const handleUseFullContent = async (doc: ProjectDocument) => {
     try {
       const bridge = (window as any).nexusBridge;
-      if (bridge?.expGetDocumentContent) {
-        const result = await bridge.expGetDocumentContent({ id: doc.id });
+      if (bridge?.projGetDocumentContent) {
+        const result = await bridge.projGetDocumentContent({ id: doc.id });
         if (result.success && result.content) {
           onUseFullContent(doc.name, result.content);
         }

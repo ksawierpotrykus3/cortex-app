@@ -72,7 +72,6 @@ const VIEW_LABELS: Record<string, string> = {
 interface UseTrackerOptions {
   activeView: ViewMode;
   selectedNodeId: string | null;
-  selectedAgentId?: string | null;
   selectedTaskId: string | null;
   selectedManuscriptId: string | null;
   projectId: string | null;

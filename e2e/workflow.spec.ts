@@ -7,6 +7,7 @@ test.describe('Workflows — testy E2E', () => {
     await page.getByText('More').first().click();
     await expect(page.getByText('Workflows').first()).toBeVisible();
     await page.getByText('Workflows').first().click();
+    await expect(page.getByText('Workflow').first()).toBeVisible();
   });
 
   test('powinien wyświetlać przycisk Workflows jako opcję w dropdown More', async ({ page }) => {

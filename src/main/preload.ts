@@ -255,56 +255,74 @@ const nexusBridge: NexusBridge = {
   },
 
   // ========================================================================
-  // Experimental Mode (Etap 1)
+  // Projekty Mode
   // ========================================================================
-  expGetTableInfo: (payload) => ipcRenderer.invoke('experimental:table-info', payload),
-  expSaveProject: (payload) => ipcRenderer.invoke('experimental:project:save', payload),
-  expGetProjects: () => ipcRenderer.invoke('experimental:project:get-all'),
-  expGetProject: (payload) => ipcRenderer.invoke('experimental:project:get', payload),
-  expDeleteProject: (payload) => ipcRenderer.invoke('experimental:project:delete', payload),
+  projGetTableInfo: (payload) => ipcRenderer.invoke('projekty:table-info', payload),
+  projSaveProject: (payload) => ipcRenderer.invoke('projekty:project:save', payload),
+  projGetProjects: () => ipcRenderer.invoke('projekty:project:get-all'),
+  projGetProject: (payload) => ipcRenderer.invoke('projekty:project:get', payload),
+  projDeleteProject: (payload) => ipcRenderer.invoke('projekty:project:delete', payload),
 
-  expSaveChatMessage: (payload) => ipcRenderer.invoke('experimental:chat:save', payload),
-  expGetChatMessages: (payload) => ipcRenderer.invoke('experimental:chat:get', payload),
-  expDeleteChatMessage: (payload) => ipcRenderer.invoke('experimental:chat:delete', payload),
-  expGetUnprocessedMessages: (payload) => ipcRenderer.invoke('experimental:chat:get-unprocessed', payload),
-  expMarkMessagesProcessed: (payload) => ipcRenderer.invoke('experimental:chat:mark-processed', payload),
+  projSaveChatMessage: (payload) => ipcRenderer.invoke('projekty:chat:save', payload),
+  projGetChatMessages: (payload) => ipcRenderer.invoke('projekty:chat:get', payload),
+  projDeleteChatMessage: (payload) => ipcRenderer.invoke('projekty:chat:delete', payload),
+  projGetUnprocessedMessages: (payload) => ipcRenderer.invoke('projekty:chat:get-unprocessed', payload),
+  projMarkMessagesProcessed: (payload) => ipcRenderer.invoke('projekty:chat:mark-processed', payload),
 
-  expSaveNode: (payload) => ipcRenderer.invoke('experimental:node:save', payload),
-  expGetNodes: (payload) => ipcRenderer.invoke('experimental:node:get', payload),
-  expDeleteNode: (payload) => ipcRenderer.invoke('experimental:node:delete', payload),
+  projSaveNode: (payload) => ipcRenderer.invoke('projekty:node:save', payload),
+  projGetNodes: (payload) => ipcRenderer.invoke('projekty:node:get', payload),
+  projDeleteNode: (payload) => ipcRenderer.invoke('projekty:node:delete', payload),
 
-  expSaveEdge: (payload) => ipcRenderer.invoke('experimental:edge:save', payload),
-  expGetEdges: (payload) => ipcRenderer.invoke('experimental:edge:get', payload),
-  expDeleteEdge: (payload) => ipcRenderer.invoke('experimental:edge:delete', payload),
+  projSaveEdge: (payload) => ipcRenderer.invoke('projekty:edge:save', payload),
+  projGetEdges: (payload) => ipcRenderer.invoke('projekty:edge:get', payload),
+  projDeleteEdge: (payload) => ipcRenderer.invoke('projekty:edge:delete', payload),
 
-  expSaveChangelog: (payload) => ipcRenderer.invoke('experimental:changelog:save', payload),
-  expGetChangelog: (payload) => ipcRenderer.invoke('experimental:changelog:get', payload),
+  projSaveChangelog: (payload) => ipcRenderer.invoke('projekty:changelog:save', payload),
+  projGetChangelog: (payload) => ipcRenderer.invoke('projekty:changelog:get', payload),
 
   // Conversations
-  expSaveConversation: (payload) => ipcRenderer.invoke('experimental:conversation:save', payload),
-  expGetConversations: (payload) => ipcRenderer.invoke('experimental:conversation:get', payload),
-  expDeleteConversation: (payload) => ipcRenderer.invoke('experimental:conversation:delete', payload),
+  projSaveConversation: (payload) => ipcRenderer.invoke('projekty:conversation:save', payload),
+  projGetConversations: (payload) => ipcRenderer.invoke('projekty:conversation:get', payload),
+  projDeleteConversation: (payload) => ipcRenderer.invoke('projekty:conversation:delete', payload),
 
   // Annotations
-  expSaveAnnotation: (payload) => ipcRenderer.invoke('experimental:annotation:save', payload),
-  expGetAnnotations: (payload) => ipcRenderer.invoke('experimental:annotation:get', payload),
-  expDeleteAnnotation: (payload) => ipcRenderer.invoke('experimental:annotation:delete', payload),
+  projSaveAnnotation: (payload) => ipcRenderer.invoke('projekty:annotation:save', payload),
+  projGetAnnotations: (payload) => ipcRenderer.invoke('projekty:annotation:get', payload),
+  projDeleteAnnotation: (payload) => ipcRenderer.invoke('projekty:annotation:delete', payload),
 
   // LLM calls
-  expInvokeChatLLM: (payload) => ipcRenderer.invoke('experimental:chat:llm', payload),
-  expInvokePlanner: (payload) => ipcRenderer.invoke('experimental:planner:run', payload),
+  projInvokeChatLLM: (payload) => ipcRenderer.invoke('projekty:chat:llm', payload),
 
-  // Fazy planowania (uzywaja expInvokeChatLLM z roznymi promptami)
-  expSaveGlobalContext: (payload) => ipcRenderer.invoke('experimental:global-context:save', payload),
-  expGetGlobalContext: (payload) => ipcRenderer.invoke('experimental:global-context:get', payload),
-  expGetUndecomposedNodes: (payload) => ipcRenderer.invoke('experimental:node:get-undecomposed', payload),
+  // Fazy planowania
+  projSaveGlobalContext: (payload) => ipcRenderer.invoke('projekty:global-context:save', payload),
+  projGetGlobalContext: (payload) => ipcRenderer.invoke('projekty:global-context:get', payload),
+  projGetUndecomposedNodes: (payload) => ipcRenderer.invoke('projekty:node:get-undecomposed', payload),
 
-  // Project Documents (Plan 01)
-  expImportDocument: (payload) => ipcRenderer.invoke('experimental:document:import', payload),
-  expGetDocuments: (payload) => ipcRenderer.invoke('experimental:document:get', payload),
-  expDeleteDocument: (payload) => ipcRenderer.invoke('experimental:document:delete', payload),
-  expGetDocumentContent: (payload) => ipcRenderer.invoke('experimental:document:content', payload),
-  expSummarizeDocument: (payload) => ipcRenderer.invoke('experimental:document:summarize', payload),
+  // Project Documents
+  projImportDocument: (payload) => ipcRenderer.invoke('projekty:document:import', payload),
+  projGetDocuments: (payload) => ipcRenderer.invoke('projekty:document:get', payload),
+  projDeleteDocument: (payload) => ipcRenderer.invoke('projekty:document:delete', payload),
+  projGetDocumentContent: (payload) => ipcRenderer.invoke('projekty:document:content', payload),
+  projSummarizeDocument: (payload) => ipcRenderer.invoke('projekty:document:summarize', payload),
+
+  // Research Space
+  researchProjectCreate: (payload) => ipcRenderer.invoke('research:project:create', payload),
+  researchProjectList: () => ipcRenderer.invoke('research:project:list'),
+  researchProjectDelete: (payload) => ipcRenderer.invoke('research:project:delete', payload),
+  researchEntryCreate: (payload) => ipcRenderer.invoke('research:entry:create', payload),
+  researchEntryList: (payload) => ipcRenderer.invoke('research:entry:list', payload),
+  researchEntryGet: (payload) => ipcRenderer.invoke('research:entry:get', payload),
+  researchEntryUpdate: (payload) => ipcRenderer.invoke('research:entry:update', payload),
+  researchEntryDelete: (payload) => ipcRenderer.invoke('research:entry:delete', payload),
+  researchChatSend: (payload) => ipcRenderer.invoke('research:chat:send', payload),
+  researchSourceImport: (payload) => ipcRenderer.invoke('research:source:import', payload),
+  researchSourceImportFile: (payload) => ipcRenderer.invoke('research:source:import-file', payload),
+  researchChatDelete: (payload) => ipcRenderer.invoke('research:chat:delete', payload),
+  researchSourceDelete: (payload) => ipcRenderer.invoke('research:source:delete', payload),
+  researchObservationAdd: (payload) => ipcRenderer.invoke('research:observation:add', payload),
+  researchObservationDelete: (payload) => ipcRenderer.invoke('research:observation:delete', payload),
+  researchChatMessages: (payload) => ipcRenderer.invoke('research:chat:messages', payload),
+  researchAgentsRun: (payload) => ipcRenderer.invoke('research:agents:run', payload),
 
   // System Tab (Plan 02)
   systemGetStatus: () => ipcRenderer.invoke('system:status'),

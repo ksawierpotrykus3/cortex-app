@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 /* ============================================================================
@@ -26,7 +25,8 @@
     --background: 16 16 18;      /* alias --bg-canvas */
     --panel: 22 22 26;           /* alias --bg-surface */
     --accent: 140 150 255;       /* stonowany indygo */
-    --accent-bg: 140 150 255 / 0.1;
+    --accent-bg: 140 150 255;
+    --accent-bg-alpha: 0.1;
     --danger: 230 90 90;
     --success: 80 190 130;
     --warning: 220 170 70;

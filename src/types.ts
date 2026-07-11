@@ -1,4 +1,10 @@
-export type ViewMode = 'nexus' | 'lab-todo' | 'lab-writing' | 'sandbox' | 'raw-fragments' | 'logs' | 'agents' | 'mermaid-plan' | 'changes' | 'wiki' | 'git' | 'feedback' | 'useme' | 'experimental' | 'system';
+// ===================================================================
+// [USER REQUEST 2026-07-11] Na prośbę użytkownika usunięto widoki:
+// 'nexus', 'lab-todo', 'lab-writing', 'raw-fragments', 'logs', 'system'
+// NIE PRZYWRACAĆ dopóki użytkownik nie każe.
+// Zostają: 'projekty', 'useme', 'changes', 'wiki', 'git'
+// ===================================================================
+export type ViewMode = 'projekty' | 'useme' | 'changes' | 'wiki' | 'git';
 export type RightPanelState = 'none' | 'properties';
 export type ModalState = 'none' | 'export' | 'settings';
 
@@ -177,32 +183,35 @@ export const DEFAULT_EXPORT_SCOPE: ExportScope = {
 
 export type AgentRole = 'writer' | 'researcher' | 'critic' | 'auditor' | 'tool-executor';
 
-// --- Tryb Eksperymentalny Types ---
+// --- Tryb Projekty Types ---
 
-export interface ExperimentalAIConfig {
-  chatModel?: string; // e.g. 'DeepSeek V4 Pro' | 'DeepSeek V4 Flash'
-  plannerModel?: string; // osobny model dla Planera
-  chatSystemPrompt?: string; // AI #1
-  mapPlannerSystemPrompt?: string; // AI #3
+export interface ProjektyAIConfig {
+  chatModel?: string;
+  plannerModel?: string;
+  chatSystemPrompt?: string;
+  mapPlannerSystemPrompt?: string;
 }
 
-export interface ExperimentalProject {
+export interface Projekt {
   id: string;
   name: string;
   spec_content: string;
-  ai_config: ExperimentalAIConfig | string;
+  ai_config: ProjektyAIConfig | string;
+  project_type?: 'technical';
   created_at?: string;
   updated_at?: string;
 }
 
-export interface ExperimentalConversation {
+export interface ProjektyConversation {
   id: string;
   project_id: string;
   name: string;
+  enabled: boolean;
+  deleted: boolean;
   created_at?: string;
 }
 
-export interface ExperimentalChatMessage {
+export interface ProjektyChatMessage {
   id: string;
   project_id: string;
   conversation_id?: string;
@@ -214,7 +223,7 @@ export interface ExperimentalChatMessage {
   metadata?: Record<string, unknown>;
 }
 
-export type NodeType = 'root' | 'domain' | 'component' | 'task' | 'integration' | 'note';
+export type NodeType = 'root' | 'domain' | 'component' | 'task' | 'integration';
 export type NodeStatus = 'new' | 'in_progress' | 'ready' | 'deprecated';
 export type RelationType = 'requires' | 'depends_on' | 'data_flow' | 'sync' | 'supports';
 
@@ -226,12 +235,11 @@ export interface NodeMetadata {
   timestamp?: string;
 }
 
-export interface ExperimentalNode {
+export interface ProjektyNode {
   id: string;
   project_id: string;
   title: string;
   content: string;
-  // Nowe pola z protokolu
   label?: string;
   description?: string;
   node_type?: NodeType;
@@ -243,22 +251,25 @@ export interface ExperimentalNode {
   width?: number;
   height?: number;
   collapsed?: number;
+  locked_position?: boolean;
+  ai_suggestion?: boolean;
+  ai_suggestion_reason?: string;
   source_message_id?: string | null;
   source_conversation_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
-export interface ExperimentalEdge {
+export interface ProjektyEdge {
   id: string;
   project_id: string;
   source_node_id: string;
   target_node_id: string;
   label?: string;
-  // Nowe pola z protokolu
   relation_type?: RelationType;
   source_handle?: string;
   target_handle?: string;
+  locked?: boolean;
   created_at?: string;
 }
 
@@ -272,26 +283,7 @@ export interface GlobalContext {
   data_io: { inputs: string[]; outputs: string[] };
 }
 
-// Wynik generatora notatek
-export interface NoteGenerationResult {
-  node: {
-    id: string;
-    parent_id: string | null;
-    type: 'note';
-    status: 'ready';
-    label: string;
-    description: string;
-    metadata: NodeMetadata;
-  };
-  edge?: {
-    id: string;
-    source: string;
-    target: string;
-    relation_type: 'supports';
-  };
-}
-
-export interface ExperimentalChangelog {
+export interface ProjektyChangelog {
   id: string;
   project_id: string;
   action_type: 'CREATE' | 'UPDATE' | 'DELETE';
@@ -302,11 +294,30 @@ export interface ExperimentalChangelog {
   created_at?: string;
 }
 
-export interface ExperimentalNodeAnnotation {
+export interface ProjektyNodeAnnotation {
   id: string;
   node_id: string;
   project_id: string;
   content: string;
   created_at?: string;
+}
+
+export interface ThoughtEntry {
+  id: string;
+  content: string;
+  group_id?: string;
+  embedding?: number[];
+  source_type: 'manual' | 'ai_extract' | 'import';
+  source_ref?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ThoughtGroup {
+  id: string;
+  label: string;
+  centroid_embedding?: number[];
+  created_at: string;
+  updated_at: string;
 }
 

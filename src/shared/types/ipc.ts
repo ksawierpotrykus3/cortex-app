@@ -104,55 +104,54 @@ export interface CommandChannels {
   // RPM Usage (RateLimiter)
   'rpm:usage': { payload: void; response: { totalUsed: number; totalLimit: number; keys: { key: string; used: number; limit: number }[] } };
 
-  // Experimental Mode (Etap 1)
-  'experimental:table-info': { payload: { tableName: string }; response: any[] };
-  'experimental:project:save': { payload: { project: import('../../types').ExperimentalProject }; response: { success: boolean } };
-  'experimental:project:get-all': { payload: void; response: import('../../types').ExperimentalProject[] };
-  'experimental:project:get': { payload: { id: string }; response: import('../../types').ExperimentalProject | null };
-  'experimental:project:delete': { payload: { id: string }; response: { success: boolean } };
+  // Projekty Mode (Etap 1)
+  'projekty:table-info': { payload: { tableName: string }; response: any[] };
+  'projekty:project:save': { payload: { project: import('../../types').Projekt }; response: { success: boolean } };
+  'projekty:project:get-all': { payload: void; response: import('../../types').Projekt[] };
+  'projekty:project:get': { payload: { id: string }; response: import('../../types').Projekt | null };
+  'projekty:project:delete': { payload: { id: string }; response: { success: boolean } };
 
-  'experimental:chat:save': { payload: { message: import('../../types').ExperimentalChatMessage }; response: { success: boolean } };
-  'experimental:chat:get': { payload: { projectId: string; conversationId?: string }; response: import('../../types').ExperimentalChatMessage[] };
-  'experimental:chat:delete': { payload: { id: string }; response: { success: boolean } };
-  'experimental:chat:get-unprocessed': { payload: { projectId: string; conversationId?: string }; response: import('../../types').ExperimentalChatMessage[] };
-  'experimental:chat:mark-processed': { payload: { ids: string[] }; response: { success: boolean } };
+  'projekty:chat:save': { payload: { message: import('../../types').ProjektyChatMessage }; response: { success: boolean } };
+  'projekty:chat:get': { payload: { projectId: string; conversationId?: string }; response: import('../../types').ProjektyChatMessage[] };
+  'projekty:chat:delete': { payload: { id: string }; response: { success: boolean } };
+  'projekty:chat:get-unprocessed': { payload: { projectId: string; conversationId?: string }; response: import('../../types').ProjektyChatMessage[] };
+  'projekty:chat:mark-processed': { payload: { ids: string[] }; response: { success: boolean } };
 
-  'experimental:node:save': { payload: { node: import('../../types').ExperimentalNode }; response: { success: boolean } };
-  'experimental:node:get': { payload: { projectId: string }; response: import('../../types').ExperimentalNode[] };
-  'experimental:node:delete': { payload: { id: string }; response: { success: boolean } };
+  'projekty:node:save': { payload: { node: import('../../types').ProjektyNode }; response: { success: boolean } };
+  'projekty:node:get': { payload: { projectId: string }; response: import('../../types').ProjektyNode[] };
+  'projekty:node:delete': { payload: { id: string }; response: { success: boolean } };
 
-  'experimental:edge:save': { payload: { edge: import('../../types').ExperimentalEdge }; response: { success: boolean } };
-  'experimental:edge:get': { payload: { projectId: string }; response: import('../../types').ExperimentalEdge[] };
-  'experimental:edge:delete': { payload: { id: string }; response: { success: boolean } };
+  'projekty:edge:save': { payload: { edge: import('../../types').ProjektyEdge }; response: { success: boolean } };
+  'projekty:edge:get': { payload: { projectId: string }; response: import('../../types').ProjektyEdge[] };
+  'projekty:edge:delete': { payload: { id: string }; response: { success: boolean } };
 
-  'experimental:changelog:save': { payload: { entry: import('../../types').ExperimentalChangelog }; response: { success: boolean } };
-  'experimental:changelog:get': { payload: { projectId: string }; response: import('../../types').ExperimentalChangelog[] };
+  'projekty:changelog:save': { payload: { entry: import('../../types').ProjektyChangelog }; response: { success: boolean } };
+  'projekty:changelog:get': { payload: { projectId: string }; response: import('../../types').ProjektyChangelog[] };
 
   // Conversations (wiele rozmow na projekt)
-  'experimental:conversation:save': { payload: { conversation: import('../../types').ExperimentalConversation }; response: { success: boolean } };
-  'experimental:conversation:get': { payload: { projectId: string }; response: import('../../types').ExperimentalConversation[] };
-  'experimental:conversation:delete': { payload: { id: string }; response: { success: boolean } };
+  'projekty:conversation:save': { payload: { conversation: import('../../types').ProjektyConversation }; response: { success: boolean } };
+  'projekty:conversation:get': { payload: { projectId: string }; response: import('../../types').ProjektyConversation[] };
+  'projekty:conversation:delete': { payload: { id: string }; response: { success: boolean } };
 
   // Node Annotations (komentarze do wezlow)
-  'experimental:annotation:save': { payload: { annotation: import('../../types').ExperimentalNodeAnnotation }; response: { success: boolean } };
-  'experimental:annotation:get': { payload: { nodeId: string }; response: import('../../types').ExperimentalNodeAnnotation[] };
-  'experimental:annotation:delete': { payload: { id: string }; response: { success: boolean } };
+  'projekty:annotation:save': { payload: { annotation: import('../../types').ProjektyNodeAnnotation }; response: { success: boolean } };
+  'projekty:annotation:get': { payload: { nodeId: string }; response: import('../../types').ProjektyNodeAnnotation[] };
+  'projekty:annotation:delete': { payload: { id: string }; response: { success: boolean } };
 
   // LLM calls (rzeczywiste AI)
-  'experimental:chat:llm': { payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; model: string }; response: { content: string } };
-  'experimental:planner:run': { payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; nodes: import('../../types').ExperimentalNode[]; edges: import('../../types').ExperimentalEdge[]; specContent: string; model: string }; response: { content: string } };
+  'projekty:chat:llm': { payload: { systemPrompt: string; messages: import('../../types').ProjektyChatMessage[]; model: string; nodes?: any[]; edges?: any[]; specContent?: string }; response: { content: string } };
 
   // Global Context i node queries
-  'experimental:global-context:save': { payload: { projectId: string; context: any }; response: {} };
-  'experimental:global-context:get': { payload: { projectId: string }; response: any };
-  'experimental:node:get-undecomposed': { payload: { projectId: string }; response: import('../../types').ExperimentalNode[] };
+  'projekty:global-context:save': { payload: { projectId: string; context: any }; response: {} };
+  'projekty:global-context:get': { payload: { projectId: string }; response: any };
+  'projekty:node:get-undecomposed': { payload: { projectId: string }; response: import('../../types').ProjektyNode[] };
 
   // Project Documents (Plan 01)
-  'experimental:document:import': { payload: { projectId: string; filePath: string }; response: { success: boolean; data?: any; error?: string } };
-  'experimental:document:get': { payload: { projectId: string }; response: any[] };
-  'experimental:document:delete': { payload: { id: string }; response: { success: boolean } };
-  'experimental:document:content': { payload: { id: string }; response: { success: boolean; content?: string; error?: string } };
-  'experimental:document:summarize': { payload: { documentId: string; content: string; tokenCount: number }; response: { success: boolean; summary?: string; error?: string } };
+  'projekty:document:import': { payload: { projectId: string; filePath: string }; response: { success: boolean; data?: any; error?: string } };
+  'projekty:document:get': { payload: { projectId: string }; response: any[] };
+  'projekty:document:delete': { payload: { id: string }; response: { success: boolean } };
+  'projekty:document:content': { payload: { id: string }; response: { success: boolean; content?: string; error?: string } };
+  'projekty:document:summarize': { payload: { documentId: string; content: string; tokenCount: number }; response: { success: boolean; summary?: string; error?: string } };
 
   // System Tab (Plan 02)
   'system:status': { payload: void; response: any };
@@ -342,55 +341,72 @@ export interface NexusBridge {
   onUsemeReviewRequired: (callback: (data: { jobId: string; jobTitle: string; price: string; proposal: string; auditReport: string }) => void) => () => void;
   onUsemeStatusChanged: (callback: (data: { status: string; error?: string }) => void) => () => void;
 
-  // Experimental Mode (Etap 1)
-  expGetTableInfo: (payload: { tableName: string }) => Promise<any[]>;
-  expSaveProject: (payload: { project: import('../../types').ExperimentalProject }) => Promise<{ success: boolean }>;
-  expGetProjects: () => Promise<import('../../types').ExperimentalProject[]>;
-  expGetProject: (payload: { id: string }) => Promise<import('../../types').ExperimentalProject | null>;
-  expDeleteProject: (payload: { id: string }) => Promise<{ success: boolean }>;
+  // Projekty Mode (Etap 1)
+  projGetTableInfo: (payload: { tableName: string }) => Promise<any[]>;
+  projSaveProject: (payload: { project: import('../../types').Projekt }) => Promise<{ success: boolean }>;
+  projGetProjects: () => Promise<import('../../types').Projekt[]>;
+  projGetProject: (payload: { id: string }) => Promise<import('../../types').Projekt | null>;
+  projDeleteProject: (payload: { id: string }) => Promise<{ success: boolean }>;
 
-  expSaveChatMessage: (payload: { message: import('../../types').ExperimentalChatMessage }) => Promise<{ success: boolean }>;
-  expGetChatMessages: (payload: { projectId: string; conversationId?: string }) => Promise<import('../../types').ExperimentalChatMessage[]>;
-  expDeleteChatMessage: (payload: { id: string }) => Promise<{ success: boolean }>;
-  expGetUnprocessedMessages: (payload: { projectId: string; conversationId?: string }) => Promise<import('../../types').ExperimentalChatMessage[]>;
-  expMarkMessagesProcessed: (payload: { ids: string[] }) => Promise<{ success: boolean }>;
+  projSaveChatMessage: (payload: { message: import('../../types').ProjektyChatMessage }) => Promise<{ success: boolean }>;
+  projGetChatMessages: (payload: { projectId: string; conversationId?: string }) => Promise<import('../../types').ProjektyChatMessage[]>;
+  projDeleteChatMessage: (payload: { id: string }) => Promise<{ success: boolean }>;
+  projGetUnprocessedMessages: (payload: { projectId: string; conversationId?: string }) => Promise<import('../../types').ProjektyChatMessage[]>;
+  projMarkMessagesProcessed: (payload: { ids: string[] }) => Promise<{ success: boolean }>;
 
-  expSaveNode: (payload: { node: import('../../types').ExperimentalNode }) => Promise<{ success: boolean }>;
-  expGetNodes: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalNode[]>;
-  expDeleteNode: (payload: { id: string }) => Promise<{ success: boolean }>;
+  projSaveNode: (payload: { node: import('../../types').ProjektyNode }) => Promise<{ success: boolean }>;
+  projGetNodes: (payload: { projectId: string }) => Promise<import('../../types').ProjektyNode[]>;
+  projDeleteNode: (payload: { id: string }) => Promise<{ success: boolean }>;
 
-  expSaveEdge: (payload: { edge: import('../../types').ExperimentalEdge }) => Promise<{ success: boolean }>;
-  expGetEdges: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalEdge[]>;
-  expDeleteEdge: (payload: { id: string }) => Promise<{ success: boolean }>;
+  projSaveEdge: (payload: { edge: import('../../types').ProjektyEdge }) => Promise<{ success: boolean }>;
+  projGetEdges: (payload: { projectId: string }) => Promise<import('../../types').ProjektyEdge[]>;
+  projDeleteEdge: (payload: { id: string }) => Promise<{ success: boolean }>;
 
-  expSaveChangelog: (payload: { entry: import('../../types').ExperimentalChangelog }) => Promise<{ success: boolean }>;
-  expGetChangelog: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalChangelog[]>;
+  projSaveChangelog: (payload: { entry: import('../../types').ProjektyChangelog }) => Promise<{ success: boolean }>;
+  projGetChangelog: (payload: { projectId: string }) => Promise<import('../../types').ProjektyChangelog[]>;
 
   // Conversations
-  expSaveConversation: (payload: { conversation: import('../../types').ExperimentalConversation }) => Promise<{ success: boolean }>;
-  expGetConversations: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalConversation[]>;
-  expDeleteConversation: (payload: { id: string }) => Promise<{ success: boolean }>;
+  projSaveConversation: (payload: { conversation: import('../../types').ProjektyConversation }) => Promise<{ success: boolean }>;
+  projGetConversations: (payload: { projectId: string }) => Promise<import('../../types').ProjektyConversation[]>;
+  projDeleteConversation: (payload: { id: string }) => Promise<{ success: boolean }>;
 
   // Annotations
-  expSaveAnnotation: (payload: { annotation: import('../../types').ExperimentalNodeAnnotation }) => Promise<{ success: boolean }>;
-  expGetAnnotations: (payload: { nodeId: string }) => Promise<import('../../types').ExperimentalNodeAnnotation[]>;
-  expDeleteAnnotation: (payload: { id: string }) => Promise<{ success: boolean }>;
+  projSaveAnnotation: (payload: { annotation: import('../../types').ProjektyNodeAnnotation }) => Promise<{ success: boolean }>;
+  projGetAnnotations: (payload: { nodeId: string }) => Promise<import('../../types').ProjektyNodeAnnotation[]>;
+  projDeleteAnnotation: (payload: { id: string }) => Promise<{ success: boolean }>;
 
   // LLM calls
-  expInvokeChatLLM: (payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; model: string }) => Promise<{ content: string }>;
-  expInvokePlanner: (payload: { systemPrompt: string; messages: import('../../types').ExperimentalChatMessage[]; nodes: import('../../types').ExperimentalNode[]; edges: import('../../types').ExperimentalEdge[]; specContent: string; model: string }) => Promise<{ content: string }>;
-
+  projInvokeChatLLM: (payload: { systemPrompt: string; messages: import('../../types').ProjektyChatMessage[]; model: string; nodes?: any[]; edges?: any[]; specContent?: string }) => Promise<{ content: string }>;
   // Global Context i node queries
-  expSaveGlobalContext: (payload: { projectId: string; context: any }) => Promise<{}>;
-  expGetGlobalContext: (payload: { projectId: string }) => Promise<any>;
-  expGetUndecomposedNodes: (payload: { projectId: string }) => Promise<import('../../types').ExperimentalNode[]>;
+  projSaveGlobalContext: (payload: { projectId: string; context: any }) => Promise<{}>;
+  projGetGlobalContext: (payload: { projectId: string }) => Promise<any>;
+  projGetUndecomposedNodes: (payload: { projectId: string }) => Promise<import('../../types').ProjektyNode[]>;
 
   // Project Documents (Plan 01)
-  expImportDocument: (payload: { projectId: string; filePath: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
-  expGetDocuments: (payload: { projectId: string }) => Promise<any[]>;
-  expDeleteDocument: (payload: { id: string }) => Promise<{ success: boolean }>;
-  expGetDocumentContent: (payload: { id: string }) => Promise<{ success: boolean; content?: string; error?: string }>;
-  expSummarizeDocument: (payload: { documentId: string; content: string; tokenCount: number }) => Promise<{ success: boolean; summary?: string; error?: string }>;
+  projImportDocument: (payload: { projectId: string; filePath: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
+  projGetDocuments: (payload: { projectId: string }) => Promise<any[]>;
+  projDeleteDocument: (payload: { id: string }) => Promise<{ success: boolean }>;
+  projGetDocumentContent: (payload: { id: string }) => Promise<{ success: boolean; content?: string; error?: string }>;
+  projSummarizeDocument: (payload: { documentId: string; content: string; tokenCount: number }) => Promise<{ success: boolean; summary?: string; error?: string }>;
+
+  // Research Space
+  researchProjectCreate: (payload: { name: string }) => Promise<{ id: string; name: string }>;
+  researchProjectList: () => Promise<any[]>;
+  researchEntryCreate: (payload: { project_id: string; title?: string }) => Promise<{ id: string; project_id: string; title: string }>;
+  researchEntryList: (payload: { project_id: string }) => Promise<any[]>;
+  researchEntryGet: (payload: { entry_id: string }) => Promise<{ entry: any; sources: any[]; messages: any[]; observations: any[] }>;
+  researchChatSend: (payload: { entry_id: string; message: string; model?: string }) => Promise<{ messages: any[] }>;
+  researchSourceImport: (payload: { entry_id: string; file_name: string; file_path: string; file_type?: string; content_text?: string }) => Promise<{ id: string; entry_id: string; file_name: string; file_path: string; file_type?: string; content_text?: string }>;
+  researchAgentsRun: (payload: { entry_id: string }) => Promise<{ observations: any[] }>;
+  researchEntryUpdate: (payload: { id: string; title: string }) => Promise<{ success: boolean }>;
+  researchEntryDelete: (payload: { id: string }) => Promise<{ success: boolean }>;
+  researchProjectDelete: (payload: { id: string }) => Promise<{ success: boolean }>;
+  researchSourceImportFile: (payload: { entry_id: string }) => Promise<{ id: string; entry_id: string; file_name: string; file_path: string; content_text: string }>;
+  researchChatDelete: (payload: { id: string }) => Promise<{ success: boolean }>;
+  researchSourceDelete: (payload: { id: string }) => Promise<{ success: boolean }>;
+  researchObservationAdd: (payload: { entry_id: string; observation_type: string; content: string }) => Promise<{ success: boolean; id?: string }>;
+  researchObservationDelete: (payload: { id: string }) => Promise<{ success: boolean }>;
+  researchChatMessages: (payload: { entry_id: string; page: number; page_size: number }) => Promise<{ messages: any[]; total: number }>;
 
   // System Tab (Plan 02)
   systemGetStatus: () => Promise<any>;

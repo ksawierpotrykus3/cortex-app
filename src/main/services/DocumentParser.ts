@@ -24,7 +24,7 @@ export async function parseFile(filePath: string): Promise<ParsedDocument> {
   try {
     if (ext === 'pdf') {
       try { const pdfParse = require('pdf-parse'); const dataBuffer = fs.readFileSync(filePath); const data = await pdfParse(dataBuffer); content = data.text; }
-      catch { content = fs.readFileSync(filePath, 'utf-8'); console.warn('[DocumentParser] PDF parsing failed, used plain text fallback'); }
+      catch { throw new Error('PDF parsing failed: pdf-parse library is not available. Install pdf-parse or provide a PDF parser.'); }
     } else if (ext === 'docx') {
       try { const mammoth = require('mammoth'); const result = await mammoth.extractRawText({ path: filePath }); content = result.value; }
       catch { content = fs.readFileSync(filePath, 'utf-8'); console.warn('[DocumentParser] DOCX parsing failed, used plain text fallback'); }

@@ -25,6 +25,8 @@ export function TriggerConfig({ config, onChange }: TriggerConfigProps) {
     { type: TriggerType.TIMER, label: 'Timer', icon: Clock, desc: 'Harmonogram czasowy' },
     { type: TriggerType.CLIPBOARD, label: 'Schowek', icon: Clipboard, desc: 'Nasłuchiwanie schowka' },
     { type: TriggerType.FILE_WATCH, label: 'Plik', icon: FileText, desc: 'Nowy plik w folderze' },
+    { type: TriggerType.AGENT_OUTPUT, label: 'Wynik agenta', icon: Zap, desc: 'Output innego agenta' },
+    { type: TriggerType.WEBHOOK, label: 'Webhook', icon: Zap, desc: 'Webhook z zewnątrz' },
   ];
 
   return (

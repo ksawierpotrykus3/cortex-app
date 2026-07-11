@@ -61,9 +61,11 @@ describe('RateLimiter', () => {
       expect(passed).toBeLessThanOrEqual(42);
     });
 
-    it('limit 0 powinien blokowa wszystkie zapytania', () => {
-      rateLimiter.setLimit('blocked-provider', 0);
-      expect(rateLimiter.tryAcquire('blocked-provider')).toBe(false);
+    it('limit 0 oznacza unlimited (np. Ollama lokalnie)', () => {
+      rateLimiter.setLimit('unlimited-provider', 0);
+      expect(rateLimiter.tryAcquire('unlimited-provider')).toBe(true);
+      expect(rateLimiter.tryAcquire('unlimited-provider')).toBe(true);
+      expect(rateLimiter.tryAcquire('unlimited-provider')).toBe(true);
     });
   });
 });

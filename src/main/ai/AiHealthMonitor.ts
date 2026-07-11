@@ -161,11 +161,14 @@ export class AiHealthMonitor {
   private async checkModelHealth(modelName: string): Promise<void> {
     const startTime = Date.now();
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       const response = await fetch(this.healthUrl, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(30000),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const ping = Date.now() - startTime;

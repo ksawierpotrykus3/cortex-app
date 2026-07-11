@@ -54,7 +54,7 @@ describe('TopNavigation — zakladki', () => {
 describe('TopNavigation — zmiana widoku', () => {
   it('klikniecie Topology wywoluje setActiveView z "nexus"', () => {
     const setActiveView = vi.fn();
-    render(<TopNavigation {...defaultProps} setActiveView={setActiveView} activeView="sandbox" />);
+    render(<TopNavigation {...defaultProps} setActiveView={setActiveView} activeView="projekty" />);
 
     fireEvent.click(screen.getByText('Topology'));
     expect(setActiveView).toHaveBeenCalledWith('nexus');

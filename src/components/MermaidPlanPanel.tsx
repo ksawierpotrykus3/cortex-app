@@ -7,6 +7,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Send, RefreshCw, Maximize2, Minimize2, Copy, Download, ArrowRight, X, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import DOMPurify from "dompurify";
 
 // ============================================================================
 // Typy
@@ -167,6 +168,18 @@ export function parseMermaidToSVG(code: string): { svg: string; nodes: MermaidNo
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** Sanitacja SVG przed wstawieniem do DOM przy użyciu DOMPurify */
+function sanitizeSvg(svg: string): string {
+  return DOMPurify.sanitize(svg, {
+    USE_PROFILES: { svg: true, svgFilters: true },
+    ADD_TAGS: ['defs', 'marker', 'path', 'polygon', 'circle', 'line', 'rect', 'text', 'style'],
+    ADD_ATTR: ['d', 'points', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'width', 'height', 'viewBox',
+               'marker-end', 'markerWidth', 'markerHeight', 'refX', 'refY', 'orient',
+               'text-anchor', 'dominant-baseline', 'fill', 'stroke', 'stroke-width',
+               'font-family', 'font-size', 'class'],
+  });
 }
 
 // ============================================================================
@@ -402,7 +415,7 @@ export function MermaidPlanPanel({
               <div className="flex-1 overflow-auto p-4 bg-[rgb(var(--background))] flex items-start justify-center">
                 <div
                   className="min-w-[400px]"
-                  dangerouslySetInnerHTML={{ __html: svg }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeSvg(svg) }}
                   onClick={(e) => handleSvgClick(e as any, nodes)}
                 />
               </div>

@@ -8,7 +8,6 @@ import { TelemetryMessage, FirehoseMessage } from '../../shared/types/ipc';
 import { ProviderRegistry } from '../ai/ProviderRegistry';
 import { systemEventBus } from '../services/SystemEventBus';
 import { StorageEngine } from '../storage/StorageEngine';
-import { SandboxRunner } from '../sandbox/SandboxRunner';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -24,6 +23,7 @@ interface AgentRuntimeState {
   currentOutput: string;
   // Rate limiter (F6.1)
   runTimestamps: number[];        // ostatnie N uruchomień (dla rate limitu)
+  isExecuting: boolean;           // blokada przed race condition przy współbieżnych wywołaniach
 }
 
 // === Event Callbacks =======================================================
@@ -40,7 +40,7 @@ export class AgentOrchestrator {
   private events: AgentOrchestratorEvents;
   private providerRegistry: ProviderRegistry;
   private storage?: StorageEngine;
-  private sandboxRunner?: SandboxRunner;
+  // private sandboxRunner?: SandboxRunner;
   private clipboard: { readText: () => string; readImage: () => { isEmpty: () => boolean; toPNG: () => Buffer } } | null;
 
   // Config
@@ -57,7 +57,7 @@ export class AgentOrchestrator {
     this.events = events;
     this.providerRegistry = providerRegistry;
     this.storage = storage;
-    this.sandboxRunner = new SandboxRunner();
+    // this.sandboxRunner = new SandboxRunner();
     this.clipboard = clipboard ?? null;
   }
 
@@ -85,6 +85,7 @@ export class AgentOrchestrator {
       tokensUsed: 0,
       currentOutput: '',
       runTimestamps: [],
+      isExecuting: false,
     };
 
     this.agents.set(agent.id, state);
@@ -165,13 +166,14 @@ export class AgentOrchestrator {
       state.status = AgentStatus.ACTIVE;
     }
 
-    if (state.status === AgentStatus.RUNNING) {
-      throw new Error(`Agent ${agentId} już RUNNING`);
+    if (state.isExecuting) {
+      throw new Error(`Agent ${agentId} już jest w trakcie wykonywania (isExecuting)`);
     }
 
-    // === Start Execution ===================================================
-    const startTime = Date.now();
+    // Atomowe: ustaw flagę isExecuting przed resztą kodu — zapobiega race condition
+    state.isExecuting = true;
     state.status = AgentStatus.RUNNING;
+    const startTime = Date.now();
     state.startTime = startTime;
     state.currentOutput = '';
     state.tokensUsed = 0;
@@ -211,12 +213,6 @@ export class AgentOrchestrator {
               `Dozwolone: ${perms.allowedTriggers.join(', ') || 'brak'}`
             );
           }
-        } else {
-          // allowedTriggers = [] — agent nie może być uruchomiony żadnym triggerem
-          throw new Error(
-            `Agent ${agentId} nie może być uruchomiony — brak dozwolonych triggerów. ` +
-            `Dodaj triggery w panelu Uprawnienia.`
-          );
         }
         // 2. Model check
         if (perms.allowedModels.length > 0 && !perms.allowedModels.includes(state.agent.model.modelName)) {
@@ -265,27 +261,8 @@ export class AgentOrchestrator {
 
       // === AI Call with streaming ==========================================
       let content: string;
-      if (state.agent.executionMode === 'sandbox' && this.sandboxRunner) {
-        // === Sandbox Execution (#7 MicroVM) ================================
-        const providerConfig = this.providerRegistry.getConfig(state.agent.model.providerLabel);
-        const sandboxResult = await this.sandboxRunner.runInSandbox({
-          agent: state.agent,
-          context: finalContext,
-          triggerType: triggerType,
-          providerApiKey: providerConfig?.apiKey || '',
-          providerBaseUrl: providerConfig?.baseUrl || '',
-          timeoutMs: 120_000,
-          memoryLimitMb: 256,
-        });
-        this.providerRegistry.recordSend(state.agent.model.providerLabel);
-        if (!sandboxResult.success) {
-          throw new Error(`[Sandbox] ${sandboxResult.error}`);
-        }
-        content = sandboxResult.output?.content || '';
-      } else {
-        // === Standard Execution (live) ======================================
-        content = await this.callAIStreaming(state.agent, finalContext, agentId, state, isPipeline);
-      }
+      // [AI] Sandbox execution disabled — sandbox removed
+      content = await this.callAIStreaming(state.agent, finalContext, agentId, state, isPipeline);
 
       // === Output ==========================================================
       const executionMs = Date.now() - startTime;
@@ -348,6 +325,7 @@ export class AgentOrchestrator {
 
     } catch (error) {
       // === Error Handling ==================================================
+      state.isExecuting = false;
       const errorMsg = error instanceof Error ? error.message : String(error);
       systemEventBus.push({ type: 'agent:error', timestamp: Date.now(), agentId, error: errorMsg });
       const executionMs = Date.now() - startTime;
@@ -365,10 +343,10 @@ export class AgentOrchestrator {
       state.agent.errorCount++;
       state.agent.updatedAt = new Date().toISOString();
 
-      if (state.retryCount <= (state.agent.maxRetries || this.DEFAULT_MAX_RETRIES)) {
+      if (state.retryCount <= (state.agent.maxRetries ?? this.DEFAULT_MAX_RETRIES)) {
         // Auto-restart
         state.status = AgentStatus.COOLDOWN;
-        state.cooldownUntil = Date.now() + ((state.agent.cooldownSeconds * 1000) || this.DEFAULT_COOLDOWN_MS);
+        state.cooldownUntil = Date.now() + ((state.agent.cooldownSeconds * 1000) ?? this.DEFAULT_COOLDOWN_MS);
         this.setStatus(agentId, AgentStatus.COOLDOWN);
         this.events.onError(agentId, `Auto-restart ${state.retryCount}/${state.agent.maxRetries}: ${errorMsg}`);
       } else {

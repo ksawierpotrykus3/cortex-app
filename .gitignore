@@ -22,3 +22,12 @@ data/
 
 # API keys (security)
 **/keys.json
+
+# Build-time artifacts (generated)
+electron.vite.config.*.mjs
+
+# npm local config (contains machine-specific paths)
+.npmrc
+
+# Auto-update blockmaps (generated)
+*.blockmap

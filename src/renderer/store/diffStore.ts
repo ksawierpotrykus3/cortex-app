@@ -96,9 +96,8 @@ export const useDiffStore = create<DiffState>((set, get) => ({
   },
 
   snapshotBeforeEdit: (entityId, entityType, content, title) => {
-    if (!content && !title) return; // Don't snapshot empty
+    if (!content?.trim() && !title?.trim()) return; // Don't snapshot empty
     get().addSnapshot({
-      id: uid(),
       entityId,
       entityType,
       content,

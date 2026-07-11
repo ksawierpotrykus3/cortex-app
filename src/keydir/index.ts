@@ -36,7 +36,7 @@ export function registerDefaultKeybindings(navigate: NavigateFn, actions: Action
     G('nav-nexus', 'Nexus Canvas', 'Ctrl+1', () => navigate('nexus')),
     G('nav-lab-todo', 'Lab — Taski', 'Ctrl+2', () => navigate('lab-todo')),
     G('nav-lab-writing', 'Lab — Pisanie', 'Ctrl+3', () => navigate('lab-writing')),
-    G('nav-agents', 'Agenci AI', 'Ctrl+4', () => navigate('agents')),
+    G('nav-agents', 'Agenci AI', 'Ctrl+4', () => navigate('projekty' /* was agents */)),
     G('nav-wiki', 'Wiki', 'Ctrl+5', () => navigate('wiki')),
     G('nav-changes', 'Zmiany', 'Ctrl+8', () => navigate('changes')),
 
@@ -58,15 +58,5 @@ export function registerDefaultKeybindings(navigate: NavigateFn, actions: Action
     { id: 'keydir:canvas-new', label: 'Nowa notatka (canvas)', keys: 'N', context: 'nexus', handler: actions.newNote },
     { id: 'keydir:canvas-delete', label: 'Usuń zaznaczoną notatkę', keys: 'Delete', context: 'nexus', handler: actions.delete },
     { id: 'keydir:canvas-back', label: 'Odznacz / wróć', keys: 'Escape', context: 'nexus', handler: actions.escape },
-
-    // ====================================================================
-    // LabTodo
-    // ====================================================================
-    { id: 'keydir:todo-new', label: 'Nowy task', keys: 'N', context: 'lab-todo', handler: actions.newTask },
-
-    // ====================================================================
-    // LabWriting
-    // ====================================================================
-    { id: 'keydir:writing-new', label: 'Nowy manuskrypt', keys: 'N', context: 'lab-writing', handler: actions.newDraft },
   ]);
 }

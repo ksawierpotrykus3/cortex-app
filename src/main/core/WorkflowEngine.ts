@@ -350,6 +350,8 @@ export class WorkflowEngine {
     }
 
     // Replace {{function(args)}}
+    // NOTE: args are split by comma, which means commas inside quoted strings
+    // (e.g. {{truncate("hello, world", 5)}}) will be incorrectly split.
     result = result.replace(/\{\{\s*(\w+)\s*\(([^)]*)\)\s*\}\}/g, (match, fnName, argsStr) => {
       const args = argsStr.split(',').map((a: string) => a.trim().replace(/^['"]|['"]$/g, ''));
 
@@ -486,11 +488,14 @@ export class WorkflowEngine {
       if (!url) return { success: false, error: 'No URL configured' };
 
       try {
-        const response = await fetch(url, {
+        const fetchOpts: any = {
           method,
           headers: { 'Content-Type': 'application/json', ...headers },
-          body: ctx.renderedTemplate || '{}',
-        });
+        };
+        if (method !== 'GET' && method !== 'HEAD') {
+          fetchOpts.body = ctx.renderedTemplate || '{}';
+        }
+        const response = await fetch(url, fetchOpts);
         return { success: response.ok, result: { status: response.status } };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };

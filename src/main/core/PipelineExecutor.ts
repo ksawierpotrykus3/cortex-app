@@ -372,7 +372,7 @@ export class PipelineExecutor {
         if (nodeConfig.condition.mode === 'skip-when-true') {
           skipped = conditionResult === true;
         } else if (nodeConfig.condition.mode === 'skip-when-false') {
-          skipped = conditionResult === true;
+          skipped = conditionResult === false;
         }
       }
 
@@ -393,7 +393,7 @@ export class PipelineExecutor {
             estimatedTokens = Math.floor((predecessorContext.length || 100) / 4) + 50;
             break;
           case 'accumulator':
-            simulatedOutput = `[DRY-RUN] Akumulator zebrałby dane z ${pipeline.connections.filter(c => c.sourceNodeId === node.id).length} połączeń`;
+            simulatedOutput = `[DRY-RUN] Akumulator zebrałby dane z ${this.getPredecessors(node.id, pipeline.connections).length} połączeń`;
             estimatedTokens = 10;
             break;
           case 'router':

@@ -241,8 +241,8 @@ export function ProviderSettingsPanel({ isOpen, onClose }: ProviderSettingsPanel
                     {/* Delete (only non-builtin) */}
                     {!cfg.isBuiltin && (
                       <button
-                        onClick={async () => {
-                          // For now just visual — full delete via IPC
+                        onClick={() => {
+                          console.warn('[ProviderSettingsPanel] Usuwanie providera nie jest jeszcze zaimplementowane');
                         }}
                         aria-label="Usuń"
                         className="p-1.5 rounded-lg text-[rgb(var(--text-secondary))] hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"

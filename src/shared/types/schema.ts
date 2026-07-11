@@ -60,6 +60,7 @@ export enum AIProvider {
   GEMINI = 'GEMINI',
   OPENROUTER = 'OPENROUTER',  // OpenAI-kompatybilny (OpenRouter, lokalny proxy, cokolwiek)
   OLLAMA = 'OLLAMA',
+  DEEPSEEK = 'DEEPSEEK',
 }
 
 // === Provider Configuration (API keys, endpoint URL) ======================
@@ -288,11 +289,11 @@ export interface AgentOutput {
 }
 
 // === Pipeline DAG (F6.12) =================================================
-export type NodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'condition' | 'system-reader' | 'system-writer' | 'browser-automate';
+export type PipelineNodeType = 'llm-agent' | 'human-in-the-loop' | 'accumulator' | 'router' | 'condition' | 'system-reader' | 'system-writer' | 'browser-automate';
 
 export interface WorkflowNode {
   id: string;
-  type: NodeType;
+  type: PipelineNodeType;
   name: string;
   agentId?: string;       // ID agenta do wykonania (dla llm-agent)
   systemPrompt?: string;

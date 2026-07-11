@@ -20,7 +20,11 @@ export class RateLimiter {
   tryAcquire(key: string): boolean {
     const entry = this.keys.get(key);
     if (!entry) return true;
-    if (entry.rpmLimit <= 0) return false;
+    // limit=0 means "unlimited" (e.g. Ollama), not "block everything"
+    if (entry.rpmLimit <= 0) {
+      entry.timestamps.push(Date.now());
+      return true;
+    }
     const now = Date.now();
     entry.timestamps = entry.timestamps.filter(ts => now - ts < 60000);
     if (entry.timestamps.length < entry.rpmLimit) {
@@ -29,19 +33,6 @@ export class RateLimiter {
     }
     systemEventBus.push({ type: 'rate-limit:hit', timestamp: Date.now(), key, used: entry.timestamps.length, limit: entry.rpmLimit });
     return false;
-  }
-
-  recordSend(key: string): void {
-    const entry = this.keys.get(key);
-    if (entry) entry.timestamps.push(Date.now());
-  }
-
-  canSend(key: string): boolean {
-    const entry = this.keys.get(key);
-    if (!entry || entry.rpmLimit <= 0) return true;
-    const now = Date.now();
-    entry.timestamps = entry.timestamps.filter(ts => now - ts < 60000);
-    return entry.timestamps.length < entry.rpmLimit;
   }
 
   getUsage(key: string): { used: number; limit: number; remaining: number } {

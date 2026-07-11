@@ -44,6 +44,10 @@ class SystemEventBus extends EventEmitter<SystemEventBusEvents> {
     this.on('event', callback);
     return () => { this.off('event', callback); };
   }
+
+  destroy(): void {
+    this.removeAllListeners();
+  }
 }
 
 export const systemEventBus = new SystemEventBus();

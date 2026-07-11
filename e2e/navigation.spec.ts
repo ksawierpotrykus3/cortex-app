@@ -40,5 +40,6 @@ test.describe('Nawigacja — testy E2E', () => {
         break;
       }
     }
+    await expect(page.locator('[role="dialog"], .modal, [class*="modal"]').first()).toBeVisible();
   });
 });

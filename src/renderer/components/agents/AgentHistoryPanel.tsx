@@ -12,6 +12,7 @@ import { useFocusTrap } from '../../../hooks/useFocusTrap';
 interface AgentHistoryPanelProps {
   agentId: string;
   agentName: string;
+  isOpen: boolean;
   onClose: () => void;
 }
 
@@ -19,7 +20,7 @@ interface AgentHistoryPanelProps {
 const PAGE_SIZE = 50;
 
 // === Component =============================================================
-export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryPanelProps) {
+export function AgentHistoryPanel({ agentId, agentName, isOpen, onClose }: AgentHistoryPanelProps) {
   const [outputs, setOutputs] = useState<AgentOutput[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -29,7 +30,7 @@ export function AgentHistoryPanel({ agentId, agentName, onClose }: AgentHistoryP
   const [filterRating, setFilterRating] = useState<'all' | 'low' | 'mid' | 'high'>('all');
   const [stats, setStats] = useState<{ total: number; avgTokens: number; avgExecutionMs: number; errorRate: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const modalRef = useFocusTrap(agentId !== null);
+  const modalRef = useFocusTrap(isOpen);
 
   // Load first page
   useEffect(() => {

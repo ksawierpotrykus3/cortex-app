@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // NEXUS ÔÇö ElectronIpcBridge (Phase 1)
 // Rejestruje IPC handlery dla agent├│w: CRUD, execute, stop
 // U┼╝ywa ipcMain.handle (invoke/promise) dla komend
@@ -8,7 +8,7 @@ import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, dialog } from 'electron';
 import {
   Agent, AgentOutput, AgentStatus, ProviderAuthConfig,
   GitConfig, DEFAULT_GIT_CONFIG, GitStatusResult, GitStatusEntry,
@@ -377,12 +377,14 @@ export class ElectronIpcBridge {
     });
 
     // === Changelog Actions ================================================
-    this.ipc.on('changelog:approve', (_event, payload: { entryId: string; agentId: string }) => {
+    this.ipc.handle('changelog:approve', async (_event, payload: { entryId: string; agentId: string }) => {
       this.storage.appendLog({ action: 'approve', ...payload });
+      return { success: true };
     });
 
-    this.ipc.on('changelog:reject', (_event, payload: { entryId: string; agentId: string; reason?: string }) => {
+    this.ipc.handle('changelog:reject', async (_event, payload: { entryId: string; agentId: string; reason?: string }) => {
       this.storage.appendLog({ action: 'reject', ...payload });
+      return { success: true };
     });
 
     // === Agent Output Approve/Reject (F6.1) ===============================
@@ -579,34 +581,36 @@ export class ElectronIpcBridge {
 
     // Browser operations (#27 Playwright)
     this.ipc.handle('browser:extract-dom', async (_event, payload: { url: string }) => {
+      const { BrowserEngine } = await import('../core/BrowserEngine');
+      const engine = new BrowserEngine();
       try {
-        const { BrowserEngine } = await import('../core/BrowserEngine');
-        const engine = new BrowserEngine();
         const result = await engine.extractCleanDOM(payload.url);
-        await engine.close();
         return { success: true, ...result };
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };
+      } finally {
+        await engine.close();
       }
     });
 
     this.ipc.handle('browser:test-macro', async (_event, payload: { steps: any[]; inputs?: Record<string, any> }) => {
+      const { BrowserEngine } = await import('../core/BrowserEngine');
+      const engine = new BrowserEngine();
       try {
-        const { BrowserEngine } = await import('../core/BrowserEngine');
-        const engine = new BrowserEngine();
         const result = await engine.executeMacro(payload.steps, payload.inputs || {});
-        await engine.close();
         return result;
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };
+      } finally {
+        await engine.close();
       }
     });
 
     // Browser: download file via Playwright and save to storage (#27)
     this.ipc.handle('browser:download-and-save', async (_event, payload: { url: string; steps: any[]; inputs?: Record<string, any>; metadata?: Record<string, any> }) => {
+      const { BrowserEngine } = await import('../core/BrowserEngine');
+      const engine = new BrowserEngine();
       try {
-        const { BrowserEngine } = await import('../core/BrowserEngine');
-        const engine = new BrowserEngine();
         const result = await engine.executeMacro(payload.steps, payload.inputs || {});
 
         // Save any downloaded files to storage
@@ -615,14 +619,14 @@ export class ElectronIpcBridge {
             ...payload.metadata,
             browserAction: 'macro',
           });
-          await engine.close();
           return { success: true, files: result.files, records };
         }
 
-        await engine.close();
         return result;
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };
+      } finally {
+        await engine.close();
       }
     });
 
@@ -701,8 +705,8 @@ export class ElectronIpcBridge {
     this.registerGitHandlers();
     // Register git scheduler handlers
     this.registerGitScheduleHandlers();
-    // Register experimental handlers (Etap 1)
-    this.registerExperimentalHandlers();
+    // Register projekty handlers (Etap 1)
+    this.registerProjektyHandlers();
   }
 
   // =========================================================================
@@ -1577,286 +1581,287 @@ export class ElectronIpcBridge {
   // =========================================================================
   // Tryb Eksperymentalny Handlers (Etap 1)
   // =========================================================================
-  private registerExperimentalHandlers(): void {
-    this.ipc.handle('experimental:table-info', async (_event: IpcMainInvokeEvent, payload: { tableName: string }) => {
+  private registerProjektyHandlers(): void {
+    this.ipc.handle('projekty:table-info', async (_event: IpcMainInvokeEvent, payload: { tableName: string }) => {
       try {
         return this.storage.runTableInfoPragma(payload.tableName);
       } catch (err) {
-        console.error('[experimental:table-info]', err);
+        console.error('[projekty:table-info]', err);
         return [];
       }
     });
 
     // Projects
-    this.ipc.handle('experimental:project:save', async (_event: IpcMainInvokeEvent, payload: { project: any }) => {
+    this.ipc.handle('projekty:project:save', async (_event: IpcMainInvokeEvent, payload: { project: any }) => {
       try {
-        this.storage.saveExperimentalProject(payload.project);
+        this.storage.saveProjekt(payload.project);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:project:save]', err);
+        console.error('[projekty:project:save]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:project:get-all', async () => {
+    this.ipc.handle('projekty:project:get-all', async () => {
       try {
-        return this.storage.getExperimentalProjects();
+        return this.storage.getProjekts();
       } catch (err) {
-        console.error('[experimental:project:get-all]', err);
+        console.error('[projekty:project:get-all]', err);
         return [];
       }
     });
 
-    this.ipc.handle('experimental:project:get', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+    this.ipc.handle('projekty:project:get', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
       try {
-        return this.storage.getExperimentalProject(payload.id);
+        return this.storage.getProjekt(payload.id);
       } catch (err) {
-        console.error('[experimental:project:get]', err);
+        console.error('[projekty:project:get]', err);
         return null;
       }
     });
 
-    this.ipc.handle('experimental:project:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+    this.ipc.handle('projekty:project:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
       try {
-        this.storage.deleteExperimentalProject(payload.id);
+        this.storage.deleteProjekt(payload.id);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:project:delete]', err);
+        console.error('[projekty:project:delete]', err);
         return { success: false };
       }
     });
 
     // Chat Messages
-    this.ipc.handle('experimental:chat:save', async (_event: IpcMainInvokeEvent, payload: { message: any }) => {
+    this.ipc.handle('projekty:chat:save', async (_event: IpcMainInvokeEvent, payload: { message: any }) => {
       try {
-        this.storage.saveExperimentalChatMessage(payload.message);
+        this.storage.saveProjektyChatMessage(payload.message);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:chat:save]', err);
+        console.error('[projekty:chat:save]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:chat:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string; conversationId?: string }) => {
+    this.ipc.handle('projekty:chat:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string; conversationId?: string }) => {
       try {
-        return this.storage.getExperimentalChatMessages(payload.projectId, payload.conversationId);
+        return this.storage.getProjektyChatMessages(payload.projectId, payload.conversationId);
       } catch (err) {
-        console.error('[experimental:chat:get]', err);
+        console.error('[projekty:chat:get]', err);
         return [];
       }
     });
 
-    this.ipc.handle('experimental:chat:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+    this.ipc.handle('projekty:chat:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
       try {
-        this.storage.deleteExperimentalChatMessage(payload.id);
+        this.storage.deleteProjektyChatMessage(payload.id);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:chat:delete]', err);
+        console.error('[projekty:chat:delete]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:chat:get-unprocessed', async (_event: IpcMainInvokeEvent, payload: { projectId: string; conversationId?: string }) => {
+    this.ipc.handle('projekty:chat:get-unprocessed', async (_event: IpcMainInvokeEvent, payload: { projectId: string; conversationId?: string }) => {
       try {
-        return this.storage.getExperimentalUnprocessedMessages(payload.projectId, payload.conversationId);
+        return this.storage.getProjektyUnprocessedMessages(payload.projectId, payload.conversationId);
       } catch (err) {
-        console.error('[experimental:chat:get-unprocessed]', err);
+        console.error('[projekty:chat:get-unprocessed]', err);
         return [];
       }
     });
 
-    this.ipc.handle('experimental:chat:mark-processed', async (_event: IpcMainInvokeEvent, payload: { ids: string[] }) => {
+    this.ipc.handle('projekty:chat:mark-processed', async (_event: IpcMainInvokeEvent, payload: { ids: string[] }) => {
       try {
-        this.storage.markExperimentalMessagesProcessed(payload.ids);
+        this.storage.markProjektyMessagesProcessed(payload.ids);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:chat:mark-processed]', err);
+        console.error('[projekty:chat:mark-processed]', err);
         return { success: false };
       }
     });
 
     // Nodes
-    this.ipc.handle('experimental:node:save', async (_event: IpcMainInvokeEvent, payload: { node: any }) => {
+    this.ipc.handle('projekty:node:save', async (_event: IpcMainInvokeEvent, payload: { node: any }) => {
       try {
-        this.storage.saveExperimentalNode(payload.node);
+        this.storage.saveProjektyNode(payload.node);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:node:save]', err);
+        console.error('[projekty:node:save]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:node:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+    this.ipc.handle('projekty:node:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
       try {
-        return this.storage.getExperimentalNodes(payload.projectId);
+        return this.storage.getProjektyNodes(payload.projectId);
       } catch (err) {
-        console.error('[experimental:node:get]', err);
+        console.error('[projekty:node:get]', err);
         return [];
       }
     });
 
-    this.ipc.handle('experimental:node:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+    this.ipc.handle('projekty:node:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
       try {
-        this.storage.deleteExperimentalNode(payload.id);
+        this.storage.deleteProjektyNode(payload.id);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:node:delete]', err);
+        console.error('[projekty:node:delete]', err);
         return { success: false };
       }
     });
 
     // Edges
-    this.ipc.handle('experimental:edge:save', async (_event: IpcMainInvokeEvent, payload: { edge: any }) => {
+    this.ipc.handle('projekty:edge:save', async (_event: IpcMainInvokeEvent, payload: { edge: any }) => {
       try {
-        this.storage.saveExperimentalEdge(payload.edge);
+        this.storage.saveProjektyEdge(payload.edge);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:edge:save]', err);
+        console.error('[projekty:edge:save]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:edge:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+    this.ipc.handle('projekty:edge:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
       try {
-        return this.storage.getExperimentalEdges(payload.projectId);
+        return this.storage.getProjektyEdges(payload.projectId);
       } catch (err) {
-        console.error('[experimental:edge:get]', err);
+        console.error('[projekty:edge:get]', err);
         return [];
       }
     });
 
-    this.ipc.handle('experimental:edge:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+    this.ipc.handle('projekty:edge:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
       try {
-        this.storage.deleteExperimentalEdge(payload.id);
+        this.storage.deleteProjektyEdge(payload.id);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:edge:delete]', err);
+        console.error('[projekty:edge:delete]', err);
         return { success: false };
       }
     });
 
     // Changelog
-    this.ipc.handle('experimental:changelog:save', async (_event: IpcMainInvokeEvent, payload: { entry: any }) => {
+    this.ipc.handle('projekty:changelog:save', async (_event: IpcMainInvokeEvent, payload: { entry: any }) => {
       try {
-        this.storage.saveExperimentalChangelog(payload.entry);
+        this.storage.saveProjektyChangelog(payload.entry);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:changelog:save]', err);
+        console.error('[projekty:changelog:save]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:changelog:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+    this.ipc.handle('projekty:changelog:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
       try {
-        return this.storage.getExperimentalChangelog(payload.projectId);
+        return this.storage.getProjektyChangelog(payload.projectId);
       } catch (err) {
-        console.error('[experimental:changelog:get]', err);
+        console.error('[projekty:changelog:get]', err);
         return [];
       }
     });
 
     // Conversations
-    this.ipc.handle('experimental:conversation:save', async (_event: IpcMainInvokeEvent, payload: { conversation: any }) => {
+    this.ipc.handle('projekty:conversation:save', async (_event: IpcMainInvokeEvent, payload: { conversation: any }) => {
       try {
-        this.storage.saveExperimentalConversation(payload.conversation);
+        this.storage.saveProjektyConversation(payload.conversation);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:conversation:save]', err);
+        console.error('[projekty:conversation:save]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:conversation:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+    this.ipc.handle('projekty:conversation:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
       try {
-        return this.storage.getExperimentalConversations(payload.projectId);
+        return this.storage.getProjektyConversations(payload.projectId);
       } catch (err) {
-        console.error('[experimental:conversation:get]', err);
+        console.error('[projekty:conversation:get]', err);
         return [];
       }
     });
 
-    this.ipc.handle('experimental:conversation:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+    this.ipc.handle('projekty:conversation:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
       try {
-        this.storage.deleteExperimentalConversation(payload.id);
+        this.storage.deleteProjektyConversation(payload.id);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:conversation:delete]', err);
+        console.error('[projekty:conversation:delete]', err);
         return { success: false };
       }
     });
 
     // Node Annotations
-    this.ipc.handle('experimental:annotation:save', async (_event: IpcMainInvokeEvent, payload: { annotation: any }) => {
+    this.ipc.handle('projekty:annotation:save', async (_event: IpcMainInvokeEvent, payload: { annotation: any }) => {
       try {
-        this.storage.saveExperimentalNodeAnnotation(payload.annotation);
+        this.storage.saveProjektyNodeAnnotation(payload.annotation);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:annotation:save]', err);
+        console.error('[projekty:annotation:save]', err);
         return { success: false };
       }
     });
 
-    this.ipc.handle('experimental:annotation:get', async (_event: IpcMainInvokeEvent, payload: { nodeId: string }) => {
+    this.ipc.handle('projekty:annotation:get', async (_event: IpcMainInvokeEvent, payload: { nodeId: string }) => {
       try {
-        return this.storage.getExperimentalNodeAnnotations(payload.nodeId);
+        return this.storage.getProjektyNodeAnnotations(payload.nodeId);
       } catch (err) {
-        console.error('[experimental:annotation:get]', err);
+        console.error('[projekty:annotation:get]', err);
         return [];
       }
     });
 
-    this.ipc.handle('experimental:annotation:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
+    this.ipc.handle('projekty:annotation:delete', async (_event: IpcMainInvokeEvent, payload: { id: string }) => {
       try {
-        this.storage.deleteExperimentalNodeAnnotation(payload.id);
+        this.storage.deleteProjektyNodeAnnotation(payload.id);
         return { success: true };
       } catch (err) {
-        console.error('[experimental:annotation:delete]', err);
+        console.error('[projekty:annotation:delete]', err);
         return { success: false };
       }
     });
 
     // Global Context
-    this.ipc.handle('experimental:global-context:save', async (_event: IpcMainInvokeEvent, payload: { projectId: string; context: any }) => {
+    this.ipc.handle('projekty:global-context:save', async (_event: IpcMainInvokeEvent, payload: { projectId: string; context: any }) => {
       try {
-        this.storage.saveExperimentalGlobalContext(payload.projectId, payload.context);
+        this.storage.saveProjektyGlobalContext(payload.projectId, payload.context);
         return {};
       } catch (err) {
-        console.error('[experimental:global-context:save]', err);
+        console.error('[projekty:global-context:save]', err);
         return {};
       }
     });
 
-    this.ipc.handle('experimental:global-context:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+    this.ipc.handle('projekty:global-context:get', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
       try {
-        return this.storage.getExperimentalGlobalContext(payload.projectId);
+        return this.storage.getProjektyGlobalContext(payload.projectId);
       } catch (err) {
-        console.error('[experimental:global-context:get]', err);
+        console.error('[projekty:global-context:get]', err);
         return null;
       }
     });
 
     // Undecomposed nodes for BFS loop
-    this.ipc.handle('experimental:node:get-undecomposed', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
+    this.ipc.handle('projekty:node:get-undecomposed', async (_event: IpcMainInvokeEvent, payload: { projectId: string }) => {
       try {
-        return this.storage.getExperimentalUndecomposedNodes(payload.projectId);
+        return this.storage.getProjektyUndecomposedNodes(payload.projectId);
       } catch (err) {
-        console.error('[experimental:node:get-undecomposed]', err);
+        console.error('[projekty:node:get-undecomposed]', err);
         return [];
       }
     });
 
-    // LLM: Chat AI (#1)
-    this.ipc.handle('experimental:chat:llm', async (_event: IpcMainInvokeEvent, payload: { systemPrompt: string; messages: any[]; model: string }) => {
+    // LLM: Zunifikowane AI (chat + planner) — Faza 2: jedno AI widzi caly kontekst
+    this.ipc.handle('projekty:chat:llm', async (_event: IpcMainInvokeEvent, payload: { systemPrompt: string; messages: any[]; model: string; nodes?: any[]; edges?: any[]; specContent?: string }) => {
       try {
         const { providerRegistry } = this;
         if (!providerRegistry) throw new Error('ProviderRegistry not available');
 
+        const hasContext = payload.nodes && payload.edges && payload.specContent;
         const modelConfig: ModelConfig = {
           provider: payload.model as any,
           providerLabel: payload.model,
           modelName: payload.model === 'DeepSeek V4 Pro' ? 'deepseek-ai/deepseek-v4-pro' : 'deepseek-ai/deepseek-v4-flash',
           temperature: 0.7,
-          maxTokens: 4096,
+          maxTokens: hasContext ? 8192 : 4096,
           topP: 0.9,
         };
         const adapter = await providerRegistry.getAdapter(modelConfig);
@@ -1866,81 +1871,298 @@ export class ElectronIpcBridge {
           content: m.content,
         }));
 
-        const prompt = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+        let prompt: string;
+        if (hasContext) {
+          const nodesJson = JSON.stringify(payload.nodes!.map(n => ({ id: n.id, tytul: n.tytul || n.title, opis: n.opis || n.content, parent_id: n.parent_id })), null, 2);
+          const edgesJson = JSON.stringify(payload.edges!.map(e => ({ from: e.source_node_id, to: e.target_node_id, label: e.label })), null, 2);
+          const convText = chatHistory.map(m => `[${m.role}]: ${m.content}`).join('\n');
 
-        const response = await adapter.complete({
-          prompt,
-          model: modelConfig,
-          systemPrompt: payload.systemPrompt,
-          contextSize: 4096,
-        });
-
-        providerRegistry.recordSend(modelConfig.providerLabel, modelConfig.modelName);
-        return { content: response.content };
-      } catch (err: any) {
-        console.error('[experimental:chat:llm]', err);
-        return { content: `[Blad AI: ${err.message || 'nieznany blad'}]` };
-      }
-    });
-
-    // LLM: Planner (#3)
-    this.ipc.handle('experimental:planner:run', async (_event: IpcMainInvokeEvent, payload: { systemPrompt: string; messages: any[]; nodes: any[]; edges: any[]; specContent: string; model: string }) => {
-      try {
-        const { providerRegistry } = this;
-        if (!providerRegistry) throw new Error('ProviderRegistry not available');
-
-        const modelConfig: ModelConfig = {
-          provider: payload.model as any,
-          providerLabel: payload.model,
-          modelName: payload.model === 'DeepSeek V4 Pro' ? 'deepseek-ai/deepseek-v4-pro' : 'deepseek-ai/deepseek-v4-flash',
-          temperature: 0.7,
-          maxTokens: 8192,
-          topP: 0.9,
-        };
-        const adapter = await providerRegistry.getAdapter(modelConfig);
-
-        const chatHistory = payload.messages.map(m => `[${m.role}]: ${m.content}`).join('\n');
-        const nodesJson = JSON.stringify(payload.nodes.map(n => ({ id: n.id, title: n.title, content: n.content, parent_id: n.parent_id })), null, 2);
-        const edgesJson = JSON.stringify(payload.edges.map(e => ({ from: e.source_node_id, to: e.target_node_id, label: e.label })), null, 2);
-
-        const prompt = `## Aktualny plan (wezly)
+          prompt = `## Aktualny plan (zadania)
 ${nodesJson}
 
-## Polaczenia miedzy wezlami
+## Polaczenia miedzy zadaniami
 ${edgesJson}
 
 ## Specyfikacja projektu
 ${payload.specContent}
 
-## Nowe wiadomosci z rozmowy do analizy
-${chatHistory}
+## Pelna historia rozmowy
+${convText}
 
 ## Instrukcja
-Na podstawie nowych wiadomosci w kontekscie aktualnego planu, zaproponuj zmiany.
-Zwroc JSON w formacie:
+Odpowiedz na pytanie uzytkownika. Jesli widzisz potrzebe zmiany planu, zwroc dodatkowo JSON z operacjami:
 {
   "operations": [
     {
       "action": "ADD" | "UPDATE" | "DELETE",
+      "reason": "dlaczego ta zmiana",
       "node": { "title": "...", "content": "...", "parent_id": null | "id_rodzica" }
     }
   ]
 }
-Kazdy wezel to krotka, czytelna notatka (1-2 zdania). Uzywaj parent_id do tworzenia hierarchii (galezie, podgalezie).`;
+Jesli nie ma potrzeby zmian — odpowiedz normalnie bez JSON. Kazde zadanie to krotka, czytelna notatka.`;
+        } else {
+          prompt = chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+        }
 
         const response = await adapter.complete({
           prompt,
           model: modelConfig,
           systemPrompt: payload.systemPrompt,
-          contextSize: 8192,
+          contextSize: modelConfig.maxTokens,
         });
 
         providerRegistry.recordSend(modelConfig.providerLabel, modelConfig.modelName);
         return { content: response.content };
       } catch (err: any) {
-        console.error('[experimental:planner:run]', err);
-        return { content: `[Blad Planera: ${err.message || 'nieznany blad'}]` };
+        console.error('[projekty:chat:llm]', err);
+        return { content: `[Blad AI: ${err.message || 'nieznany blad'}]` };
       }
+    });
+
+    // === Research Space =====================================================
+    this.ipc.handle('research:project:create', async (_event, payload: { name: string }) => {
+      const id = crypto.randomUUID();
+      this.storage.db?.prepare('INSERT INTO research_projects (id, name) VALUES (?, ?)').run(id, payload.name);
+      return { id, name: payload.name };
+    });
+
+    this.ipc.handle('research:project:list', async () => {
+      const rows = this.storage.db?.prepare('SELECT * FROM research_projects ORDER BY created_at DESC').all() || [];
+      return rows;
+    });
+
+    this.ipc.handle('research:entry:create', async (_event, payload: { project_id: string; title?: string }) => {
+      const id = crypto.randomUUID();
+      this.storage.db?.prepare('INSERT INTO research_entries (id, project_id, title) VALUES (?, ?, ?)').run(id, payload.project_id, payload.title || '');
+      return { id, project_id: payload.project_id, title: payload.title || '' };
+    });
+
+    this.ipc.handle('research:entry:list', async (_event, payload: { project_id: string }) => {
+      const rows = this.storage.db?.prepare('SELECT * FROM research_entries WHERE project_id = ? ORDER BY created_at DESC').all(payload.project_id) || [];
+      return rows;
+    });
+
+    this.ipc.handle('research:entry:get', async (_event, payload: { entry_id: string }) => {
+      const entry = this.storage.db?.prepare('SELECT * FROM research_entries WHERE id = ?').get(payload.entry_id);
+      const sources = this.storage.db?.prepare('SELECT * FROM research_sources WHERE entry_id = ?').all(payload.entry_id) || [];
+      const messages = this.storage.db?.prepare('SELECT * FROM research_chat_messages WHERE entry_id = ? ORDER BY created_at ASC').all(payload.entry_id) || [];
+      const observations = this.storage.db?.prepare('SELECT * FROM research_agent_observations WHERE entry_id = ? ORDER BY created_at ASC').all(payload.entry_id) || [];
+      return { entry, sources, messages, observations };
+    });
+
+    this.ipc.handle('research:chat:send', async (_event, payload: { entry_id: string; message: string; model?: string }) => {
+      const msgId = crypto.randomUUID();
+      this.storage.db?.prepare('INSERT INTO research_chat_messages (id, entry_id, role, content) VALUES (?, ?, ?, ?)').run(msgId, payload.entry_id, 'user', payload.message);
+
+      // Get entry and its sources for context
+      const entry = this.storage.db?.prepare('SELECT * FROM research_entries WHERE id = ?').get(payload.entry_id) as any;
+      const sources = this.storage.db?.prepare('SELECT * FROM research_sources WHERE entry_id = ?').all(payload.entry_id) as any[] || [];
+      const history = this.storage.db?.prepare('SELECT * FROM research_chat_messages WHERE entry_id = ? ORDER BY created_at ASC LIMIT 50').all(payload.entry_id) as any[] || [];
+
+      // Build context from sources
+      let sourceContext = '';
+      if (sources.length > 0) {
+        sourceContext = '\n\nDostepne zrodla:\n' + sources.map((s: any) => `--- ${s.file_name} ---\n${(s.content_text || '').slice(0, 4000)}`).join('\n\n');
+      }
+
+      // Call AI
+      let aiContent = '';
+      try {
+        const provider = this.getPrimaryAIProvider();
+        if (provider) {
+          const modelConfig = provider.getDefaultModel?.() || { provider: 'openai', providerLabel: 'default', modelName: 'gpt-3.5-turbo', temperature: 0.7, maxTokens: 2048, topP: 0.95 };
+          const chatHistory = history.map((m: any) => ({ role: m.role, content: m.content }));
+          const systemPrompt = `Jestes asystentem badawczym w Nexus Research Space. Pomagasz analizowac zrodla i wyciagac wnioski. Odpowiadaj po polsku.${sourceContext}`;
+          const response = await provider.complete({
+            prompt: payload.message,
+            model: modelConfig,
+            systemPrompt,
+            contextSize: systemPrompt.length + payload.message.length,
+            messages: chatHistory.slice(0, -1),
+          });
+          aiContent = typeof response === 'string' ? response : (response as any)?.content || response?.toString() || '';
+        }
+      } catch (err: any) {
+        console.error('[research:chat:send] AI error:', err.message);
+        aiContent = `[Blad AI: ${err.message || 'nieznany blad'}]`;
+      }
+
+      // Fallback if no AI response
+      if (!aiContent) {
+        aiContent = '[Nie udalo sie uzyskac odpowiedzi AI - sprawdz konfiguracje providera]';
+      }
+
+      const aiId = crypto.randomUUID();
+      this.storage.db?.prepare('INSERT INTO research_chat_messages (id, entry_id, role, content) VALUES (?, ?, ?, ?)').run(aiId, payload.entry_id, 'assistant', aiContent);
+      const messages = this.storage.db?.prepare('SELECT * FROM research_chat_messages WHERE entry_id = ? ORDER BY created_at ASC').all(payload.entry_id) || [];
+      return { messages };
+    });
+
+    this.ipc.handle('research:source:import', async (_event, payload: { entry_id: string; file_name: string; file_path: string; file_type?: string; content_text?: string }) => {
+      const id = crypto.randomUUID();
+      this.storage.db?.prepare('INSERT INTO research_sources (id, entry_id, file_name, file_path, file_type, content_text) VALUES (?, ?, ?, ?, ?, ?)').run(id, payload.entry_id, payload.file_name, payload.file_path, payload.file_type || null, payload.content_text || null);
+      return { id, ...payload };
+    });
+
+    this.ipc.handle('research:agents:run', async (_event, payload: { entry_id: string }) => {
+      const messages = this.storage.db?.prepare('SELECT * FROM research_chat_messages WHERE entry_id = ? ORDER BY created_at ASC').all(payload.entry_id) as any[] || [];
+      const sources = this.storage.db?.prepare('SELECT * FROM research_sources WHERE entry_id = ?').all(payload.entry_id) as any[] || [];
+      const observations: any[] = [];
+      if (messages.length === 0) {
+        return { observations };
+      }
+
+      const provider = this.getPrimaryAIProvider();
+      if (!provider) {
+        const obsId = crypto.randomUUID();
+        const content = '[Nie mozna uruchomic agentow - brak skonfigurowanego providera AI]';
+        this.storage.db?.prepare('INSERT INTO research_agent_observations (id, entry_id, agent_id, observation_type, content) VALUES (?, ?, ?, ?, ?)').run(obsId, payload.entry_id, 'system', 'ai_finding', content);
+        observations.push({ id: obsId, entry_id: payload.entry_id, agent_id: 'system', observation_type: 'ai_finding', content });
+        return { observations };
+      }
+
+      const modelConfig = provider.getDefaultModel?.() || { provider: 'openai', providerLabel: 'default', modelName: 'gpt-3.5-turbo', temperature: 0.5, maxTokens: 1024, topP: 0.95 };
+
+      // Build conversation transcript
+      const transcript = messages.map((m: any) => `[${m.role}]: ${m.content}`).join('\n');
+      let sourceContext = '';
+      if (sources.length > 0) {
+        sourceContext = '\nZrodla:\n' + sources.map((s: any) => `- ${s.file_name}: ${(s.content_text || '').slice(0, 2000)}`).join('\n');
+      }
+
+      const agentPrompt = `Przeanalizuj ponizsza rozmowe badawcza i wykryj:
+1. **ai_finding** - co AI wykrylo, jakie wnioski wyciagnelo
+2. **user_observation** - co uzytkownik zaobserwowal, jakie ma spostrzezenia
+3. **unresolved** - kwestie nierozstrzygniete, pytania bez odpowiedzi, niepewnosci
+
+Dla kazdego punktu zwroc JSON w formacie:
+[{"type": "ai_finding|user_observation|unresolved", "content": "tresc obserwacji"}]
+
+Rozmowa:
+${transcript}
+${sourceContext}`;
+
+      try {
+        const response = await provider.complete({
+          prompt: agentPrompt,
+          model: modelConfig,
+          systemPrompt: 'Jestes agentem analitycznym. Odpowiadasz TYLKO czystym JSONem, bez formatowania markdown.',
+          contextSize: agentPrompt.length,
+        });
+        const rawContent = typeof response === 'string' ? response : (response as any)?.content || '';
+        // Try to parse JSON from response
+        let parsed: any[] = [];
+        try {
+          const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            parsed = JSON.parse(jsonMatch[0]);
+          }
+        } catch {
+          // Fallback: create a single observation from raw content
+          parsed = [{ type: 'ai_finding', content: rawContent.slice(0, 500) }];
+        }
+
+        for (const obs of parsed) {
+          if (obs.type && obs.content) {
+            const obsId = crypto.randomUUID();
+            const obsType = ['ai_finding', 'user_observation', 'unresolved'].includes(obs.type) ? obs.type : 'ai_finding';
+            this.storage.db?.prepare('INSERT INTO research_agent_observations (id, entry_id, agent_id, observation_type, content) VALUES (?, ?, ?, ?, ?)').run(obsId, payload.entry_id, 'research_agent', obsType, obs.content);
+            observations.push({ id: obsId, entry_id: payload.entry_id, agent_id: 'research_agent', observation_type: obsType, content: obs.content });
+          }
+        }
+      } catch (err: any) {
+        console.error('[research:agents:run] AI error:', err.message);
+        const obsId = crypto.randomUUID();
+        const content = `[Blad analizy: ${err.message}]`;
+        this.storage.db?.prepare('INSERT INTO research_agent_observations (id, entry_id, agent_id, observation_type, content) VALUES (?, ?, ?, ?, ?)').run(obsId, payload.entry_id, 'system', 'ai_finding', content);
+        observations.push({ id: obsId, entry_id: payload.entry_id, agent_id: 'system', observation_type: 'ai_finding', content });
+      }
+
+      return { observations };
+    });
+
+    // Research: update entry title
+    this.ipc.handle('research:entry:update', async (_event, payload: { id: string; title: string }) => {
+      this.storage.db?.prepare('UPDATE research_entries SET title = ?, updated_at = ? WHERE id = ?').run(payload.title, new Date().toISOString(), payload.id);
+      return { success: true };
+    });
+
+    // Research: delete entry
+    this.ipc.handle('research:entry:delete', async (_event, payload: { id: string }) => {
+      this.storage.db?.prepare('DELETE FROM research_chat_messages WHERE entry_id = ?').run(payload.id);
+      this.storage.db?.prepare('DELETE FROM research_sources WHERE entry_id = ?').run(payload.id);
+      this.storage.db?.prepare('DELETE FROM research_agent_observations WHERE entry_id = ?').run(payload.id);
+      this.storage.db?.prepare('DELETE FROM research_entries WHERE id = ?').run(payload.id);
+      return { success: true };
+    });
+
+    // Research: delete observation
+    this.ipc.handle('research:observation:delete', async (_event, payload: { id: string }) => {
+      this.storage.db?.prepare('DELETE FROM research_agent_observations WHERE id = ?').run(payload.id);
+      return { success: true };
+    });
+
+    // Research: delete project
+    this.ipc.handle('research:project:delete', async (_event, payload: { id: string }) => {
+      // Get all entries for this project
+      const entries = this.storage.db?.prepare('SELECT id FROM research_entries WHERE project_id = ?').all(payload.id) as any[] || [];
+      for (const e of entries) {
+        this.storage.db?.prepare('DELETE FROM research_chat_messages WHERE entry_id = ?').run(e.id);
+        this.storage.db?.prepare('DELETE FROM research_sources WHERE entry_id = ?').run(e.id);
+        this.storage.db?.prepare('DELETE FROM research_agent_observations WHERE entry_id = ?').run(e.id);
+      }
+      this.storage.db?.prepare('DELETE FROM research_entries WHERE project_id = ?').run(payload.id);
+      this.storage.db?.prepare('DELETE FROM research_projects WHERE id = ?').run(payload.id);
+      return { success: true };
+    });
+
+    // Research: import file via dialog
+    this.ipc.handle('research:source:import-file', async (_event, payload: { entry_id: string }) => {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+          { name: 'Dokumenty', extensions: ['txt', 'md', 'json', 'csv', 'pdf', 'html', 'htm', 'xml', 'yaml', 'yml', 'log'] },
+          { name: 'Wszystkie pliki', extensions: ['*'] },
+        ],
+      });
+      if (result.canceled || result.filePaths.length === 0) {
+        return { id: '', entry_id: payload.entry_id, file_name: '', file_path: '', content_text: '' };
+      }
+      const filePath = result.filePaths[0];
+      const fileName = path.basename(filePath);
+      const contentText = fs.readFileSync(filePath, 'utf-8');
+      const ext = path.extname(filePath).replace('.', '');
+      const id = crypto.randomUUID();
+      this.storage.db?.prepare('INSERT INTO research_sources (id, entry_id, file_name, file_path, file_type, content_text) VALUES (?, ?, ?, ?, ?, ?)').run(id, payload.entry_id, fileName, filePath, ext, contentText);
+      return { id, entry_id: payload.entry_id, file_name: fileName, file_path: filePath, content_text: contentText };
+    });
+
+    // === System Tab (Plan 02) ==============================================
+    this.ipc.handle('system:status', async () => {
+      return { uptime: process.uptime(), platform: process.platform, arch: process.arch, nodeVersion: process.version, memoryUsage: process.memoryUsage() };
+    });
+
+    this.ipc.handle('system:handlers', async () => {
+      return [
+        { channel: 'system:status', group: 'System', description: 'Get system status and resource usage' },
+        { channel: 'system:handlers', group: 'System', description: 'List all registered IPC handlers' },
+        { channel: 'system:scan-architecture', group: 'System', description: 'Scan project architecture graph' },
+        { channel: 'system:get-logs', group: 'System', description: 'Retrieve system logs' },
+        { channel: 'system:events-subscribe', group: 'System', description: 'Subscribe to system events' },
+      ];
+    });
+
+    this.ipc.handle('system:scan-architecture', async () => {
+      return { nodes: [], edges: [], hash: crypto.randomUUID() };
+    });
+
+    this.ipc.handle('system:get-logs', async () => {
+      return [];
+    });
+
+    this.ipc.handle('system:events-subscribe', async () => {
+      return { success: true };
     });
   }
 
@@ -2011,13 +2233,29 @@ Kazdy wezel to krotka, czytelna notatka (1-2 zdania). Uzywaj parent_id do tworze
       // RPM Usage
       'rpm:usage',
 
-      // Experimental Mode
-      'experimental:table-info',
-      'experimental:project:save', 'experimental:project:get-all', 'experimental:project:get', 'experimental:project:delete',
-      'experimental:chat:save', 'experimental:chat:get', 'experimental:chat:delete',
-      'experimental:node:save', 'experimental:node:get', 'experimental:node:delete',
-      'experimental:edge:save', 'experimental:edge:get', 'experimental:edge:delete',
-      'experimental:changelog:save', 'experimental:changelog:get',
+      // Discovery/Eye Signals
+      'signal:create', 'signal:get-all', 'signal:update', 'signal:promote', 'eye:run',
+
+      // Thought Depot
+      'thought:add', 'thought:get-all', 'thought:groups:get-all', 'thought:regroup',
+
+      // Projekty Mode
+      'projekty:table-info',
+      'projekty:project:save', 'projekty:project:get-all', 'projekty:project:get', 'projekty:project:delete',
+      'projekty:chat:save', 'projekty:chat:get', 'projekty:chat:delete',
+      'projekty:node:save', 'projekty:node:get', 'projekty:node:delete',
+      'projekty:edge:save', 'projekty:edge:get', 'projekty:edge:delete',
+      'projekty:changelog:save', 'projekty:changelog:get',
+
+      // Research Space
+      'research:project:create', 'research:project:list', 'research:project:delete',
+      'research:entry:create', 'research:entry:list', 'research:entry:get', 'research:entry:update', 'research:entry:delete',
+      'research:chat:send', 'research:source:import', 'research:source:import-file', 'research:agents:run',
+      'research:chat:delete', 'research:source:delete', 'research:observation:add', 'research:observation:delete', 'research:chat:messages',
+
+      // System Tab (Plan 02)
+      'system:status', 'system:handlers', 'system:scan-architecture',
+      'system:get-logs', 'system:events-subscribe',
     ];
 
     // Stop all git schedulers
@@ -2027,8 +2265,8 @@ Kazdy wezel to krotka, czytelna notatka (1-2 zdania). Uzywaj parent_id do tworze
       this.ipc.removeHandler(channel);
     }
 
-    this.ipc.removeAllListeners('changelog:approve');
-    this.ipc.removeAllListeners('changelog:reject');
+    this.ipc.removeHandler('changelog:approve');
+    this.ipc.removeHandler('changelog:reject');
 
     // console.debug('[ElectronIpcBridge] Destroyed');
   }

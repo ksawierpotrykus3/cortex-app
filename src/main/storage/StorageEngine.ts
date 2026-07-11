@@ -13,20 +13,38 @@
 //   logs/sys_YYYYMMDD.jsonl ← JSONL (logi systemowe)
 // ============================================================================
 
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Agent, AgentOutput, Pipeline, WorkspaceEntity, DownloadedFileRecord } from '../../shared/types/schema';
 import { WorkflowDefinition, WorkflowExecutionResult } from '../../shared/types/workflow';
-import { ExperimentalProject, ExperimentalChatMessage, ExperimentalNode, ExperimentalEdge, ExperimentalChangelog, ExperimentalConversation, ExperimentalNodeAnnotation } from '../../types';
+import { Projekt, ProjektyChatMessage, ProjektyNode, ProjektyEdge, ProjektyChangelog, ProjektyConversation, ProjektyNodeAnnotation, ThoughtEntry, ThoughtGroup } from '../../types';
 
 /**
  * Atomowy zapis pliku: tmp → rename.
  * Nawet jeśli proces crashe w trakcie writeFileSync, oryginalny plik pozostaje nienaruszony.
  */
 function atomicWriteFileSync(filePath: string, data: string, encoding: BufferEncoding = 'utf8'): void {
+  // Backup przed zapisem (Faza 2: ochrona danych)
+  if (fs.existsSync(filePath)) {
+    try {
+      fs.copyFileSync(filePath, filePath + '.bak');
+    } catch {
+      // backup failure is non-fatal
+    }
+  }
   const tmpPath = filePath + '.tmp';
   fs.writeFileSync(tmpPath, data, encoding);
   fs.renameSync(tmpPath, filePath);
+}
+
+// Kolejka zapisow (Faza 2: zapobiega race condition i skazeniu kolejki)
+class SaveQueue {
+  private queue: Promise<void> = Promise.resolve();
+  enqueue(fn: () => Promise<void>): Promise<void> {
+    this.queue = this.queue.then(fn).catch(() => {});
+    return this.queue;
+  }
 }
 
 // === Database Row Types ====================================================
@@ -56,7 +74,7 @@ interface Statement {
 
 // === StorageEngine =========================================================
 export class StorageEngine {
-  private db: Database | null = null;
+  db: Database | null = null;
   private _basePath: string;
   private ready: boolean = false;
 
@@ -89,7 +107,7 @@ export class StorageEngine {
       this.db = new Database(path.join(configDir, 'nexus.db'));
       this.db!.pragma('journal_mode = WAL');
       this.db!.pragma('foreign_keys = ON');
-      await this.initSchema();
+      this.initSchema();
       console.log('[StorageEngine] SQLite initialized');
     } catch (err) {
       console.warn('[StorageEngine] better-sqlite3 not available — using JSON-only mode');
@@ -99,7 +117,7 @@ export class StorageEngine {
     console.log('[StorageEngine] Ready:', this.basePath);
   }
 
-  private async initSchema(): Promise<void> {
+  private initSchema(): void {
     if (!this.db) return;
 
     this.db.exec(`
@@ -167,7 +185,7 @@ export class StorageEngine {
       END;
 
       -- Projekty eksperymentalne
-      CREATE TABLE IF NOT EXISTS experimental_projects (
+      CREATE TABLE IF NOT EXISTS projekty_projects (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         spec_content TEXT DEFAULT '',
@@ -177,16 +195,16 @@ export class StorageEngine {
       );
 
       -- Konwersacje (wiele rozmow w jednym projekcie)
-      CREATE TABLE IF NOT EXISTS experimental_conversations (
+      CREATE TABLE IF NOT EXISTS projekty_conversations (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
         name TEXT NOT NULL DEFAULT 'Nowa rozmowa',
         created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+        FOREIGN KEY (project_id) REFERENCES projekty_projects(id) ON DELETE CASCADE
       );
 
       -- Wiadomości w czacie
-      CREATE TABLE IF NOT EXISTS experimental_chat_messages (
+      CREATE TABLE IF NOT EXISTS projekty_chat_messages (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
         conversation_id TEXT,
@@ -195,12 +213,12 @@ export class StorageEngine {
         extracted_to_spec INTEGER DEFAULT 0,
         extracted_to_canvas INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (conversation_id) REFERENCES experimental_conversations(id) ON DELETE SET NULL
+        FOREIGN KEY (project_id) REFERENCES projekty_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (conversation_id) REFERENCES projekty_conversations(id) ON DELETE SET NULL
       );
 
       -- Nody na mapie (z hierarchia parent_id)
-      CREATE TABLE IF NOT EXISTS experimental_nodes (
+      CREATE TABLE IF NOT EXISTS projekty_nodes (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
         title TEXT NOT NULL DEFAULT '',
@@ -218,13 +236,13 @@ export class StorageEngine {
         source_conversation_id TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (parent_id) REFERENCES experimental_nodes(id) ON DELETE SET NULL,
-        FOREIGN KEY (source_message_id) REFERENCES experimental_chat_messages(id) ON DELETE SET NULL
+        FOREIGN KEY (project_id) REFERENCES projekty_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES projekty_nodes(id) ON DELETE SET NULL,
+        FOREIGN KEY (source_message_id) REFERENCES projekty_chat_messages(id) ON DELETE SET NULL
       );
 
       -- Relacje między nodami
-      CREATE TABLE IF NOT EXISTS experimental_edges (
+      CREATE TABLE IF NOT EXISTS projekty_edges (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
         source_node_id TEXT NOT NULL,
@@ -234,24 +252,24 @@ export class StorageEngine {
         source_handle TEXT,
         target_handle TEXT,
         created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (source_node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE,
-        FOREIGN KEY (target_node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE
+        FOREIGN KEY (project_id) REFERENCES projekty_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (source_node_id) REFERENCES projekty_nodes(id) ON DELETE CASCADE,
+        FOREIGN KEY (target_node_id) REFERENCES projekty_nodes(id) ON DELETE CASCADE
       );
 
       -- Adnotacje do wezlow (komentarze uzytkownika)
-      CREATE TABLE IF NOT EXISTS experimental_node_annotations (
+      CREATE TABLE IF NOT EXISTS projekty_node_annotations (
         id TEXT PRIMARY KEY,
         node_id TEXT NOT NULL,
         project_id TEXT NOT NULL,
         content TEXT NOT NULL DEFAULT '',
         created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (node_id) REFERENCES experimental_nodes(id) ON DELETE CASCADE,
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+        FOREIGN KEY (node_id) REFERENCES projekty_nodes(id) ON DELETE CASCADE,
+        FOREIGN KEY (project_id) REFERENCES projekty_projects(id) ON DELETE CASCADE
       );
 
       -- Historia zmian (Changelog)
-      CREATE TABLE IF NOT EXISTS experimental_changelog (
+      CREATE TABLE IF NOT EXISTS projekty_changelog (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
         action_type TEXT NOT NULL,
@@ -260,7 +278,7 @@ export class StorageEngine {
         summary TEXT NOT NULL,
         source_message_id TEXT,
         created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+        FOREIGN KEY (project_id) REFERENCES projekty_projects(id) ON DELETE CASCADE
       );
 
       -- Dokumenty projektu (Plan 01)
@@ -274,7 +292,72 @@ export class StorageEngine {
         token_count INTEGER,
         file_size INTEGER,
         imported_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (project_id) REFERENCES experimental_projects(id) ON DELETE CASCADE
+        FOREIGN KEY (project_id) REFERENCES projekty_projects(id) ON DELETE CASCADE
+      );
+
+      -- Research Space
+      CREATE TABLE IF NOT EXISTS research_projects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS research_entries (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES research_projects(id) ON DELETE CASCADE,
+        title TEXT DEFAULT '',
+        related_entry_ids TEXT DEFAULT '[]',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS research_sources (
+        id TEXT PRIMARY KEY,
+        entry_id TEXT NOT NULL REFERENCES research_entries(id) ON DELETE CASCADE,
+        file_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        file_type TEXT,
+        content_text TEXT,
+        imported_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS research_chat_messages (
+        id TEXT PRIMARY KEY,
+        entry_id TEXT NOT NULL REFERENCES research_entries(id) ON DELETE CASCADE,
+        role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+        content TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS research_agent_observations (
+        id TEXT PRIMARY KEY,
+        entry_id TEXT NOT NULL REFERENCES research_entries(id) ON DELETE CASCADE,
+        agent_id TEXT,
+        observation_type TEXT NOT NULL CHECK(observation_type IN ('ai_finding', 'user_observation', 'unresolved')),
+        content TEXT NOT NULL,
+        source_message_ids TEXT DEFAULT '[]',
+        corrects_observation_id TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS thought_depot (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL DEFAULT '',
+        group_id TEXT,
+        embedding TEXT,
+        source_type TEXT NOT NULL DEFAULT 'manual' CHECK(source_type IN ('manual', 'ai_extract', 'import')),
+        source_ref TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS thought_groups (
+        id TEXT PRIMARY KEY,
+        label TEXT NOT NULL DEFAULT '',
+        centroid_embedding TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
       );
     `);
       this.db.prepare('INSERT OR REPLACE INTO schema_version (version) VALUES (1)').run();
@@ -643,6 +726,64 @@ export class StorageEngine {
   }
 
   // =========================================================================
+  // Thought Depot
+  // =========================================================================
+
+  saveThought(entry: ThoughtEntry): void {
+    if (!this.db) return;
+    this.db.prepare(`
+      INSERT OR REPLACE INTO thought_depot (id, content, group_id, embedding, source_type, source_ref, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now')), datetime('now'))
+    `).run(entry.id, entry.content, entry.group_id || null, entry.embedding ? JSON.stringify(entry.embedding) : null, entry.source_type, entry.source_ref || null, entry.created_at || null);
+  }
+
+  getAllThoughts(): ThoughtEntry[] {
+    if (!this.db) return [];
+    const rows = this.db.prepare('SELECT * FROM thought_depot ORDER BY created_at DESC').all() as any[];
+    return rows.map(r => ({
+      id: r.id,
+      content: r.content,
+      group_id: r.group_id || undefined,
+      embedding: r.embedding ? JSON.parse(r.embedding) : undefined,
+      source_type: r.source_type,
+      source_ref: r.source_ref || undefined,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }));
+  }
+
+  saveThoughtGroup(group: ThoughtGroup): void {
+    if (!this.db) return;
+    this.db.prepare(`
+      INSERT OR REPLACE INTO thought_groups (id, label, centroid_embedding, created_at, updated_at)
+      VALUES (?, ?, ?, COALESCE(?, datetime('now')), datetime('now'))
+    `).run(group.id, group.label, group.centroid_embedding ? JSON.stringify(group.centroid_embedding) : null, group.created_at || null);
+  }
+
+  getAllThoughtGroups(): ThoughtGroup[] {
+    if (!this.db) return [];
+    const rows = this.db.prepare('SELECT * FROM thought_groups ORDER BY created_at DESC').all() as any[];
+    return rows.map(r => ({
+      id: r.id,
+      label: r.label,
+      centroid_embedding: r.centroid_embedding ? JSON.parse(r.centroid_embedding) : undefined,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }));
+  }
+
+  regroupThoughts(thoughtIds: string[], groupId: string): void {
+    if (!this.db) return;
+    const stmt = this.db.prepare('UPDATE thought_depot SET group_id = ?, updated_at = datetime(\'now\') WHERE id = ?');
+    const tx = this.db.transaction(() => {
+      for (const tid of thoughtIds) {
+        stmt.run(groupId, tid);
+      }
+    });
+    tx();
+  }
+
+  // =========================================================================
   // Workflow Storage (#1)
   // =========================================================================
 
@@ -869,23 +1010,23 @@ export class StorageEngine {
   }
 
   // --- Projects ---
-  saveExperimentalProject(proj: ExperimentalProject): void {
+  saveProjekt(proj: Projekt): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_projects (id, name, spec_content, ai_config, created_at, updated_at)
-        VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_projects WHERE id = ?), datetime('now')), datetime('now'))
+        INSERT OR REPLACE INTO projekty_projects (id, name, spec_content, ai_config, created_at, updated_at)
+        VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM projekty_projects WHERE id = ?), datetime('now')), datetime('now'))
       `);
       const aiConfigStr = typeof proj.ai_config === 'string' ? proj.ai_config : JSON.stringify(proj.ai_config || {});
       stmt.run(proj.id, proj.name, proj.spec_content || '', aiConfigStr, proj.id);
     }
-    const dir = path.join(this.basePath, 'experimental', 'projects');
+    const dir = path.join(this.basePath, 'projekty', 'projects');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     atomicWriteFileSync(path.join(dir, `${proj.id}.json`), JSON.stringify(proj, null, 2));
   }
 
-  getExperimentalProjects(): ExperimentalProject[] {
+  getProjekts(): Projekt[] {
     if (this.db) {
-      const rows = this.db.prepare('SELECT * FROM experimental_projects ORDER BY updated_at DESC').all() as any[];
+      const rows = this.db.prepare('SELECT * FROM projekty_projects ORDER BY updated_at DESC').all() as any[];
       return rows.map(r => ({
         id: r.id,
         name: r.name,
@@ -895,14 +1036,14 @@ export class StorageEngine {
         updated_at: r.updated_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'projects');
+    const dir = path.join(this.basePath, 'projekty', 'projects');
     if (!fs.existsSync(dir)) return [];
-    return fs.readdirSync(dir).filter(f => f.endsWith('.json')).map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalProject);
+    return fs.readdirSync(dir).filter(f => f.endsWith('.json')).map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as Projekt);
   }
 
-  getExperimentalProject(id: string): ExperimentalProject | null {
+  getProjekt(id: string): Projekt | null {
     if (this.db) {
-      const r = this.db.prepare('SELECT * FROM experimental_projects WHERE id = ?').get(id) as any;
+      const r = this.db.prepare('SELECT * FROM projekty_projects WHERE id = ?').get(id) as any;
       if (r) {
         return {
           id: r.id,
@@ -914,40 +1055,40 @@ export class StorageEngine {
         };
       }
     }
-    const p = path.join(this.basePath, 'experimental', 'projects', `${id}.json`);
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8')) as ExperimentalProject;
+    const p = path.join(this.basePath, 'projekty', 'projects', `${id}.json`);
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8')) as Projekt;
     return null;
   }
 
-  deleteExperimentalProject(id: string): void {
+  deleteProjekt(id: string): void {
     if (this.db) {
-      this.db.prepare('DELETE FROM experimental_projects WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM projekty_projects WHERE id = ?').run(id);
     }
-    const p = path.join(this.basePath, 'experimental', 'projects', `${id}.json`);
+    const p = path.join(this.basePath, 'projekty', 'projects', `${id}.json`);
     if (fs.existsSync(p)) fs.unlinkSync(p);
   }
 
   // --- Chat Messages ---
-  saveExperimentalChatMessage(msg: ExperimentalChatMessage): void {
+  saveProjektyChatMessage(msg: ProjektyChatMessage): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_chat_messages (id, project_id, conversation_id, role, content, extracted_to_spec, extracted_to_canvas, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_chat_messages WHERE id = ?), datetime('now')))
+        INSERT OR REPLACE INTO projekty_chat_messages (id, project_id, conversation_id, role, content, extracted_to_spec, extracted_to_canvas, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM projekty_chat_messages WHERE id = ?), datetime('now')))
       `);
       stmt.run(msg.id, msg.project_id, msg.conversation_id || null, msg.role, msg.content, msg.extracted_to_spec ? 1 : 0, msg.extracted_to_canvas ? 1 : 0, msg.id);
     }
-    const dir = path.join(this.basePath, 'experimental', 'chat');
+    const dir = path.join(this.basePath, 'projekty', 'chat');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     atomicWriteFileSync(path.join(dir, `${msg.id}.json`), JSON.stringify(msg, null, 2));
   }
 
-  getExperimentalChatMessages(projectId: string, conversationId?: string): ExperimentalChatMessage[] {
+  getProjektyChatMessages(projectId: string, conversationId?: string): ProjektyChatMessage[] {
     if (this.db) {
       let rows: any[];
       if (conversationId) {
-        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? AND conversation_id = ? ORDER BY created_at ASC').all(projectId, conversationId) as any[];
+        rows = this.db.prepare('SELECT * FROM projekty_chat_messages WHERE project_id = ? AND conversation_id = ? ORDER BY created_at ASC').all(projectId, conversationId) as any[];
       } else {
-        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+        rows = this.db.prepare('SELECT * FROM projekty_chat_messages WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
       }
       return rows.map(r => ({
         id: r.id,
@@ -960,22 +1101,22 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'chat');
+    const dir = path.join(this.basePath, 'projekty', 'chat');
     if (!fs.existsSync(dir)) return [];
     const all = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalChatMessage)
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ProjektyChatMessage)
       .filter(m => m.project_id === projectId && (!conversationId || m.conversation_id === conversationId))
       .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
     return all;
   }
 
-  getExperimentalUnprocessedMessages(projectId: string, conversationId?: string): ExperimentalChatMessage[] {
+  getProjektyUnprocessedMessages(projectId: string, conversationId?: string): ProjektyChatMessage[] {
     if (this.db) {
       let rows: any[];
       if (conversationId) {
-        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? AND conversation_id = ? AND extracted_to_canvas = 0 ORDER BY created_at ASC').all(projectId, conversationId) as any[];
+        rows = this.db.prepare('SELECT * FROM projekty_chat_messages WHERE project_id = ? AND conversation_id = ? AND extracted_to_canvas = 0 ORDER BY created_at ASC').all(projectId, conversationId) as any[];
       } else {
-        rows = this.db.prepare('SELECT * FROM experimental_chat_messages WHERE project_id = ? AND extracted_to_canvas = 0 ORDER BY created_at ASC').all(projectId) as any[];
+        rows = this.db.prepare('SELECT * FROM projekty_chat_messages WHERE project_id = ? AND extracted_to_canvas = 0 ORDER BY created_at ASC').all(projectId) as any[];
       }
       return rows.map(r => ({
         id: r.id,
@@ -988,18 +1129,18 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'chat');
+    const dir = path.join(this.basePath, 'projekty', 'chat');
     if (!fs.existsSync(dir)) return [];
     const all = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalChatMessage)
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ProjektyChatMessage)
       .filter(m => m.project_id === projectId && (!conversationId || m.conversation_id === conversationId) && !m.extracted_to_canvas)
       .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
     return all;
   }
 
-  markExperimentalMessagesProcessed(messageIds: string[]): void {
+  markProjektyMessagesProcessed(messageIds: string[]): void {
     if (this.db && messageIds.length > 0) {
-      const stmt = this.db.prepare('UPDATE experimental_chat_messages SET extracted_to_canvas = 1 WHERE id = ?');
+      const stmt = this.db.prepare('UPDATE projekty_chat_messages SET extracted_to_canvas = 1 WHERE id = ?');
       const runAll = this.db.transaction((ids: string[]) => {
         for (const id of ids) {
           stmt.run(id);
@@ -1009,19 +1150,19 @@ export class StorageEngine {
     }
   }
 
-  deleteExperimentalChatMessage(id: string): void {
+  deleteProjektyChatMessage(id: string): void {
     if (this.db) {
-      this.db.prepare('DELETE FROM experimental_chat_messages WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM projekty_chat_messages WHERE id = ?').run(id);
     }
   }
 
   // --- Nodes ---
-  saveExperimentalNode(node: ExperimentalNode): void {
+  saveProjektyNode(node: ProjektyNode): void {
     if (this.db) {
       const meta = typeof node.metadata === 'string' ? node.metadata : (node.metadata ? JSON.stringify(node.metadata) : '{}');
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_nodes (id, project_id, title, content, node_type, status, metadata, parent_id, x, y, width, height, collapsed, source_message_id, source_conversation_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_nodes WHERE id = ?), datetime('now')), datetime('now'))
+        INSERT OR REPLACE INTO projekty_nodes (id, project_id, title, content, node_type, status, metadata, parent_id, x, y, width, height, collapsed, source_message_id, source_conversation_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM projekty_nodes WHERE id = ?), datetime('now')), datetime('now'))
       `);
       stmt.run(
         node.id, node.project_id,
@@ -1032,14 +1173,14 @@ export class StorageEngine {
         node.collapsed ? 1 : 0, node.source_message_id || null, node.source_conversation_id || null, node.id
       );
     }
-    const dir = path.join(this.basePath, 'experimental', 'nodes');
+    const dir = path.join(this.basePath, 'projekty', 'nodes');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     atomicWriteFileSync(path.join(dir, `${node.id}.json`), JSON.stringify(node, null, 2));
   }
 
-  getExperimentalNodes(projectId: string): ExperimentalNode[] {
+  getProjektyNodes(projectId: string): ProjektyNode[] {
     if (this.db) {
-      const rows = this.db.prepare('SELECT * FROM experimental_nodes WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+      const rows = this.db.prepare('SELECT * FROM projekty_nodes WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
       return rows.map(r => ({
         id: r.id,
         project_id: r.project_id,
@@ -1060,18 +1201,18 @@ export class StorageEngine {
         updated_at: r.updated_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'nodes');
+    const dir = path.join(this.basePath, 'projekty', 'nodes');
     if (!fs.existsSync(dir)) return [];
     return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalNode)
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ProjektyNode)
       .filter(n => n.project_id === projectId)
       .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   }
 
-  getExperimentalUndecomposedNodes(projectId: string): ExperimentalNode[] {
+  getProjektyUndecomposedNodes(projectId: string): ProjektyNode[] {
     if (this.db) {
       const rows = this.db.prepare(
-        `SELECT * FROM experimental_nodes WHERE project_id = ? AND (node_type = 'root' OR node_type = 'domain' OR node_type = 'component') AND status != 'ready' AND metadata NOT LIKE '%"is_leaf":true%' ORDER BY created_at ASC LIMIT 1`
+        `SELECT * FROM projekty_nodes WHERE project_id = ? AND (node_type = 'root' OR node_type = 'domain' OR node_type = 'component') AND status != 'ready' AND metadata NOT LIKE '%"is_leaf":true%' ORDER BY created_at ASC LIMIT 1`
       ).all(projectId) as any[];
       return rows.map(r => ({
         id: r.id,
@@ -1095,47 +1236,49 @@ export class StorageEngine {
     return [];
   }
 
-  deleteExperimentalNode(id: string): void {
+  deleteProjektyNode(id: string): void {
     if (this.db) {
-      this.db.prepare('DELETE FROM experimental_nodes WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM projekty_nodes WHERE id = ?').run(id);
     }
   }
 
   // --- Conversations ---
-  saveExperimentalConversation(conv: ExperimentalConversation): void {
+  saveProjektyConversation(conv: ProjektyConversation): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_conversations (id, project_id, name, created_at)
-        VALUES (?, ?, ?, COALESCE((SELECT created_at FROM experimental_conversations WHERE id = ?), datetime('now')))
+        INSERT OR REPLACE INTO projekty_conversations (id, project_id, name, created_at)
+        VALUES (?, ?, ?, COALESCE((SELECT created_at FROM projekty_conversations WHERE id = ?), datetime('now')))
       `);
       stmt.run(conv.id, conv.project_id, conv.name, conv.id);
     }
-    const dir = path.join(this.basePath, 'experimental', 'conversations');
+    const dir = path.join(this.basePath, 'projekty', 'conversations');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     atomicWriteFileSync(path.join(dir, `${conv.id}.json`), JSON.stringify(conv, null, 2));
   }
 
-  getExperimentalConversations(projectId: string): ExperimentalConversation[] {
+  getProjektyConversations(projectId: string): ProjektyConversation[] {
     if (this.db) {
-      const rows = this.db.prepare('SELECT * FROM experimental_conversations WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
+      const rows = this.db.prepare('SELECT * FROM projekty_conversations WHERE project_id = ? ORDER BY created_at ASC').all(projectId) as any[];
       return rows.map(r => ({
         id: r.id,
         project_id: r.project_id,
         name: r.name,
+        enabled: r.enabled ?? true,
+        deleted: r.deleted ?? false,
         created_at: r.created_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'conversations');
+    const dir = path.join(this.basePath, 'projekty', 'conversations');
     if (!fs.existsSync(dir)) return [];
     return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalConversation)
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ProjektyConversation)
       .filter(c => c.project_id === projectId)
       .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   }
 
-  deleteExperimentalConversation(id: string): void {
+  deleteProjektyConversation(id: string): void {
     if (this.db) {
-      this.db.prepare('DELETE FROM experimental_conversations WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM projekty_conversations WHERE id = ?').run(id);
     }
   }
 
@@ -1189,22 +1332,22 @@ export class StorageEngine {
   }
 
   // --- Node Annotations ---
-  saveExperimentalNodeAnnotation(ann: ExperimentalNodeAnnotation): void {
+  saveProjektyNodeAnnotation(ann: ProjektyNodeAnnotation): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_node_annotations (id, node_id, project_id, content, created_at)
-        VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_node_annotations WHERE id = ?), datetime('now')))
+        INSERT OR REPLACE INTO projekty_node_annotations (id, node_id, project_id, content, created_at)
+        VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM projekty_node_annotations WHERE id = ?), datetime('now')))
       `);
       stmt.run(ann.id, ann.node_id, ann.project_id, ann.content, ann.id);
     }
-    const dir = path.join(this.basePath, 'experimental', 'annotations');
+    const dir = path.join(this.basePath, 'projekty', 'annotations');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     atomicWriteFileSync(path.join(dir, `${ann.id}.json`), JSON.stringify(ann, null, 2));
   }
 
-  getExperimentalNodeAnnotations(nodeId: string): ExperimentalNodeAnnotation[] {
+  getProjektyNodeAnnotations(nodeId: string): ProjektyNodeAnnotation[] {
     if (this.db) {
-      const rows = this.db.prepare('SELECT * FROM experimental_node_annotations WHERE node_id = ? ORDER BY created_at ASC').all(nodeId) as any[];
+      const rows = this.db.prepare('SELECT * FROM projekty_node_annotations WHERE node_id = ? ORDER BY created_at ASC').all(nodeId) as any[];
       return rows.map(r => ({
         id: r.id,
         node_id: r.node_id,
@@ -1213,36 +1356,36 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'annotations');
+    const dir = path.join(this.basePath, 'projekty', 'annotations');
     if (!fs.existsSync(dir)) return [];
     return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalNodeAnnotation)
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ProjektyNodeAnnotation)
       .filter(a => a.node_id === nodeId)
       .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   }
 
-  deleteExperimentalNodeAnnotation(id: string): void {
+  deleteProjektyNodeAnnotation(id: string): void {
     if (this.db) {
-      this.db.prepare('DELETE FROM experimental_node_annotations WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM projekty_node_annotations WHERE id = ?').run(id);
     }
   }
 
   // --- Global Context (Faza 1) ---
-  saveExperimentalGlobalContext(projectId: string, context: any): void {
+  saveProjektyGlobalContext(projectId: string, context: any): void {
     if (this.db) {
-      const existing = this.db.prepare('SELECT ai_config FROM experimental_projects WHERE id = ?').get(projectId) as any;
+      const existing = this.db.prepare('SELECT ai_config FROM projekty_projects WHERE id = ?').get(projectId) as any;
       if (existing) {
         let cfg = {};
         try { cfg = existing.ai_config ? JSON.parse(existing.ai_config) : {}; } catch { cfg = {}; }
         cfg = { ...cfg, global_context: context };
-        this.db.prepare('UPDATE experimental_projects SET ai_config = ?, updated_at = datetime(\'now\') WHERE id = ?').run(JSON.stringify(cfg), projectId);
+        this.db.prepare('UPDATE projekty_projects SET ai_config = ?, updated_at = datetime(\'now\') WHERE id = ?').run(JSON.stringify(cfg), projectId);
       }
     }
   }
 
-  getExperimentalGlobalContext(projectId: string): any {
+  getProjektyGlobalContext(projectId: string): any {
     if (this.db) {
-      const r = this.db.prepare('SELECT ai_config FROM experimental_projects WHERE id = ?').get(projectId) as any;
+      const r = this.db.prepare('SELECT ai_config FROM projekty_projects WHERE id = ?').get(projectId) as any;
       if (r && r.ai_config) {
         try {
           const cfg = typeof r.ai_config === 'string' ? JSON.parse(r.ai_config) : r.ai_config;
@@ -1254,23 +1397,23 @@ export class StorageEngine {
   }
 
   // --- Edges ---
-  saveExperimentalEdge(edge: ExperimentalEdge): void {
+  saveProjektyEdge(edge: ProjektyEdge): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_edges (id, project_id, source_node_id, target_node_id, label, relation_type, source_handle, target_handle, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_edges WHERE id = ?), datetime('now')))
+        INSERT OR REPLACE INTO projekty_edges (id, project_id, source_node_id, target_node_id, label, relation_type, source_handle, target_handle, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM projekty_edges WHERE id = ?), datetime('now')))
       `);
       stmt.run(edge.id, edge.project_id, edge.source_node_id, edge.target_node_id,
         edge.label || '', edge.relation_type || 'depends_on', edge.source_handle || null, edge.target_handle || null, edge.id);
     }
-    const dir = path.join(this.basePath, 'experimental', 'edges');
+    const dir = path.join(this.basePath, 'projekty', 'edges');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     atomicWriteFileSync(path.join(dir, `${edge.id}.json`), JSON.stringify(edge, null, 2));
   }
 
-  getExperimentalEdges(projectId: string): ExperimentalEdge[] {
+  getProjektyEdges(projectId: string): ProjektyEdge[] {
     if (this.db) {
-      const rows = this.db.prepare('SELECT * FROM experimental_edges WHERE project_id = ?').all(projectId) as any[];
+      const rows = this.db.prepare('SELECT * FROM projekty_edges WHERE project_id = ?').all(projectId) as any[];
       return rows.map(r => ({
         id: r.id,
         project_id: r.project_id,
@@ -1283,25 +1426,25 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'edges');
+    const dir = path.join(this.basePath, 'projekty', 'edges');
     if (!fs.existsSync(dir)) return [];
     return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalEdge)
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ProjektyEdge)
       .filter(e => e.project_id === projectId);
   }
 
-  deleteExperimentalEdge(id: string): void {
+  deleteProjektyEdge(id: string): void {
     if (this.db) {
-      this.db.prepare('DELETE FROM experimental_edges WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM projekty_edges WHERE id = ?').run(id);
     }
   }
 
   // --- Changelog ---
-  saveExperimentalChangelog(entry: ExperimentalChangelog): void {
+  saveProjektyChangelog(entry: ProjektyChangelog): void {
     if (this.db) {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO experimental_changelog (id, project_id, action_type, entity_type, entity_id, summary, source_message_id, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM experimental_changelog WHERE id = ?), datetime('now')))
+        INSERT OR REPLACE INTO projekty_changelog (id, project_id, action_type, entity_type, entity_id, summary, source_message_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM projekty_changelog WHERE id = ?), datetime('now')))
       `);
       stmt.run(
         entry.id, entry.project_id, entry.action_type, entry.entity_type, entry.entity_id,
@@ -1310,9 +1453,9 @@ export class StorageEngine {
     }
   }
 
-  getExperimentalChangelog(projectId: string): ExperimentalChangelog[] {
+  getProjektyChangelog(projectId: string): ProjektyChangelog[] {
     if (this.db) {
-      const rows = this.db.prepare('SELECT * FROM experimental_changelog WHERE project_id = ? ORDER BY created_at DESC').all(projectId) as any[];
+      const rows = this.db.prepare('SELECT * FROM projekty_changelog WHERE project_id = ? ORDER BY created_at DESC').all(projectId) as any[];
       return rows.map(r => ({
         id: r.id,
         project_id: r.project_id,
@@ -1324,12 +1467,119 @@ export class StorageEngine {
         created_at: r.created_at,
       }));
     }
-    const dir = path.join(this.basePath, 'experimental', 'changelog');
+    const dir = path.join(this.basePath, 'projekty', 'changelog');
     if (!fs.existsSync(dir)) return [];
     return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ExperimentalChangelog)
+      .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as ProjektyChangelog)
       .filter(c => c.project_id === projectId)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  }
+
+  // =========================================================================
+  // Research Space CRUD
+  // =========================================================================
+
+  createResearchProject(name: string): any {
+    const id = crypto.randomUUID?.() || `rp_${Date.now()}`;
+    const now = new Date().toISOString();
+    if (this.db) {
+      this.db.prepare('INSERT INTO research_projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)').run(id, name, now, now);
+    }
+    return { id, name, created_at: now, updated_at: now };
+  }
+
+  getResearchProjects(): any[] {
+    if (this.db) {
+      return this.db.prepare('SELECT * FROM research_projects ORDER BY updated_at DESC').all();
+    }
+    return [];
+  }
+
+  getResearchProject(id: string): any | null {
+    if (this.db) {
+      return this.db.prepare('SELECT * FROM research_projects WHERE id = ?').get(id) || null;
+    }
+    return null;
+  }
+
+  deleteResearchProject(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM research_projects WHERE id = ?').run(id);
+    }
+  }
+
+  createResearchEntry(projectId: string, title: string): any {
+    const id = crypto.randomUUID?.() || `re_${Date.now()}`;
+    const now = new Date().toISOString();
+    if (this.db) {
+      this.db.prepare('INSERT INTO research_entries (id, project_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(id, projectId, title, now, now);
+      this.db.prepare('UPDATE research_projects SET updated_at = ? WHERE id = ?').run(now, projectId);
+    }
+    return { id, project_id: projectId, title, related_entry_ids: '[]', created_at: now, updated_at: now };
+  }
+
+  getResearchEntries(projectId: string): any[] {
+    if (this.db) {
+      return this.db.prepare('SELECT * FROM research_entries WHERE project_id = ? ORDER BY updated_at DESC').all(projectId);
+    }
+    return [];
+  }
+
+  deleteResearchEntry(id: string): void {
+    if (this.db) {
+      this.db.prepare('DELETE FROM research_entries WHERE id = ?').run(id);
+    }
+  }
+
+  addResearchSource(entryId: string, fileName: string, filePath: string, fileType: string, contentText: string | null): any {
+    const id = crypto.randomUUID?.() || `rsrc_${Date.now()}`;
+    const now = new Date().toISOString();
+    if (this.db) {
+      this.db.prepare('INSERT INTO research_sources (id, entry_id, file_name, file_path, file_type, content_text) VALUES (?, ?, ?, ?, ?, ?)').run(id, entryId, fileName, filePath, fileType, contentText);
+      this.db.prepare('UPDATE research_entries SET updated_at = ? WHERE id = ?').run(now, entryId);
+    }
+    return { id, entry_id: entryId, file_name: fileName, file_path: filePath, file_type: fileType, content_text: contentText, imported_at: now };
+  }
+
+  getResearchSources(entryId: string): any[] {
+    if (this.db) {
+      return this.db.prepare('SELECT * FROM research_sources WHERE entry_id = ? ORDER BY imported_at DESC').all(entryId);
+    }
+    return [];
+  }
+
+  addResearchChatMessage(entryId: string, role: 'user' | 'assistant' | 'system', content: string): any {
+    const id = crypto.randomUUID?.() || `rmsg_${Date.now()}`;
+    const now = new Date().toISOString();
+    if (this.db) {
+      this.db.prepare('INSERT INTO research_chat_messages (id, entry_id, role, content) VALUES (?, ?, ?, ?)').run(id, entryId, role, content);
+      this.db.prepare('UPDATE research_entries SET updated_at = ? WHERE id = ?').run(now, entryId);
+    }
+    return { id, entry_id: entryId, role, content, created_at: now };
+  }
+
+  getResearchChatMessages(entryId: string): any[] {
+    if (this.db) {
+      return this.db.prepare('SELECT * FROM research_chat_messages WHERE entry_id = ? ORDER BY created_at ASC').all(entryId);
+    }
+    return [];
+  }
+
+  addResearchAgentObservation(entryId: string, agentId: string | null, observationType: 'ai_finding' | 'user_observation' | 'unresolved', content: string, sourceMessageIds?: string[], correctsObservationId?: string): any {
+    const id = crypto.randomUUID?.() || `robs_${Date.now()}`;
+    const now = new Date().toISOString();
+    if (this.db) {
+      this.db.prepare('INSERT INTO research_agent_observations (id, entry_id, agent_id, observation_type, content, source_message_ids, corrects_observation_id) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, entryId, agentId, observationType, content, JSON.stringify(sourceMessageIds || []), correctsObservationId || null);
+      this.db.prepare('UPDATE research_entries SET updated_at = ? WHERE id = ?').run(now, entryId);
+    }
+    return { id, entry_id: entryId, agent_id: agentId, observation_type: observationType, content, source_message_ids: JSON.stringify(sourceMessageIds || []), corrects_observation_id: correctsObservationId || null, created_at: now };
+  }
+
+  getResearchAgentObservations(entryId: string): any[] {
+    if (this.db) {
+      return this.db.prepare('SELECT * FROM research_agent_observations WHERE entry_id = ? ORDER BY created_at ASC').all(entryId);
+    }
+    return [];
   }
 
   // =========================================================================

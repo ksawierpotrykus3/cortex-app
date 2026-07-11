@@ -4,7 +4,7 @@
 // które notatki, taski, manuskrypty i inne elementy dołączyć
 // ============================================================================
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ContextConfig, ContextEntityRef } from '../../../shared/types/schema';
 
 // === Types =================================================================
@@ -43,32 +43,39 @@ export function ContextBuilder({ config, onChange }: ContextBuilderProps) {
   }, []);
 
   // Load workspace entities
+  const cancelledRef = useRef(false);
+
   const loadEntities = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const bridge = (window as any).nexusBridge;
       if (!bridge?.getWorkspaceEntities) {
-        setError('Brak mostu IPC — upewnij się, że aplikacja działa w Electron');
+        if (cancelledRef.current) return;
+        setError('Brak mostu IPC');
+        if (cancelledRef.current) return;
         setEntities({ nodes: [], tasks: [], drafts: [] });
+        if (cancelledRef.current) return;
         setLoading(false);
         return;
       }
       const result = await bridge.getWorkspaceEntities();
+      if (cancelledRef.current) return;
       setEntities(result);
     } catch (err) {
+      if (cancelledRef.current) return;
       setError(err instanceof Error ? err.message : 'Nie udało się pobrać listy');
+      if (cancelledRef.current) return;
       setEntities({ nodes: [], tasks: [], drafts: [] });
     }
+    if (cancelledRef.current) return;
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    loadEntities().then(() => {
-      // no-op; funkcja ustawia stan wewnętrznie
-    });
-    return () => { cancelled = true; };
+    cancelledRef.current = false;
+    loadEntities();
+    return () => { cancelledRef.current = true; };
   }, [loadEntities]);
 
   // Toggle entity selected/unselected

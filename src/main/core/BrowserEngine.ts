@@ -87,10 +87,12 @@ export class BrowserEngine {
       this.browserLaunching = chromium.launch(launchOpts);
     }
 
-    this.browser = await this.browserLaunching;
-    // fix(audyt): browserLaunching nie był resetowany — po disconnectcie stara Promise blokowała nowy browser
-    this.browserLaunching = null;
-    return this.browser;
+    try {
+      this.browser = await this.browserLaunching;
+      return this.browser;
+    } finally {
+      this.browserLaunching = null;
+    }
   }
 
   private async getPage(userDataDir?: string): Promise<Page> {
@@ -335,6 +337,11 @@ export class BrowserEngine {
   // === 3. executeWithProfile ===============================================
   // Wykonuje macro z izolowanym profilem przeglądarki (userDataDir).
   // Profil zachowuje cookies/sesję między uruchomieniami — omija CAPTCHA.
+  // NOTE: This method has a race condition when switching profiles.
+  // If two callers invoke executeWithProfile with different profileDirs
+  // concurrently, the close() + reassign of currentProfileDir can interleave
+  // and cause one caller to use the wrong profile. A mutex/queue should be
+  // added if concurrent profile switching becomes a requirement.
   async executeWithProfile(
     steps: MacroStep[],
     inputs: Record<string, any>,

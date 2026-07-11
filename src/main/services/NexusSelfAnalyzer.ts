@@ -81,6 +81,20 @@ export function scanArchitecture(srcPath: string): ArchitectureGraph {
   const edges: ArchitectureEdge[] = [];
   const fileMap = new Map<string, string>(); // relative path -> absolute path
 
+  // Helper: mapuje import (np. './AgentOrchestrator') na pełną ścieżkę względną
+  const resolveImportPath = (fromFile: string, importPath: string): string | null => {
+    if (!importPath.startsWith('.')) return null; // zewnętrzny import, pomijamy
+    const fromDir = path.dirname(fromFile);
+    const resolved = path.resolve(fromDir, importPath);
+    const withExt = path.extname(resolved) ? resolved : resolved + '.ts';
+    const rel = path.relative(srcPath, withExt).replace(/\\/g, '/');
+    if (fileMap.has(rel)) return rel;
+    const withTsx = path.extname(resolved) ? resolved : resolved + '.tsx';
+    const relTsx = path.relative(srcPath, withTsx).replace(/\\/g, '/');
+    if (fileMap.has(relTsx)) return relTsx;
+    return null;
+  };
+
   for (const fp of files) {
     const rel = relativeToSrc(fp, srcPath);
     fileMap.set(rel, fp);
@@ -88,7 +102,10 @@ export function scanArchitecture(srcPath: string): ArchitectureGraph {
     nodes.push({ file: rel, exports });
 
     for (const imp of imports) {
-      edges.push({ from: rel, to: imp, type: 'import' });
+      const resolvedTarget = resolveImportPath(fp, imp);
+      if (resolvedTarget) {
+        edges.push({ from: rel, to: resolvedTarget, type: 'import' });
+      }
     }
   }
 
@@ -128,7 +145,7 @@ export async function initNexusSelfProject(
     specContent += `Ostatnie skanowanie: ${new Date().toISOString()}\n`;
 
     const projectId = 'nexus-system-self';
-    const existing = storage.getExperimentalProject(projectId);
+    const existing = storage.getProjekt(projectId);
     if (!existing) {
       const proj = {
         id: projectId,
@@ -136,28 +153,31 @@ export async function initNexusSelfProject(
         spec_content: specContent,
         ai_config: '{}',
       };
-      storage.saveExperimentalProject(proj);
+      storage.saveProjekt(proj);
       console.log('[NexusSelfAnalyzer] Created "Nexus System" project');
     } else {
       // Aktualizuj jeśli hash się zmienił
       const oldHash = (existing.spec_content || '').match(/Hash architektury: ([a-f0-9]+)/)?.[1];
       if (oldHash !== graph.hash) {
         existing.spec_content = specContent;
-        storage.saveExperimentalProject(existing);
+        storage.saveProjekt(existing);
         console.log('[NexusSelfAnalyzer] Updated "Nexus System" project');
       }
     }
 
+    // NOTE: Transactional integrity risk — old nodes/edges are deleted BEFORE new ones are saved.
+    // If saving new data fails halfway, data is lost. Consider: save new data first, then delete old ones.
+
     // Usuń stare nody/krawędzie i zapisz nowe
-    const existingNodes = storage.getExperimentalNodes(projectId);
-    for (const n of existingNodes) storage.deleteExperimentalNode(n.id);
-    const existingEdges = storage.getExperimentalEdges(projectId);
-    for (const e of existingEdges) storage.deleteExperimentalEdge(e.id);
+    const existingNodes = storage.getProjektyNodes(projectId);
+    for (const n of existingNodes) storage.deleteProjektyNode(n.id);
+    const existingEdges = storage.getProjektyEdges(projectId);
+    for (const e of existingEdges) storage.deleteProjektyEdge(e.id);
 
     // Zapisz nody
     for (const node of graph.nodes) {
       const nodeId = `sys_${crypto.createHash('sha256').update(node.file).digest('hex').slice(0, 12)}`;
-      storage.saveExperimentalNode({
+      storage.saveProjektyNode({
         id: nodeId,
         project_id: projectId,
         title: node.file,
@@ -171,7 +191,7 @@ export async function initNexusSelfProject(
       });
     }
 
-    // Zapisz krawedzie (przez ExperimentalEdge, jesli StorageEngine obsluguje)
+    // Zapisz krawedzie (przez ProjektyEdge, jesli StorageEngine obsluguje)
     for (const edge of graph.edges) {
       const fromId = `sys_${crypto.createHash('sha256').update(edge.from).digest('hex').slice(0, 12)}`;
       const toId = `sys_${crypto.createHash('sha256').update(edge.to).digest('hex').slice(0, 12)}`;
@@ -187,7 +207,7 @@ export async function initNexusSelfProject(
           source_handle: undefined as string | undefined,
           target_handle: undefined as string | undefined,
         };
-        storage.saveExperimentalEdge(expEdge);
+        storage.saveProjektyEdge(expEdge);
       } catch { /* edge storage not available */ }
     }
 

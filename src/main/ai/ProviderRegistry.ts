@@ -231,8 +231,8 @@ export class ProviderRegistry {
     const modelName = modelConfig.modelName;
 
     // Check if this is a default free DeepSeek model
-    const isFreeModel = (label === 'DeepSeek V4 Flash' || label === 'DeepSeek V4 Pro') &&
-      (modelName === 'deepseek-ai/deepseek-v4-pro' || modelName === 'deepseek-ai/deepseek-v4-flash' || modelName === 'deepseek-v4-flash' || modelName === 'deepseek-v4-pro');
+    const isFreeModel = (label === 'DeepSeek V4 Flash' && (modelName.includes('flash') || modelName.includes('v4-flash'))) ||
+      (label === 'DeepSeek V4 Pro' && (modelName.includes('pro') || modelName.includes('reasoner')));
 
     if (isFreeModel && this.healthMonitor) {
       const settings = this.healthMonitor.getSettings();
@@ -286,25 +286,23 @@ export class ProviderRegistry {
     if (!adapter.isConfigured()) {
       throw new Error(`Provider "${label}" nie ma klucza API. Skonfiguruj go w ustawieniach.`);
     }
-    // Sprawdź limit RPM przed wysłaniem
-    if (!rateLimiter.canSend(label)) {
+    // Sprawdź limit RPM przed wysłaniem (atomowe)
+    if (!rateLimiter.tryAcquire(label)) {
       const usage = rateLimiter.getUsage(label);
       throw new Error(`Przekroczono limit RPM dla "${label}" (${usage.used}/${usage.limit}). Odczekaj przed następnym zapytaniem.`);
     }
     return adapter;
   }
 
-  /** Rejestruje udane wysłanie zapytania do RateLimiter */
+  /** Emituje zdarzenie po udanym zapytaniu. Rate limiting obsłużony atomowo przez tryAcquire w getAdapter. */
   recordSend(label: string, modelName?: string): void {
-    if (modelName && this.activeFailovers.has(modelName) && label === 'DeepSeek V4 Flash') {
+    if (modelName && this.activeFailovers.has(modelName) && (label === 'DeepSeek V4 Flash' || label === 'DeepSeek V4 Pro')) {
       const paid = this.getPaidAdapter(modelName);
       if (paid) {
-        rateLimiter.recordSend(paid.label);
         systemEventBus.push({ type: 'ai:response-received', timestamp: Date.now(), provider: paid.label, durationMs: 0, tokenCount: 0 });
         return;
       }
     }
-    rateLimiter.recordSend(label);
     systemEventBus.push({ type: 'ai:response-received', timestamp: Date.now(), provider: label, durationMs: 0, tokenCount: 0 });
   }
 

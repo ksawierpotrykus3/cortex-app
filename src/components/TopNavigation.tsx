@@ -1,16 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Download, Settings, PanelLeft, ScrollText, PenSquare, Bot, History, BookOpen, GitBranch, Network, Workflow, Shield, Tags, ChevronDown, MessageSquareMore, Monitor } from "lucide-react";
+import { Download, Settings, Bot, History, BookOpen, GitBranch, Shield, ChevronDown } from "lucide-react";
 import { ViewMode, RightPanelState, ModalState } from "../types";
 
+// [USER REQUEST 2026-07-11] Usunięto nexus canvas i powiązane widoki.
+// PanelLeft, Tags, PenSquare, Monitor - niepotrzebne po wywaleniu nexusa, raw-fragments, system.
 export function TopNavigation({
   activeView,
   setActiveView,
-  rightPanel,
-  setRightPanel,
   setModal,
-  isSidebarOpen,
-  setIsSidebarOpen,
-  onOpenTagDialog,
 }: {
   activeView: ViewMode;
   setActiveView: (view: ViewMode) => void;
@@ -25,15 +22,6 @@ export function TopNavigation({
     <div className="h-14 border-b border-[rgb(var(--border))] bg-[rgb(var(--panel))] flex items-center justify-between px-6 shrink-0 z-50 shadow-sm">
       <div className="flex items-center gap-6 h-full">
         <div className="flex items-center gap-3">
-          {activeView === "nexus" && (
-            <button
-               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-               aria-label={isSidebarOpen ? "Zwiń panel boczny" : "Rozwiń panel boczny"}
-               className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${isSidebarOpen ? 'bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))]' : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--background))]'}`}
-            >
-              <PanelLeft className="w-4 h-4" />
-            </button>
-          )}
           <div className="text-[15px] font-bold tracking-wide text-[rgb(var(--text-main))] flex items-center gap-2.5 select-none">
             <div className="w-2.5 h-2.5 rounded shadow-[0_0_10px_rgba(45,212,191,0.5)] bg-[rgb(var(--accent))]" />
             NEXUS
@@ -57,16 +45,16 @@ export function TopNavigation({
             Useme
           </button>
 
-          {/* Tryb Eksperymentalny */}
+          {/* Projekty */}
           <button
-            onClick={() => setActiveView("experimental")}
+            onClick={() => setActiveView("projekty")}
             className={`px-3 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
-              activeView === "experimental"
+              activeView === "projekty"
                 ? "text-[rgb(var(--accent))] border-[rgb(var(--accent))]"
                 : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] border-transparent"
             }`}
           >
-            Eksperyment
+            Projekty
           </button>
           
 
@@ -78,16 +66,6 @@ export function TopNavigation({
       <div className="flex items-center gap-3">
 
         <div className="flex items-center gap-1">
-            {onOpenTagDialog && (
-              <button
-                onClick={onOpenTagDialog}
-                aria-label="Taguj notatki"
-                className="p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-main))] hover:bg-[rgb(var(--background))] transition-colors cursor-pointer rounded-lg"
-                title="Taguj notatki"
-              >
-                <Tags className="w-4 h-4" />
-              </button>
-            )}
             <button 
               onClick={() => setModal("settings")}
               aria-label="Ustawienia"
@@ -127,13 +105,11 @@ function NavGroup({ label, activeView, setActiveView }: { label: string; activeV
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // [USER REQUEST 2026-07-11] raw-fragments i system usunięte na zawsze
   const subViews: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
-    { id: 'raw-fragments', label: 'Raw Fragments', icon: <PenSquare className="w-3.5 h-3.5" /> },
     { id: 'changes', label: 'Changes', icon: <History className="w-3.5 h-3.5" /> },
     { id: 'wiki', label: 'Wiki', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'git', label: 'Git', icon: <GitBranch className="w-3.5 h-3.5" /> },
-    { id: 'feedback', label: 'Feedback', icon: <MessageSquareMore className="w-3.5 h-3.5" /> },
-    { id: 'system', label: 'System', icon: <Monitor className="w-3.5 h-3.5" /> },
   ];
 
   return (

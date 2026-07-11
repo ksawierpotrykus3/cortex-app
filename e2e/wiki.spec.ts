@@ -7,6 +7,7 @@ test.describe('Wiki — testy E2E', () => {
     await page.getByText('More').first().click();
     await expect(page.getByText('Wiki').first()).toBeVisible();
     await page.getByText('Wiki').first().click();
+    await expect(page.getByText('Wiki').first()).toBeVisible();
   });
 
   test('powinien wyświetlać przycisk Axioms w prawym panelu', async ({ page }) => {

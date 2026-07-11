@@ -4,12 +4,22 @@
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$PythonPath = "C:\Users\Ksawier\AppData\Local\Programs\Python\Python313"
+
+# Auto-detect Python from PATH
+$PythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source
+if (-not $PythonExe) {
+    $PythonExe = (Get-Command python3 -ErrorAction SilentlyContinue).Source
+}
+if (-not $PythonExe) {
+    Write-Error "Python not found in PATH. Install Python and add it to PATH."
+    exit 1
+}
+$PythonPath = Split-Path -Parent $PythonExe
 
 # Add Python to PATH and set node-gyp env vars
 $env:PATH = "$PythonPath;$PythonPath\Scripts;$env:PATH"
-$env:PYTHON = "$PythonPath\python.exe"
-$env:npm_config_python = "$PythonPath\python.exe"
+$env:PYTHON = $PythonExe
+$env:npm_config_python = $PythonExe
 
 Write-Host "[NEXUS] Python: $env:PYTHON" -ForegroundColor Cyan
 Write-Host "[NEXUS] Building release..." -ForegroundColor Cyan

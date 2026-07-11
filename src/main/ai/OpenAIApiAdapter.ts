@@ -99,12 +99,22 @@ export class OpenAIApiAdapter implements IAIProvider {
 
     try {
       while (true) {
-        const { done, value } = await Promise.race([
-          reader.read(),
-          new Promise<{ done: boolean; value?: never }>((_, reject) =>
-            setTimeout(() => reject(new Error('Stream read timeout')), STREAM_TIMEOUT_MS)
-          ),
-        ]) as { done: boolean; value?: Uint8Array };
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Stream read timeout')), STREAM_TIMEOUT_MS);
+        });
+
+        let readResult: { done: boolean; value?: Uint8Array };
+        try {
+          readResult = (await Promise.race([
+            reader.read(),
+            timeoutPromise,
+          ])) as { done: boolean; value?: Uint8Array };
+        } finally {
+          if (timeoutId !== undefined) clearTimeout(timeoutId);
+        }
+
+        const { done, value } = readResult;
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -147,7 +157,8 @@ export class OpenAIApiAdapter implements IAIProvider {
         } catch { /* skip */ }
       }
     } finally {
-      try { reader?.releaseLock(); } catch { /* reader already released */ }
+      try { reader.cancel(); } catch { /* ignore */ }
+      try { reader.releaseLock(); } catch { /* reader already released */ }
     }
 
     yield { token: '', done: true };

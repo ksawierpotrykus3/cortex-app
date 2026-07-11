@@ -36,6 +36,7 @@ let orchestrator: AgentOrchestrator | null = null;
 let storage: StorageEngine | null = null;
 let ipcBridge: ElectronIpcBridge | null = null;
 let providerRegistry: ProviderRegistry | null = null;
+let healthMonitor: AiHealthMonitor | null = null;
 let usemeManager: UsemeHandlerManager | null = null;
 let deepSeekProxyProcess: ChildProcess | null = null;
 
@@ -137,7 +138,7 @@ function createMainWindow(): BrowserWindow {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com; " +
           "img-src 'self' data: blob:; " +
-          "connect-src 'self' ws: http://localhost:*; " +
+          "connect-src 'self' ws: http://localhost:* https://generativelanguage.googleapis.com https://api.deepseek.com https://openrouter.ai; " +
           "frame-src 'none'; " +
           "object-src 'none'; ",
         ],
@@ -174,7 +175,7 @@ async function bootstrap(): Promise<void> {
   storage = new StorageEngine(DATA_DIR);
   await storage.init();
 
-  const healthMonitor = new AiHealthMonitor(DATA_DIR, config.deepseekProxy.healthUrl);
+  healthMonitor = new AiHealthMonitor(DATA_DIR, config.deepseekProxy.healthUrl);
   await healthMonitor.init();
   providerRegistry = new ProviderRegistry(healthMonitor);
   providerRegistry.setIpcSender((channel, data) => {
@@ -204,14 +205,11 @@ async function bootstrap(): Promise<void> {
 
   initNexusSelfProject(storage!, path.join(ROOT_DIR, 'src'), path.join(ROOT_DIR, 'STAN_PROJEKTU.md')).catch(err => console.warn('[NexusSelfAnalyzer] init error:', err));
 
-  usemeManager = new UsemeHandlerManager();
-  if (mainWindow) usemeManager.setMainWindow(mainWindow);
-  registerUsemeHandlers(ipcMain, usemeManager);
-
   mainWindow = createMainWindow();
-  if (usemeManager && mainWindow) {
-    usemeManager.setMainWindow(mainWindow);
-  }
+
+  usemeManager = new UsemeHandlerManager();
+  usemeManager.setMainWindow(mainWindow);
+  registerUsemeHandlers(ipcMain, usemeManager);
 }
 
 // ============================================================================
@@ -246,6 +244,7 @@ if (!gotLock) {
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         mainWindow = createMainWindow();
+        usemeManager?.setMainWindow(mainWindow);
       }
     });
   }).catch(err => {
@@ -261,6 +260,7 @@ if (!gotLock) {
   });
 
   app.on('before-quit', () => {
+    healthMonitor?.stopMonitoring();
     orchestrator?.destroy();
     storage?.destroy();
     ipcBridge?.destroy();

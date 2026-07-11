@@ -104,7 +104,7 @@ function saveCursorStore(): void {
       }
       fs.writeFileSync(file, JSON.stringify(obj, null, 2), 'utf-8');
     } catch { /* ignore save errors */ }
-  });
+  }).catch(() => {});
 }
 
 // Load initially

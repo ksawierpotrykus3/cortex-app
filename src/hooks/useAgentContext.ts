@@ -4,7 +4,7 @@
 // ostatnią akcję. Używany przez feedback, floating agentów i wszędzie.
 // ============================================================================
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ViewMode } from '../types';
 
 export interface AgentContext {

@@ -133,7 +133,7 @@ export class UsemeHandlerManager {
     const proc = this.process;
     this.process.removeAllListeners();
     if (process.platform === 'win32') {
-      child_process.exec(`taskkill /F /T /PID ${proc.pid}`);
+      child_process.spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { shell: false });
     } else {
       proc.kill('SIGTERM');
     }

@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    environment: 'node',
+    environment: 'jsdom',
     testTimeout: 60_000,
     hookTimeout: 30_000,
     pool: 'forks',

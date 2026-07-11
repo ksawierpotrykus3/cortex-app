@@ -11,7 +11,14 @@ import { ContextBar } from "./ContextBar";
 import { ViewMode, FeedbackEntry } from "../types";
 import { CapabilityCategory, ApprovalLevel, ALL_CAPABILITIES, CapabilityEntry } from "../shared/types/capabilities";
 import { saveChatSessions, loadChatSessions, deleteChatSession } from "../utils/chatStorage";
-import { AtMentionAutocomplete, MentionableItem, resolveAtReferences } from "./AtMentionAutocomplete";
+
+interface MentionableItem {
+  id: string;
+  type: 'wiki' | 'agent' | 'task';
+  label: string;
+  subtitle?: string;
+  content?: string;
+}
 
 interface FloatingMessage {
   role: 'user' | 'assistant' | 'system' | 'approval_request' | 'approval_response' | 'action' | 'failover_proposal' | 'recovery_proposal';
@@ -613,32 +620,13 @@ function AgentCard({ agent, tracker, onSend, onRemove, onToggleCollapse, mention
 
           {/* Input */}
           <div className="flex gap-2 relative">
-            <AtMentionAutocomplete
-              items={mentionableItems}
-              value={input}
-              onSelect={(item) => {
-                // Replace @query with resolved reference using cursorPosRef
-                const atIdx = input.lastIndexOf('@', cursorPosRef.current);
-                if (atIdx >= 0) {
-                  const before = input.slice(0, atIdx);
-                  const ref = `@${item.type}:${item.label} `;
-                  const newVal = before + ref;
-                  setInput(newVal);
-                }
-                return input;
-              }}
-            />
             <input
+              className="flex-1 bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border))] rounded px-3 py-2 text-sm"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Zapytaj ${agent.name}... (użyj @ aby wstrzyknąć kontekst)`}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder={`Zapytaj ${agent.name}...`}
               className="flex-1 bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg px-3 py-1.5 text-[11px] text-[rgb(var(--text-main))] placeholder:text-[rgb(var(--text-muted))] focus:outline-none focus:border-[rgb(var(--text-secondary))] transition-colors"
-              onSelect={(e) => {
-                // Track cursor position for @ detection
-                const target = e.target as HTMLInputElement;
-                cursorPosRef.current = target.selectionStart || 0;
-              }}
             />
             <button
               onClick={handleSend}

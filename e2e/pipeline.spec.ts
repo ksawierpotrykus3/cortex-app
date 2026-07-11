@@ -12,5 +12,6 @@ test.describe('Pipeline — testy E2E', () => {
     await page.goto('/');
     await page.getByText('More').first().click();
     await page.getByText('Pipeline').first().click();
+    await expect(page.getByText('Pipeline').first()).toBeVisible();
   });
 });
