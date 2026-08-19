@@ -13,10 +13,6 @@ const { MockAdapter } = vi.hoisted(() => {
   };
 });
 
-vi.mock('./GeminiAdapter', () => ({
-  GeminiAdapter: MockAdapter
-}));
-
 vi.mock('./OpenAIApiAdapter', () => ({
   OpenAIApiAdapter: MockAdapter
 }));

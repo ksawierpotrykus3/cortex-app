@@ -5,7 +5,6 @@
 
 import { IAIProvider } from './IAIProvider';
 import { OpenAIApiAdapter } from './OpenAIApiAdapter';
-import { GeminiAdapter } from './GeminiAdapter';
 import { AIProvider, ProviderAuthConfig, ModelConfig, DEFAULT_PROVIDERS } from '../../shared/types/schema';
 import { rateLimiter } from './RateLimiter';
 import { AiHealthMonitor } from './AiHealthMonitor';
@@ -17,9 +16,6 @@ function createAdapter(config: ProviderAuthConfig): IAIProvider | null {
   const apiKey = config.apiKey || '';
 
   switch (config.provider) {
-    case AIProvider.GEMINI:
-      return new GeminiAdapter(apiKey);
-
     case AIProvider.OPENROUTER:
     case AIProvider.OLLAMA:
       return new OpenAIApiAdapter(config.label, baseUrl, apiKey);
