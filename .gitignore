@@ -31,3 +31,8 @@ electron.vite.config.*.mjs
 
 # Auto-update blockmaps (generated)
 *.blockmap
+
+# Scratch scripts and captures
+*.py
+*.png
+ocena_gemini.txt

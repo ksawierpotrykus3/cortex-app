@@ -6,7 +6,7 @@ export interface Projekt {
   updated_at?: string;
 }
 
-export type NodeType = 'root' | 'domain' | 'component' | 'task' | 'integration';
+export type NodeType = 'root' | 'domain' | 'component' | 'task' | 'integration' | 'note';
 export type NodeStatus = 'new' | 'in_progress' | 'ready' | 'deprecated';
 export type RelationType = 'requires' | 'depends_on' | 'data_flow' | 'sync' | 'supports';
 

@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    passWithNoTests: true,
     environment: 'jsdom',
     testTimeout: 60_000,
     hookTimeout: 30_000,

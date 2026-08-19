@@ -1,5 +1,5 @@
-import { ExperimentalCanvas } from "./components/ExperimentalCanvas";
+import { NotesCanvas } from "./components/NotesCanvas";
 
 export function App() {
-  return <ExperimentalCanvas />;
+  return <NotesCanvas />;
 }

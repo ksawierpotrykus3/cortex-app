@@ -34,7 +34,7 @@ export default defineConfig({
         },
         output: {
           format: 'cjs',
-          entryFileNames: 'index.js',
+          entryFileNames: 'index.cjs',
         },
       },
     },

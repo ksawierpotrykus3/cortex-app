@@ -1,5 +1,5 @@
 // ============================================================================
-// NEXUS — Main Process (electron-vite entry)
+// CORTEX — Main Process (electron-vite entry)
 // Bezpieczny BrowserWindow z contextIsolation: true + preload.ts
 // Inicjalizuje StorageEngine + ElectronIpcBridge
 // ============================================================================
@@ -14,7 +14,7 @@ import { ElectronIpcBridge } from './ipc/ElectronIpcBridge';
 const IS_DEV = !app.isPackaged;
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const DATA_DIR = !IS_DEV
-  ? path.join(app.getPath('userData'), 'NexusData')
+  ? path.join(app.getPath('userData'), 'CortexData')
   : path.join(ROOT_DIR, 'data');
 
 // === State =================================================================
@@ -26,14 +26,14 @@ let ipcBridge: ElectronIpcBridge | null = null;
 // Create Window
 // ============================================================================
 function createMainWindow(): BrowserWindow {
-  const preloadPath = path.join(__dirname, '..', 'preload', 'index.js');
+  const preloadPath = path.join(__dirname, '..', 'preload', 'index.cjs');
 
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1000,
     minHeight: 700,
-    title: 'NEXUS — Agent Orchestration System',
+    title: 'Cortex — Agent Orchestration System',
     backgroundColor: '#0a0e14',
     show: false,
     webPreferences: {
@@ -51,7 +51,7 @@ function createMainWindow(): BrowserWindow {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
-          "script-src 'self'; " +
+          "script-src 'self' " + (IS_DEV ? "'unsafe-inline' " : "") + "; " +
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com; " +
           "img-src 'self' data: blob:; " +
@@ -61,6 +61,16 @@ function createMainWindow(): BrowserWindow {
         ],
       },
     });
+  });
+
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[RENDERER:${level}] ${message} (${sourceId}:${line})`);
+  });
+  win.webContents.on('did-fail-load', (_event, code, desc) => {
+    console.error(`[RENDERER FAIL] ${code}: ${desc}`);
+  });
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error(`[RENDERER GONE] ${details.reason}`);
   });
 
   win.once('ready-to-show', () => {
@@ -84,7 +94,7 @@ function createMainWindow(): BrowserWindow {
 // ============================================================================
 async function bootstrap(): Promise<void> {
   console.log('====================================================');
-  console.log('  NEXUS — Agent Orchestration System');
+  console.log('  Cortex — Notatki');
   console.log('====================================================\n');
 
   storage = new StorageEngine(DATA_DIR);
@@ -117,8 +127,8 @@ if (!gotLock) {
     try {
       await bootstrap();
     } catch (err) {
-      console.error('[NEXUS] Bootstrap failed:', err);
-      dialog.showErrorBox('Nexus Bootstrap Error', String(err));
+      console.error('[CORTEX] Bootstrap failed:', err);
+      dialog.showErrorBox('Cortex Bootstrap Error', String(err));
       app.quit();
       return;
     }
@@ -129,8 +139,8 @@ if (!gotLock) {
       }
     });
   }).catch(err => {
-    console.error('[NEXUS] App ready failed:', err);
-    dialog.showErrorBox('Nexus Error', String(err));
+    console.error('[CORTEX] App ready failed:', err);
+    dialog.showErrorBox('Cortex Error', String(err));
     app.quit();
   });
 
