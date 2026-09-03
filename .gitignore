@@ -39,4 +39,6 @@ electron.vite.config.*.mjs
 ocena_gemini.txt
 1.md
 *.bak
+cortex_eksport_dla_ai.md
+
 
