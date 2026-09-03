@@ -34,5 +34,9 @@ electron.vite.config.*.mjs
 
 # Scratch scripts and captures
 *.py
+!agent/**/*.py
 *.png
 ocena_gemini.txt
+1.md
+*.bak
+

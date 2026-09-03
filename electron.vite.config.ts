@@ -62,8 +62,8 @@ export default defineConfig({
       },
     },
     plugins: [
-      react(),
       tailwindcss(),
+      react(),
       {
         name: 'remove-crossorigin',
         transformIndexHtml: (html) => html.replace(/\bcrossorigin\b/g, ''),

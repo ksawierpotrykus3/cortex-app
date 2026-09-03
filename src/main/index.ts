@@ -36,6 +36,7 @@ function createMainWindow(): BrowserWindow {
     title: 'Cortex — Agent Orchestration System',
     backgroundColor: '#0a0e14',
     show: false,
+    frame: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -55,7 +56,7 @@ function createMainWindow(): BrowserWindow {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com; " +
           "img-src 'self' data: blob:; " +
-          "connect-src 'self' ws: http://localhost:* https://generativelanguage.googleapis.com https://api.deepseek.com https://openrouter.ai; " +
+          "connect-src 'self' ws: http://localhost:* http://127.0.0.1:* https://generativelanguage.googleapis.com https://api.deepseek.com https://openrouter.ai; " +
           "frame-src 'none'; " +
           "object-src 'none'; ",
         ],
@@ -75,10 +76,28 @@ function createMainWindow(): BrowserWindow {
 
   win.once('ready-to-show', () => {
     win.show();
-    if (IS_DEV) {
-      win.webContents.openDevTools();
-    }
   });
+
+  // Kontrola okna (okno bez ramki — własne przyciski min/max/close)
+  ipcMain.handle('window:minimize', () => win.minimize());
+  ipcMain.handle('window:maximize', () => {
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+    return win.isMaximized();
+  });
+  ipcMain.handle('window:close', () => win.close());
+  ipcMain.handle('window:is-maximized', () => win.isMaximized());
+
+  if (IS_DEV) {
+    win.webContents.on('before-input-event', (_event, input) => {
+      if (
+        input.type === 'keyDown' &&
+        (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i'))
+      ) {
+        win.webContents.toggleDevTools();
+      }
+    });
+  }
 
   if (IS_DEV) {
     win.loadURL('http://localhost:3000');
